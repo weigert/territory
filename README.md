@@ -4,6 +4,7 @@
 ## Controls
 - Change Position: WASD
 - Change View: Arrow Keys
+- Zoom: Scroll
 
 ![Example Rendering](https://github.com/weigert/territory/blob/master/territory.png)
 
