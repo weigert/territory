@@ -1,6 +1,7 @@
 # territory
 3D rendered proc-gen world test
 
+![Example Rendering](https://octodex.github.com/images/yaktocat.png)
 
 /*
 ToDo:
