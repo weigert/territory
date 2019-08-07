@@ -1,7 +1,7 @@
 # territory
 3D rendered proc-gen world test
 
-![Example Rendering](https://octodex.github.com/images/yaktocat.png)
+![Example Rendering](https://github.com/weigert/territory/blob/master/territory.png)
 
 /*
 ToDo:
