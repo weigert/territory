@@ -93,85 +93,26 @@ void View::cleanup(){
 }
 
 void View::loadChunkModels(World world){
-  //Empty the Models
+  //Find models that need to be deleted! Don't delete all of them (ideally)!
   models.clear();
 
-  //For every loaded chunk
-  for(unsigned int l = 0; l < world.chunks.size(); l++){
-    //Construct a New Model Object
+  //Loop over the loaded chunks
+  for(unsigned int i = 0; i < world.chunks.size(); i++){
+
+    //Construct a new model from the chunk, add to array
     Model model;
-
-    //Loop over all elements inside the chunk
-    for(int i = 0; i < world.chunkSize; i++){
-      for(int j = 0; j < world.chunkSize; j++){
-        for(int k = 0; k < world.chunkSize; k++){
-          //Get the current block type
-          BlockType _type = world.chunks[l].data.getPosition(i,j,k);
-          if(_type != 0){
-            //Set this shit up
-            std::ifstream t("/home/nick/Documents/Game Workspace/23_HexelRender/source/include/positions.txt");
-            std::string x;
-            std::string y;
-            std::string z;
-            do{
-              t >> x;
-              t >> y;
-              t >> z;
-              model.positions.push_back(std::atof(x.c_str())+i);
-              model.positions.push_back(std::atof(y.c_str())+j);
-              model.positions.push_back(std::atof(z.c_str())+k);
-            }
-            while (t.good());
-            //Remove 3 of them for some reason. It does it once too often.
-            model.positions.pop_back();
-            model.positions.pop_back();
-            model.positions.pop_back();
-
-            //We need to get a color
-            glm::vec4 color = world.getColorByID(world.chunks[l].data.getPosition(i, j, k));
-            //For all 36 triangles we add a color (12*3)
-            for(unsigned int m = 0; m < 36; m++){
-              model.colors.push_back(color.x);
-              model.colors.push_back(color.y);
-              model.colors.push_back(color.z);
-              model.colors.push_back(color.w);
-            }
-          }
-        }
-      }
-    }
-
-    //Compute all Surface Normals
-    //For every surface we compute the surface normal
-    for(unsigned int m = 0; m < model.positions.size()/9; m++){
-      glm::vec3 v1 = glm::vec3(model.positions[m*9], model.positions[m*9+1], model.positions[m*9+2]);
-      glm::vec3 v2 = glm::vec3(model.positions[m*9+3], model.positions[m*9+4], model.positions[m*9+5]);
-      glm::vec3 v3 = glm::vec3(model.positions[m*9+6], model.positions[m*9+7], model.positions[m*9+8]);
-      glm::vec3 edge1 = v3-v1;
-      glm::vec3 edge2 = v2-v1;
-      glm::vec3 normal = glm::normalize(glm::cross(edge1, edge2));
-      //We add the x,y,z value 3 times (once for each for every vertex)
-      for(int n = 0; n < 3; n++){
-        model.normals.push_back(normal.x);
-        model.normals.push_back(normal.y);
-        model.normals.push_back(normal.z);
-      }
-    }
-
-    //Generate the model from all this data now
-    //The question is if we need to
+    model.fromChunk(world.chunks[i], LOD);
     model.setup();
 
     //Translate it according to the chunk position relative to the player position
-    glm::vec3 axis = world.chunks[l].pos-world.chunkPos;
+    glm::vec3 axis = world.chunks[i].pos-world.chunkPos;
     axis.x *= world.chunkSize;
     axis.y *= world.chunkSize;
     axis.z *= world.chunkSize;
     axis -= world.playerPos;
     model.translate(axis);
-
-    //Add the Model
     models.push_back(model);
+    std::cout<<"I: "<<i<<std::endl;
   }
 }
 
@@ -308,12 +249,12 @@ void View::renderShadow(){
     //Render the Model
     models[i].render();
   }
-
-  //Unbind the Framebuffer
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void View::renderScene(){
+  //Unbind the Framebuffer
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
   //Clear the Color and Stuff
   glClearColor(0.6f, 0.9f, 0.8f, 1.0f); //Blue
 
@@ -328,7 +269,7 @@ void View::renderScene(){
 			0.0, 0.5, 0.0, 0.0,
 			0.0, 0.0, 0.5, 0.0,
 			0.5, 0.5, 0.5, 1.0
-		);
+	);
 
   //Use the Shader
   cubeShader.useProgram();    //Use the model's shader

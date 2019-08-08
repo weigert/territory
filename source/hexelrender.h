@@ -34,8 +34,8 @@ Hexelrender Header File
 //Include Any Dependencies Here
 #include "include/octree.cpp"
 #include "include/shader.cpp"
-#include "include/model.cpp"
 #include "include/chunk.cpp"
+#include "include/model.cpp"
 #include "include/world.cpp"
 #include "include/sprite.cpp"
 #include "include/view.cpp"

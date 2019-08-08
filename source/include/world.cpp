@@ -1,51 +1,47 @@
+//Include Header File
 #include "world.h"
 
 void World::generate(){
   //Seed the Random Generator
-  srand(SEED);
+  srand(time(NULL));
 
   //Perlin Noise Generator
   //noise::module::Perlin perlin;
 
   //Loop over all Chunks in the World
   for(int i = 0; i < worldSize; i++){
-    for(int j = 0; j < worldSize; j++){
-      for(int k = 0; k < worldHeight; k++){
+    for(int j = 0; j < worldHeight; j++){
+      for(int k = 0; k < worldSize; k++){
         //Generate a new chunk at a specific location
         Chunk chunk;
         chunk.biome = BIOME_FOREST;
         chunk.size = chunkSize;
-        chunk.data.maxDepth = log2(chunkSize);
-        //chunk.maxDepth = log2(chunkSize);
-        // = new Chunk(glm::vec3(i, k, j));
-        chunk.pos = glm::vec3(i, k, j);
-        chunk.data.setRoot();
+        chunk.data.depth = log2(chunkSize); //Set the remaining depth
+        chunk.pos = glm::vec3(i, j, k);
 
-        //This needs to be done properly!!!!
+        chunk.fillVolume(glm::vec3(0,0,0),glm::vec3(chunkSize-1,0,chunkSize-1), BLOCK_GRASS);
 
-        if(k == 0){
-          chunk.fillVolume(glm::vec3(0,0,0), glm::vec3(chunkSize-1,0,chunkSize-1), BLOCK_GRASS);
-        }
-
-        for(int l = 0; l < 5; l++){
+        for(int i = 0; i < 10; i++){
+          //Random Locations of Rocks / Trees
           int rock[2] = {rand()%chunkSize, rand()%chunkSize};
+          int tree[3] = {rand()%(chunkSize-2)+1, rand()%(chunkSize-2)+1, rand()%(chunkSize/2)+chunkSize/2-1};
+
+          //Place Rocks
           chunk.data.setPosition(rock[0],1,rock[1],BLOCK_STONE);
-          int tree[2] = {rand()%chunkSize, rand()%chunkSize};
-          chunk.data.setPosition(tree[0],1,tree[1],BLOCK_WOOD);
-          chunk.data.setPosition(tree[0],2,tree[1],BLOCK_WOOD);
-          chunk.data.setPosition(tree[0],3,tree[1],BLOCK_WOOD);
-          chunk.data.setPosition(tree[0],4,tree[1],BLOCK_WOOD);
-          chunk.data.setPosition(tree[0],5,tree[1],BLOCK_WOOD);
-          chunk.data.setPosition(tree[0],6,tree[1],BLOCK_WOOD);
-          chunk.data.setPosition(tree[0],7,tree[1],BLOCK_WOOD);
-          chunk.data.setPosition(tree[0],8,tree[1],BLOCK_WOOD);
-          chunk.data.setPosition(tree[0],9,tree[1],BLOCK_WOOD);
-          chunk.data.setPosition(tree[0],10,tree[1],BLOCK_LEAVES);
-          chunk.data.setPosition(tree[0]-1,9,tree[1],BLOCK_LEAVES);
-          chunk.data.setPosition(tree[0]+1,9,tree[1],BLOCK_LEAVES);
-          chunk.data.setPosition(tree[0],9,tree[1]-1,BLOCK_LEAVES);
-          chunk.data.setPosition(tree[0],9,tree[1]+1,BLOCK_LEAVES);
+
+          //Place Trees
+          for(int j = 0; j < tree[2]; j++){
+            chunk.data.setPosition(tree[0],j,tree[1],BLOCK_WOOD);
+          }
+          chunk.data.setPosition(tree[0],tree[2]+1,tree[1],BLOCK_LEAVES);
+          chunk.data.setPosition(tree[0]+1,tree[2],tree[1],BLOCK_LEAVES);
+          chunk.data.setPosition(tree[0]-1,tree[2],tree[1],BLOCK_LEAVES);
+          chunk.data.setPosition(tree[0],tree[2],tree[1]+1,BLOCK_LEAVES);
+          chunk.data.setPosition(tree[0],tree[2],tree[1]-1,BLOCK_LEAVES);
         }
+
+        //Try to simplify the chunk
+        chunk.data.trySimplify();
 
         //Save this thing to file
         boost::filesystem::path data_dir(boost::filesystem::current_path());
@@ -58,36 +54,119 @@ void World::generate(){
       }
     }
   }
-
-  //We need to set the player's sprite to the correct height
-
 }
 
-void World::loadChunks(){
-  std::cout<<"loading chunks"<<std::endl;
-  //Get the path of the chunks
+void World::bufferChunks(){
+  //Load / Reload all Visible Chunks
+  //Brute Force Method
   chunks.clear();
-  //Loop over our chunk renderdistance
-  for(int i = chunkPos.x - renderDistance; i <= chunkPos.x + renderDistance; i++){
-    for(int j = chunkPos.y - renderDistance; j <= chunkPos.y + renderDistance; j++){
-      for(int k = chunkPos.z - renderDistance; k <= chunkPos.z + renderDistance; k++){
-        //Generate the supposed file name
-        boost::filesystem::path data_dir(boost::filesystem::current_path());
-        data_dir /= "save";
-        data_dir /= saveFile;
+
+  //File Loading / Saving Path
+  boost::filesystem::path data_dir(boost::filesystem::current_path());
+  data_dir /= "save";
+  data_dir /= saveFile;
+
+  //Get the Guy
+  glm::vec3 a = chunkPos - renderDistance;
+  glm::vec3 b = chunkPos + renderDistance;
+
+  //Can't exceed a certain size
+  a = glm::clamp(a, glm::vec3(0), glm::vec3(worldSize, worldHeight, worldSize));
+  b = glm::clamp(b, glm::vec3(0), glm::vec3(worldSize, worldHeight, worldSize));
+
+  //Construct the Vector of guys we should load
+  for(int i = a.x; i <= b.x; i ++){
+    for(int j = a.y; j <= b.y; j ++){
+      for(int k = a.z; k <= b.z; k ++){
+        //Get the Chunk
+        Chunk _chunk;
+        //Coordinates of chunks we want to load
         std::stringstream ss;
-        ss << "00" << std::to_string(i) << "00" << std::to_string(k) << "00" << std::to_string(j) << ".chunk";
-        data_dir /= ss.str();
+        ss << "00" << std::to_string(i) << "00" << std::to_string(j) << "00" << std::to_string(k) << ".chunk";
         //Check for file name existence
-        if(boost::filesystem::is_regular_file(data_dir)){
+        if(boost::filesystem::is_regular_file((data_dir/ss.str()))){
           //Load the chunk into memory
-          Chunk _chunk;
-          loadChunk(data_dir.string(), _chunk);
+          loadChunk((data_dir/ss.str()).string(), _chunk);
+          //Add the chunk
           chunks.push_back(_chunk);
         }
       }
     }
   }
+
+
+  /*
+  //Non-Brute Force Method
+  //Chunks that should be loaded
+  glm::vec3 a = chunkPos - renderDistance;
+  glm::vec3 b = chunkPos + renderDistance;
+
+  //Can't exceed a certain size
+  a = glm::clamp(a, glm::vec3(0), glm::vec3(worldSize, worldHeight, worldSize));
+  b = glm::clamp(b, glm::vec3(0), glm::vec3(worldSize, worldHeight, worldSize));
+
+  //Construct a vector so we can check which guys need loading
+
+  //Chunks that need to be removed
+  std::stack<int> remove;
+  std::vector<glm::vec3> load;
+
+  //Construct the Vector of guys we should load
+  for(int i = a.x; i <= b.x; i ++){
+    for(int j = a.y; j <= b.y; j ++){
+      for(int k = a.z; k <= b.z; k ++){
+        //Add the vector that we should be loading
+        load.push_back(glm::vec3(i, j, k));
+      }
+    }
+  }
+
+  //Loop over all existing chunks
+  for(unsigned int i = 0; i < chunks.size(); i++){
+    //Check if any of these chunks are outside of the limits of a / b
+    if(glm::any(glm::lessThan(chunks[i].pos, a)) || glm::any(glm::greaterThan(chunks[i].pos, b))){
+      //Check if the chunk was updated
+      if(chunks[i].updated){
+        //Save chunk to file
+        std::stringstream ss;
+        ss << "00" << std::to_string(chunks[i].pos.x) << "00" << std::to_string(chunks[i].pos.y) << "00" << std::to_string(chunks[i].pos.z) << ".chunk";
+        saveChunk((data_dir/ss.str()).string(), chunks[i]);
+      }
+      //Add the chunk to the erase pile
+      remove.push(i);
+
+      //Loop over the load vector, see if the guy we are looking at is identical, remove it in that case
+      for(unsigned int j = 0; j < load.size(); j++){
+        if(load[j].x == chunks[i].pos.x && load[j].y == chunks[i].pos.y && load[j].z == chunks[i].pos.z){
+          //Remove the element from load, as it is already inside this guy
+          load.erase(load.begin()+j);
+        }
+      }
+    }
+  }
+
+  //Loop over the erase pile, delete the relevant chunks.
+  while(!remove.empty()){
+    chunks.erase(chunks.begin()+remove.top());
+    remove.pop();
+  }
+
+  //Loop over the guys we want to load
+  while(!load.empty()){
+    //Make sure the vector we are trying to load is legit
+    Chunk _chunk;
+
+    std::stringstream ss;
+    ss << "00" << std::to_string((int)load.back().x) << "00" << std::to_string((int)load.back().y) << "00" << std::to_string((int)load.back().z) << ".chunk";
+    //Check for file name existence
+    if(boost::filesystem::is_regular_file((data_dir/ss.str()))){
+      //Load the chunk into memory
+      loadChunk((data_dir/ss.str()).string(), _chunk);
+      //Add the chunk
+      chunks.push_back(_chunk);
+    }
+    load.pop_back();
+  }*/
 }
 
 bool World::saveChunk(std::string fileName, Chunk chunk){
@@ -110,41 +189,6 @@ bool World::loadChunk(std::string fileName, Chunk &chunk){
   return true;
 }
 
-glm::vec4 World::getColorByID(BlockType _type){
-  //Switch the value and return a vector
-  glm::vec4 color;
-  switch(_type){
-    case BLOCK_GRASS:
-      color = glm::vec4(0.54f, 0.7f, 0.34f, 1.0f);
-      break;
-    case BLOCK_DIRT:
-      color = glm::vec4(0.74f, 0.5f, 0.36f, 1.0f);
-      break;
-    case BLOCK_WATER:
-      color = glm::vec4(0.02f, 0.61f, 0.75f, 1.0f);
-      break;
-    case BLOCK_SAND:
-      color = glm::vec4(0.93f, 0.91f, 0.38f, 1.0f);
-      break;
-    case BLOCK_CLAY:
-      color = glm::vec4(0.97f, 0.5f, 0.44f, 1.0f);
-      break;
-    case BLOCK_STONE:
-      color = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f);
-      break;
-    case BLOCK_LEAVES:
-      color = glm::vec4(0.38f, 0.48f, 0.26f, 0.8f);
-      break;
-    case BLOCK_WOOD:
-      color = glm::vec4(0.6f, 0.375f, 0.14f, 1.0f);
-      break;
-    default:
-      color = glm::vec4(1.0f, 1.0f, 1.0f, 0.5f);
-      break;
-  }
-  return color;
-}
-
 namespace boost {
 namespace serialization {
 
@@ -164,9 +208,7 @@ void serialize(Archive & ar, Chunk & _chunk, const unsigned int version)
 template<class Archive>
 void serialize(Archive & ar, Octree & _octree, const unsigned int version)
 {
-  ar & _octree.maxDepth;
   ar & _octree.depth;
-  ar & _octree.isRoot;
   ar & _octree.isNode;
   ar & _octree.type;
   ar & _octree.subTree;
