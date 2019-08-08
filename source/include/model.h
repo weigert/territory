@@ -20,6 +20,9 @@ public:
   void setup();
   void cleanup();
 
+  //Model Generation Functions
+  void fromChunk(Chunk _chunk, int LOD);
+
   //Position Handling Functions
   void reset();
   void translate(const glm::vec3 &axis);

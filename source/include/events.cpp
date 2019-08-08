@@ -52,7 +52,7 @@ void eventHandler::handle(World &world, View &view){
         world.chunkPos.z--; //Increment Chunkposition
         world.playerPos.z = world.chunkSize-1; //Reset Playerposition
         //Load new chunks
-        world.loadChunks();
+        world.bufferChunks();
         view.loadChunkModels(world); //This can be made more efficient to only reload new chunks
       }
     }
@@ -69,7 +69,7 @@ void eventHandler::handle(World &world, View &view){
         world.chunkPos.x++;
         world.playerPos.x = 0;
         //Load new chunks
-        world.loadChunks();
+        world.bufferChunks();
         view.loadChunkModels(world); //This can be made more efficient to only reload new chunks
       }
     }
@@ -85,7 +85,7 @@ void eventHandler::handle(World &world, View &view){
         world.chunkPos.z++;
         world.playerPos.z = 0;
         //Load new chunks
-        world.loadChunks();
+        world.bufferChunks();
         view.loadChunkModels(world); //This can be made more efficient to only reload new chunks
       }
     }
@@ -101,7 +101,7 @@ void eventHandler::handle(World &world, View &view){
       else if(world.chunkPos.x > 0){
         world.chunkPos.x--;
         world.playerPos.x = world.chunkSize-1;
-        world.loadChunks();
+        world.bufferChunks();
         view.loadChunkModels(world); //This can be made more efficient to only reload new chunks
       }
     }
@@ -143,13 +143,48 @@ void eventHandler::handle(World &world, View &view){
   }
 
   if(!scroll.empty()){
-    if(scroll.back()->wheel.y > 0 && view.zoom < 0.1){
-      view.zoom+=0.001;
+    //Scroll Away
+    if(scroll.back()->wheel.y > 0 && view.zoom <= 0.3){
+      //Change the Zoom Value and Projection Matrix
+      view.zoom+=view.zoomInc;
       view.projection = glm::ortho(-(float)view.SCREEN_WIDTH*view.zoom, (float)view.SCREEN_WIDTH*view.zoom, -(float)view.SCREEN_HEIGHT*view.zoom, (float)view.SCREEN_HEIGHT*view.zoom, -100.0f, 100.0f);
+
+      //LOD Change Here
+      if((int)(view.zoom*1000) == 50){
+        view.LOD = 3;
+        view.loadChunkModels(world);
+      }
+      //LOD Change Here
+      else if((int)(view.zoom*1000) == 100){
+        view.LOD = 2;
+        view.loadChunkModels(world);
+      }
+      //And Again
+      else if((int)(view.zoom*1000) == 200){
+        view.LOD = 1;
+        view.loadChunkModels(world);
+      }
     }
+    //Scroll Closer
     else if(scroll.back()->wheel.y < 0 && view.zoom > 0.005){
-      view.zoom-=0.001;
+      view.zoom-=view.zoomInc;
       view.projection = glm::ortho(-(float)view.SCREEN_WIDTH*view.zoom, (float)view.SCREEN_WIDTH*view.zoom, -(float)view.SCREEN_HEIGHT*view.zoom, (float)view.SCREEN_HEIGHT*view.zoom, -100.0f, 100.0f);
+
+      //LOD Change Here
+      if((int)(view.zoom*1000) == 50){
+        view.LOD = 4;
+        view.loadChunkModels(world);
+      }
+      //LOD Change Here
+      else if((int)(view.zoom*1000) == 99){
+        view.LOD = 3;
+        view.loadChunkModels(world);
+      }
+      //LOD Change Here
+      else if((int)(view.zoom*1000) == 199){
+        view.LOD = 2;
+        view.loadChunkModels(world);
+      }
     }
     scroll.pop_back();
   }

@@ -36,10 +36,10 @@ void main(void) {
   //*vec4(lightColor, ex_Position - vec2(600.0f, 400.0f));
   vec4 objColor = ex_Color*vec4(lightCol*lightFactor, 1.0f);
   //vec4 grain = vec4(rand(ex_WorldPos.xy)*vec3(1.0f), 1.0f);
-  //vec4 grain = 0.1*vec4(rand(ex_WorldPos.xy)*vec3(1.0f), 1.0f);
+  vec4 grain = 0.0*vec4(rand(ex_WorldPos.xy)*vec3(1.0f), 1.0f);
 
   //vec4 objColor = mix(ex_Color, lightCol, lightFactor);
-  fragColor = shade()*objColor;//mix(fogColor, objColor, fogFactor);
+  fragColor = shade()*objColor+grain;
 
   //Fog
   //float z = length(abs(ex_Position - vec2(0.5f, 0.5f)))*3;

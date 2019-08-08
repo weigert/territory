@@ -15,28 +15,18 @@ class Octree{
 public:
   Octree(){
     isNode = true;
-    isRoot = false;
-    type = BLOCK_AIR;
-  }
-
-  Octree(int _maxDepth){
-    maxDepth = _maxDepth;
-    isNode = true;
-    isRoot = false;
     type = BLOCK_AIR;
   }
 
   //Some Information contained by the octree element
   std::vector<Octree> subTree;
-  int maxDepth; //Our Chunk is at maximum 16^3 = 2^4^3
+  int depth;    //Gives us the remaining depth levels of the octree
   bool isRoot;  //No parent
   bool isNode;  //No children (important for file IO)
-  int depth;  //Gives us the depth inside the max octree
 
   //By default type is 0, and subTree is empty.
   BlockType type;
 
-  void setRoot();
   bool contains(int x, int y, int z);
 
   //Filling and Combining Operations for Subtrees
@@ -47,5 +37,5 @@ public:
 
   //We need setters, getters, volume setters, etc.
   bool setPosition(int x, int y, int z, BlockType _type);
-  BlockType getPosition(int x, int y, int z);
+  BlockType getPosition(int x, int y, int z, int LOD);
 };
