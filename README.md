@@ -11,24 +11,26 @@
 ## Functionality
 ### Renderer
 - Generation of Voxel Maps based on chunk data
+- Proper ignoring of occluded faces for faster VBO (model) construction
 - World-Size: 16^3 block-sized chunks, a (10x10x1) chunks ~3.5MB
 - Normal Shading
 - Shadow Mapping and Transparency
 - True 3D Rendering (change angle with arrow keys)
 - 2D Camera-Facing Sprites
+- Can handle arbitrary LOD for the underlying octree
 
 ### World Generator
 - Arbitrary Worldsizes
 - Chunks saved to file, loaded dynamically when entering regions (change position with WASD)
 - Recursive Octree Data Structure for Chunks
+- Octree test for majority contents for LOD handling
 - Painting Functions (e.g. "fillVolume") implemented for easy chunk data manipulation
 
 ## ToDo:
 ### Renderer
 - Drop-Shadow for sprites
 - Sprite animation support
-- Use Octree for LOD extraction and "worldmap" drawing
-- Higher Efficiency in Chunk Rendering (combine vertices -> VBO indexing, ignore occluded blocks)
+- Higher Efficiency in Chunk Rendering (don't regenerate whole models when moving around)
 - Sprite Outlines and Block Outlines (-> picking)
 - Shader Effects: Fog, Bloom, Blur, Grain, Particles
 
