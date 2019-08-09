@@ -180,6 +180,7 @@ template<class Archive>
 void serialize(Archive & ar, Octree & _octree, const unsigned int version)
 {
   ar & _octree.depth;
+  ar & _octree.index;
   ar & _octree.type;
   ar & _octree.subTree;
 }

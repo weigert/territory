@@ -15,22 +15,25 @@ class Octree{
 public:
   Octree(){
     type = BLOCK_AIR;
+    index = 0;
   }
 
   //Some Information contained by the octree element
   std::vector<Octree> subTree;
   int depth;    //Gives us the remaining depth levels of the octree
+  int index;
 
   //By default type is 0, and subTree is empty.
   BlockType type;
 
-  bool contains(int x, int y, int z);
 
   //Filling and Combining Operations for Subtrees
-  void fillSubTree();
   bool trySimplify();
-  bool tryMajority(); //This function should search the octree and find majority values, so that we can do a lower LEVEL-OF-DETAL (LOD) map rendering later on.
-  //Alternatively,  make trySimplify do that on its own.
+  bool contains(int x, int y, int z);
+
+  //Index Functions
+  glm::vec3 getPos(int index);
+  int getIndex(glm::vec3 pos);
 
   //We need setters, getters, volume setters, etc.
   bool setPosition(int x, int y, int z, BlockType _type);

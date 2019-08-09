@@ -1,20 +1,6 @@
 #include "octree.h"
 #include <bits/stdc++.h>
 
-void Octree::fillSubTree(){
-  //Check that the depth is fine
-  if(depth > 0){
-    //For 8 times, we construct a new octree element and add it in.
-    Octree element;
-    //Depth is one less now
-    element.depth = depth-1;
-    element.type = type;
-    for(int i = 0; i < 8; i ++){
-      subTree.push_back(element);
-    }
-  }
-}
-
 bool Octree::trySimplify(){
   //Output the Current dive Depth
   std::cout<<depth<<std::endl;
@@ -113,23 +99,30 @@ bool Octree::setPosition(int x, int y, int z, BlockType _type){
       type = _type;
       return true;
     }
-    //Not at final node, not identical, subtree empty
+    //Not at final node, subtree empty and not the appropriate type.
     else{
+      //Expand the Node where we want to place the guy
       //Fill the subtree so we can expand
-      fillSubTree();
+      Octree element;
+      //Depth is one less now
+      element.depth = depth-1;
+      element.type = type;
+
+      for(int i = 0; i < 8; i ++){
+        element.index = i;
+        subTree.push_back(element);
+      }
     }
   }
   //Shorten the x,y,z and try to setposition
-  for(int i = 0; i < 8; i++){
+  for(unsigned int i = 0; i < subTree.size(); i++){
     //Moving Coordinates (i.e. binary conversion)
-    int _x = i/4;
-    int _y = (i - 4*_x)/2;
-    int _z = (i - 4*_x - 2*_y);
+    glm::vec3 p = getPos(subTree[i].index);
     int width = pow(2,depth-1);
     //Check if a subtree element contains the element
-    if(subTree[i].contains(x - _x*width, y - _y*width, z - _z*width)){
+    if(subTree[i].contains(x - p.x*width, y - p.y*width, z - p.z*width)){
       //We found the element that we wish to try to replace now.
-      return subTree[i].setPosition(x - _x*width, y-_y*width, z-_z*width, _type);
+      return subTree[i].setPosition(x - p.x*width, y-p.y*width, z-p.z*width, _type);
     }
   }
   std::cout<<"Failure setting Octree element."<<std::endl;
@@ -142,19 +135,32 @@ BlockType Octree::getPosition(int x, int y, int z, int LOD){
     return type;
   }
   //Find the subtree element that contains the value
-  for(int i = 0; i < 8; i++){
+  for(unsigned int i = 0; i < subTree.size(); i++){
     //Binary Representation in 3 Coords
-    int _x = i/4;
-    int _y = (i - 4*_x)/2;
-    int _z = (i - 4*_x - 2*_y);
+    glm::vec3 p = getPos(subTree[i].index);
     int width = pow(2, depth-1);
 
     //Check if the subtree contains it
-    if(subTree[i].contains(x - _x*width, y - _y*width, z - _z*width)){
+    if(subTree[i].contains(x - p.x*width, y - p.y*width, z - p.z*width)){
       //We found the element that we wish to try to replace now.
-      return subTree[i].getPosition(x-_x*width, y-_y*width, z-_z*width, LOD-1);
+      return subTree[i].getPosition(x-p.x*width, y-p.y*width, z-p.z*width, LOD-1);
     }
   }
   std::cout<<"Failure getting Octree element."<<std::endl;
   return BLOCK_AIR;
+}
+
+glm::vec3 Octree::getPos(int index){
+  //(XYZ) = (111)
+  //Generate Binary Sequence
+  int _x = index/4;
+  int _y = (index-4*_x)/2;
+  int _z = (index-4*_x - 2*_y);
+  //Return Binary Vectory
+  return glm::vec3(_x, _y, _z);
+}
+
+int Octree::getIndex(glm::vec3 pos){
+  //Decode the Binary into Decimals
+  return pos.x*4+pos.y*2+pos.z*1;
 }
