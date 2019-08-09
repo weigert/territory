@@ -21,24 +21,23 @@
 
 ### World Generator
 - Arbitrary Worldsizes
-- Chunks saved to file, loaded dynamically when entering regions (change position with WASD)
-- Recursive Octree Data Structure for Chunks
+- Chunks saved to file, loaded dynamically when entering regions (change position with WASD), loaded efficiently
+- Recursive Octree Data Structure for Chunks, high sparsity of data structure, very compact
 - Octree test for majority contents for LOD handling
 - Painting Functions (e.g. "fillVolume") implemented for easy chunk data manipulation
+- Simple Perlin Height Generator (for now)
 
 ## ToDo:
 ### Renderer
 - Drop-Shadow for sprites
 - Sprite animation support
-- Higher Efficiency in Chunk Rendering (don't regenerate whole models when moving around)
+- Higher Efficiency in Chunk Rendering (don't regenerate whole models when moving around -> trickyyyy)
 - Sprite Outlines and Block Outlines (-> picking)
 - Shader Effects: Fog, Bloom, Blur, Grain, Particles
 
 ### Game
 - Proper sprite movement constraints
 - Move sprite vertically when possible
-- Merge Chunk-Files into more compact region files
-- Higher Efficiency in Chunk Loading (don't reload everything all the time)
 
 ### Event Handler
 - Better Handling of Keyboard Inputs (no key-interrupts)
