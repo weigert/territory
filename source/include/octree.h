@@ -26,7 +26,6 @@ public:
   //By default type is 0, and subTree is empty.
   BlockType type;
 
-
   //Filling and Combining Operations for Subtrees
   bool trySimplify();
   bool contains(int x, int y, int z);

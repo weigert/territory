@@ -11,9 +11,9 @@ public:
   //Block Data in Octree
   std::vector<Chunk> chunks; //Loaded Chunks
   int SEED = 10;
-  int chunkSize = 16;
+  int chunkSize = 32;
   int worldSize = 20;    //In Chunks^2
-  int worldHeight = 2;  //In Chunks
+  int worldHeight = 1;  //In Chunks
   glm::vec3 renderDistance = glm::vec3(1, 0, 1);
 
   //Player Position
