@@ -12,8 +12,8 @@ public:
   std::vector<Chunk> chunks; //Loaded Chunks
   int SEED = 10;
   int chunkSize = 16;
-  int worldSize = 5;    //In Chunks^2
-  int worldHeight = 1;  //In Chunks
+  int worldSize = 20;    //In Chunks^2
+  int worldHeight = 2;  //In Chunks
   glm::vec3 renderDistance = glm::vec3(1, 0, 1);
 
   //Player Position
@@ -30,6 +30,7 @@ public:
   //Save and Load Worldfiles
   bool loadWorld();
   bool saveWorld();
-  bool saveChunk(std::string fileName, Chunk chunk);
-  bool loadChunk(std::string fileName, Chunk &chunk);
+  bool overwriteChunk(int i, int j, int k, Chunk chunk);
+  bool saveChunk(Chunk chunk);
+  bool loadChunk(int i, int j, int k, Chunk &chunk);
 };

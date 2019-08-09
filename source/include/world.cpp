@@ -42,15 +42,7 @@ void World::generate(){
 
         //Try to simplify the chunk
         chunk.data.trySimplify();
-
-        //Save this thing to file
-        boost::filesystem::path data_dir(boost::filesystem::current_path());
-        data_dir /= "save";
-        data_dir /= saveFile;
-        std::stringstream ss;
-        ss << "00" << std::to_string(i) << "00" << std::to_string(j) << "00" << std::to_string(k) << ".chunk";
-        data_dir /= ss.str();
-        saveChunk(data_dir.string(), chunk);
+        saveChunk(chunk);
       }
     }
   }
@@ -58,52 +50,16 @@ void World::generate(){
 
 void World::bufferChunks(){
   //Load / Reload all Visible Chunks
-  //Brute Force Method
-  chunks.clear();
 
-  //File Loading / Saving Path
-  boost::filesystem::path data_dir(boost::filesystem::current_path());
-  data_dir /= "save";
-  data_dir /= saveFile;
-
-  //Get the Guy
-  glm::vec3 a = chunkPos - renderDistance;
-  glm::vec3 b = chunkPos + renderDistance;
-
-  //Can't exceed a certain size
-  a = glm::clamp(a, glm::vec3(0), glm::vec3(worldSize, worldHeight, worldSize));
-  b = glm::clamp(b, glm::vec3(0), glm::vec3(worldSize, worldHeight, worldSize));
-
-  //Construct the Vector of guys we should load
-  for(int i = a.x; i <= b.x; i ++){
-    for(int j = a.y; j <= b.y; j ++){
-      for(int k = a.z; k <= b.z; k ++){
-        //Get the Chunk
-        Chunk _chunk;
-        //Coordinates of chunks we want to load
-        std::stringstream ss;
-        ss << "00" << std::to_string(i) << "00" << std::to_string(j) << "00" << std::to_string(k) << ".chunk";
-        //Check for file name existence
-        if(boost::filesystem::is_regular_file((data_dir/ss.str()))){
-          //Load the chunk into memory
-          loadChunk((data_dir/ss.str()).string(), _chunk);
-          //Add the chunk
-          chunks.push_back(_chunk);
-        }
-      }
-    }
-  }
-
-
-  /*
   //Non-Brute Force Method
   //Chunks that should be loaded
   glm::vec3 a = chunkPos - renderDistance;
   glm::vec3 b = chunkPos + renderDistance;
 
+
   //Can't exceed a certain size
-  a = glm::clamp(a, glm::vec3(0), glm::vec3(worldSize, worldHeight, worldSize));
-  b = glm::clamp(b, glm::vec3(0), glm::vec3(worldSize, worldHeight, worldSize));
+  a = glm::clamp(a, glm::vec3(0), glm::vec3(worldSize-1, worldHeight-1, worldSize-1));
+  b = glm::clamp(b, glm::vec3(0), glm::vec3(worldSize-1, worldHeight-1, worldSize-1));
 
   //Construct a vector so we can check which guys need loading
 
@@ -128,9 +84,7 @@ void World::bufferChunks(){
       //Check if the chunk was updated
       if(chunks[i].updated){
         //Save chunk to file
-        std::stringstream ss;
-        ss << "00" << std::to_string(chunks[i].pos.x) << "00" << std::to_string(chunks[i].pos.y) << "00" << std::to_string(chunks[i].pos.z) << ".chunk";
-        saveChunk((data_dir/ss.str()).string(), chunks[i]);
+        overwriteChunk(chunks[i].pos.x, chunks[i].pos.y, chunks[i].pos.z, chunks[i]);
       }
       //Add the chunk to the erase pile
       remove.push(i);
@@ -155,37 +109,54 @@ void World::bufferChunks(){
   while(!load.empty()){
     //Make sure the vector we are trying to load is legit
     Chunk _chunk;
-
-    std::stringstream ss;
-    ss << "00" << std::to_string((int)load.back().x) << "00" << std::to_string((int)load.back().y) << "00" << std::to_string((int)load.back().z) << ".chunk";
-    //Check for file name existence
-    if(boost::filesystem::is_regular_file((data_dir/ss.str()))){
-      //Load the chunk into memory
-      loadChunk((data_dir/ss.str()).string(), _chunk);
-      //Add the chunk
-      chunks.push_back(_chunk);
-    }
+    loadChunk(load.back().x, load.back().y, load.back().z, _chunk);
+    //Add the chunk
+    chunks.push_back(_chunk);
     load.pop_back();
-  }*/
+  }
 }
 
-bool World::saveChunk(std::string fileName, Chunk chunk){
+bool World::saveChunk(Chunk chunk){
+  //Get the Working Directory
+  boost::filesystem::path data_dir(boost::filesystem::current_path());
+  data_dir /= "save";
+  data_dir /= saveFile;
+  data_dir /= "world.region";
+
   //Save the current loaded chunks to file and the world data
-  std::ofstream out(fileName);
+  std::ofstream out(data_dir.string(), std::ofstream::app);
   {
     boost::archive::text_oarchive oa(out);
-    oa << chunk;
+    oa << chunk;    //Append the Chunk to the Region File
   }
   return true;
 }
 
-bool World::loadChunk(std::string fileName, Chunk &chunk){
+bool World::loadChunk(int i, int j, int k, Chunk &chunk){
+  //Get the Working Directory
+  boost::filesystem::path data_dir(boost::filesystem::current_path());
+  data_dir /= "save";
+  data_dir /= saveFile;
+  data_dir /= "world.region";
+
   //Load the actual worldfile, and the chunks relevant for the player.
-  std::ifstream in(fileName);
+  std::ifstream in(data_dir.string());
+
+  //Skip the Lines
+  int n = i*worldSize*worldHeight+j*worldSize+k;
+  while(n>0){
+    in.ignore(100000,'\n');
+    n--;
+  }
+
   {
     boost::archive::text_iarchive ia(in);
     ia >> chunk;
   }
+  return true;
+}
+
+bool World::overwriteChunk(int i, int j, int k, Chunk chunk){
   return true;
 }
 
@@ -255,7 +226,7 @@ bool World::loadWorld(){
   }
 
   //Load the World
-  data_dir /= "world.save";
+  data_dir /= "world.meta";
   std::ifstream in(data_dir.string());
   {
     boost::archive::text_iarchive ia(in);
@@ -269,7 +240,7 @@ bool World::saveWorld(){
   boost::filesystem::path data_dir(boost::filesystem::current_path());
   data_dir /= "save";
   data_dir /= saveFile;
-  data_dir /= "world.save";
+  data_dir /= "world.meta";
   //Make new directory, save stuff to a world file
   std::ofstream out(data_dir.string());
   {
