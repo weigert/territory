@@ -112,7 +112,6 @@ void View::loadChunkModels(World world){
     axis -= world.playerPos;
     model.translate(axis);
     models.push_back(model);
-    std::cout<<"I: "<<i<<std::endl;
   }
 }
 

@@ -1,5 +1,15 @@
 #include "chunk.h"
 
+void Chunk::setBlock(int x, int y, int z, BlockType _type){
+  data.setPosition(x, y, z, _type);
+}
+
+void Chunk::fillHeight(int x, int height, int z, BlockType _type){
+  for(int i = 0; i <= height; i++){
+    data.setPosition(x, i, z, _type);
+  }
+}
+
 void Chunk::fillVolume(glm::vec3 start, glm::vec3 end, BlockType _type){
   //Fills the volume
   for(int i = start.x; i <= end.x; i++){
