@@ -14,15 +14,12 @@ enum BlockType{
 class Octree{
 public:
   Octree(){
-    isNode = true;
     type = BLOCK_AIR;
   }
 
   //Some Information contained by the octree element
   std::vector<Octree> subTree;
   int depth;    //Gives us the remaining depth levels of the octree
-  bool isRoot;  //No parent
-  bool isNode;  //No children (important for file IO)
 
   //By default type is 0, and subTree is empty.
   BlockType type;

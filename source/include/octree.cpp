@@ -2,7 +2,6 @@
 #include <bits/stdc++.h>
 
 void Octree::fillSubTree(){
-  isNode = false;
   //Check that the depth is fine
   if(depth > 0){
     //For 8 times, we construct a new octree element and add it in.
@@ -20,7 +19,7 @@ bool Octree::trySimplify(){
   //Output the Current dive Depth
   std::cout<<depth<<std::endl;
   //If we are at a node, return true
-  if(subTree.empty() || isNode){
+  if(subTree.empty()){
     std::cout<<"We are at node. No simplification possible."<<std::endl;
     return true;
   }
@@ -82,7 +81,6 @@ bool Octree::trySimplify(){
       //One of our subelements is non-simple or non-matching, so we can't combine
       subTree.clear();
       type = _type[0];
-      isNode = true;
       std::cout<<"Node simplified"<<std::endl;
       return true;
     }
