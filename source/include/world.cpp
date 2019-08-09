@@ -2,12 +2,103 @@
 #include "world.h"
 
 void World::generate(){
+  //I guess we should split the world-gen into multiple steps?
+  std::cout<<"Generating New World"<<std::endl;
+  std::cout<<"Seed: "<<SEED<<std::endl;
   //Seed the Random Generator
-  srand(time(NULL));
+  srand(SEED);
 
+  //Generate Height
+  generateHeight();
+  generateTrees();
+
+  //Place the Player
+  placePlayer();
+}
+
+
+void World::generateHeight(){
   //Perlin Noise Generator
-  //noise::module::Perlin perlin;
+  noise::module::Perlin perlin;
+  perlin.SetOctaveCount(16);
+  perlin.SetFrequency(5);
+  perlin.SetPersistence(0.6);
 
+  //Loop over all Chunks in the World
+  for(int i = 0; i < worldSize; i++){
+    for(int j = 0; j < worldHeight; j++){
+      for(int k = 0; k < worldSize; k++){
+
+        //Generate a new chunk at a specific location
+        Chunk chunk;
+        chunk.biome = BIOME_FOREST;
+        chunk.size = chunkSize;
+        chunk.data.depth = log2(chunkSize); //Set the remaining depth
+        chunk.pos = glm::vec3(i, j, k);
+
+        //Loop over the chunksize
+        for(int l = 0; l < chunkSize; l++){
+          for(int m = 0; m < chunkSize; m++){
+
+            //Normalize the Block's x,z coordinates
+            float x = (float)(i*chunkSize+l) / (float)(chunkSize*worldSize);
+            float z = (float)(k*chunkSize+m) / (float)(chunkSize*worldSize);
+
+            //Get the Height
+            float height = perlin.GetValue(x, SEED, z)/5+0.25;
+            height = height*2*chunkSize;
+
+            //Get the appropriate fillheight for this block
+            height -= j*chunkSize;
+
+            //Fill the column
+            if(height >= 0){
+              chunk.fillHeight(l, (int)height-1, m, BLOCK_DIRT);
+              chunk.setBlock(l, (int)height, m, BLOCK_GRASS);
+            }
+          }
+        }
+
+        //Try to simplify the chunk
+        //chunk.data.trySimplify();
+        //Write the chunk to the region file
+        saveChunk(chunk);
+      }
+    }
+  }
+}
+
+void World::generateTrees(){
+  /*
+  for(int i = 0; i < 10; i++){
+    //Random Locations of Rocks / Trees
+    int rock[2] = {rand()%chunkSize, rand()%chunkSize};
+
+    //Place Rocks
+    chunk.data.setPosition(rock[0],1,rock[1],BLOCK_STONE);
+
+    //Place Trees
+    for(int j = 0; j < tree[2]; j++){
+      chunk.data.setPosition(tree[0],j,tree[1],BLOCK_WOOD);
+    }
+    chunk.data.setPosition(tree[0],tree[2]+1,tree[1],BLOCK_LEAVES);
+    chunk.data.setPosition(tree[0]+1,tree[2],tree[1],BLOCK_LEAVES);
+    chunk.data.setPosition(tree[0]-1,tree[2],tree[1],BLOCK_LEAVES);
+    chunk.data.setPosition(tree[0],tree[2],tree[1]+1,BLOCK_LEAVES);
+    chunk.data.setPosition(tree[0],tree[2],tree[1]-1,BLOCK_LEAVES);
+  }*/
+}
+
+void World::placePlayer(){
+
+}
+
+bool World::getValidMove(glm::vec3 pos, int height){
+  return true;
+}
+
+
+void World::flatForest(){
   //Loop over all Chunks in the World
   for(int i = 0; i < worldSize; i++){
     for(int j = 0; j < worldHeight; j++){

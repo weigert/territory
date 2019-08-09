@@ -11,7 +11,7 @@ public:
   //Block Data in Octree
   std::vector<Chunk> chunks; //Loaded Chunks
   int SEED = 10;
-  int chunkSize = 32;
+  int chunkSize = 16;
   int worldSize = 20;    //In Chunks^2
   int worldHeight = 1;  //In Chunks
   glm::vec3 renderDistance = glm::vec3(1, 0, 1);
@@ -25,7 +25,13 @@ public:
 
   //Generate Function / Chunk Handlers
   void generate();
-  void bufferChunks();    //Reloads all relevant chunks from file
+  void generateHeight();
+  void generateTrees();
+  void flatForest();
+
+  //Player Position Functions
+  void placePlayer();
+  bool getValidMove(glm::vec3 pos, int height); //Get a Valid Movement
 
   //Save and Load Worldfiles
   bool loadWorld();
@@ -33,4 +39,5 @@ public:
   bool overwriteChunk(int i, int j, int k, Chunk chunk);
   bool saveChunk(Chunk chunk);
   bool loadChunk(int i, int j, int k, Chunk &chunk);
+  void bufferChunks();    //Reloads all relevant chunks from file
 };
