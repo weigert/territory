@@ -10,7 +10,7 @@ void World::generate(){
 
   //Generate Height
   std::cout<<"Generating Heightmap"<<std::endl;
-  flatForest();
+  generateHeight();
 
   std::cout<<"Placing Trees"<<std::endl;
   //generateTrees();
@@ -50,7 +50,7 @@ void World::generateHeight(){
 
             //Get the Height
             float height = perlin.GetValue(x, SEED, z)/5+0.25;
-            height = height*2*chunkSize;
+            height = height*worldHeight*chunkSize;
 
             //Get the appropriate fillheight for this block
             height -= j*chunkSize;
@@ -113,25 +113,27 @@ void World::flatForest(){
         chunk.data.depth = log2(chunkSize); //Set the remaining depth
         chunk.pos = glm::vec3(i, j, k);
 
-        chunk.fillVolume(glm::vec3(0,0,0),glm::vec3(chunkSize-1,0,chunkSize-1), BLOCK_GRASS);
+        if(j == 0){
+          chunk.fillVolume(glm::vec3(0,0,0),glm::vec3(chunkSize-1,0,chunkSize-1), BLOCK_GRASS);
 
-        for(int i = 0; i < 10; i++){
-          //Random Locations of Rocks / Trees
-          int rock[2] = {rand()%chunkSize, rand()%chunkSize};
-          int tree[3] = {rand()%(chunkSize-2)+1, rand()%(chunkSize-2)+1, rand()%(chunkSize/2)+chunkSize/2-1};
+          for(int i = 0; i < 10; i++){
+            //Random Locations of Rocks / Trees
+            int rock[2] = {rand()%chunkSize, rand()%chunkSize};
+            int tree[3] = {rand()%(chunkSize-2)+1, rand()%(chunkSize-2)+1, rand()%(chunkSize/2)+chunkSize/2-1};
 
-          //Place Rocks
-          chunk.data.setPosition(rock[0],1,rock[1],BLOCK_STONE);
+            //Place Rocks
+            chunk.data.setPosition(rock[0],1,rock[1],BLOCK_STONE);
 
-          //Place Trees
-          for(int j = 0; j < tree[2]; j++){
-            chunk.data.setPosition(tree[0],j,tree[1],BLOCK_WOOD);
+            //Place Trees
+            for(int j = 0; j < tree[2]; j++){
+              chunk.data.setPosition(tree[0],j,tree[1],BLOCK_WOOD);
+            }
+            chunk.data.setPosition(tree[0],tree[2]+1,tree[1],BLOCK_LEAVES);
+            chunk.data.setPosition(tree[0]+1,tree[2],tree[1],BLOCK_LEAVES);
+            chunk.data.setPosition(tree[0]-1,tree[2],tree[1],BLOCK_LEAVES);
+            chunk.data.setPosition(tree[0],tree[2],tree[1]+1,BLOCK_LEAVES);
+            chunk.data.setPosition(tree[0],tree[2],tree[1]-1,BLOCK_LEAVES);
           }
-          chunk.data.setPosition(tree[0],tree[2]+1,tree[1],BLOCK_LEAVES);
-          chunk.data.setPosition(tree[0]+1,tree[2],tree[1],BLOCK_LEAVES);
-          chunk.data.setPosition(tree[0]-1,tree[2],tree[1],BLOCK_LEAVES);
-          chunk.data.setPosition(tree[0],tree[2],tree[1]+1,BLOCK_LEAVES);
-          chunk.data.setPosition(tree[0],tree[2],tree[1]-1,BLOCK_LEAVES);
         }
 
         //Try to simplify the chunk

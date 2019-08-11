@@ -5,7 +5,6 @@ bool Octree::trySimplify(){
   //Output the Current dive Depth
   //If we are at a node, return true
   if(subTree.empty()){
-    std::cout<<"We are at node. No simplification possible."<<std::endl;
     return true;
   }
 
@@ -17,7 +16,6 @@ bool Octree::trySimplify(){
     //Check if subelement is simple!
     if(!subTree[i].trySimplify()){
       //We have a non-simple subelement -> can't combine
-      std::cout<<"Can't combine sub-element. Non-simple."<<std::endl;
       fail = true;
     }
     //Add the subtree's element to the type list! (even for failed)
@@ -59,7 +57,6 @@ bool Octree::trySimplify(){
 
     //Set the Majority Class
     type = majType;
-    std::cout<<"Majority Class Set."<<std::endl;
     return false;
   }
 
@@ -70,7 +67,6 @@ bool Octree::trySimplify(){
     //One of our subelements is non-simple or non-matching, so we can't combine
     subTree.clear();
     type = _type[0];
-    std::cout<<"Node simplified"<<std::endl;
     return true;
   }
 

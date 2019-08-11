@@ -87,6 +87,8 @@ void Model::fromChunk(Chunk chunk, int LOD){
     LOD = chunk.data.depth;
   }
 
+  //Really, we should only dive down the Octree!
+
   //Get the scale multiplier
   int scale = pow(2, chunk.data.depth-LOD);
   int width = pow(2, LOD);

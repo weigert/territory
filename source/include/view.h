@@ -9,7 +9,7 @@ class View{
     const unsigned int SHADOW_WIDTH = 2000, SHADOW_HEIGHT = 2000;
     float zoom = 0.01;
     float zoomInc = 0.001;
-    int LOD = 5;
+    int LOD = 4;
     float rotation = 0.0;
     int renderDistance = 1;
     bool mapView = false;

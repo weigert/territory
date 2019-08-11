@@ -12,13 +12,13 @@ public:
   std::vector<Chunk> chunks; //Loaded Chunks
   int SEED = 10;
   int chunkSize = 16;
-  int worldSize = 20;    //In Chunks^2
-  int worldHeight = 1;  //In Chunks
-  glm::vec3 renderDistance = glm::vec3(1, 0, 1);
+  int worldSize = 50;    //In Chunks^2
+  int worldHeight = 10;  //In Chunks
+  glm::vec3 renderDistance = glm::vec3(1, 2, 1);
 
   //Player Position
   glm::vec3 playerPos = glm::vec3(0, 0, 0);  //Position of the player in chunkspace
-  glm::vec3 chunkPos = glm::vec3(1, 0, 1);           //Position of the player in worldspace
+  glm::vec3 chunkPos = glm::vec3(25, 5, 25);           //Position of the player in worldspace
 
   //World Information Data
   std::string saveFile;
