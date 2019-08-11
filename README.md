@@ -1,10 +1,16 @@
 # territory
 3D rendered proc-gen world test
 
+## Usage
+    ./territory [world_name]
+If the world name doesn't exist, it will generate a world. If it does, it will load the world. Tested on Ubuntu 18
+
 ## Controls
 - Change Position: WASD
-- Change View: Arrow Keys
-- Zoom: Scroll
+- Move Character Up / Down: Space / LShift
+- Change View Angle: Scroll Left / Right
+- Zoom: Scroll Up / Down
+- Change LOD: Zoom Out / In
 
 ![Example Rendering](https://github.com/weigert/territory/blob/master/territory.png)
 
@@ -24,7 +30,8 @@
 - Chunks saved to file, loaded dynamically when entering regions (change position with WASD), loaded efficiently
 - Recursive Octree Data Structure for Chunks, high sparsity of data structure, very compact
 - Octree test for majority contents for LOD handling
-- Painting Functions (e.g. "fillVolume") implemented for easy chunk data manipulation
+- Fast macro-world editing using an editBuffer, which sorts changes by their order in file and writes them very quickly
+  -> Also tackles the constraint of "chunk-boundaries" and their editing seamlessly for continous objects in world-space
 - Simple Perlin Height Generator (for now)
 
 ## ToDo:
@@ -37,12 +44,11 @@
 
 ### Game
 - Proper sprite movement constraints
-- Move sprite vertically when possible
 
 ### Event Handler
 - Better Handling of Keyboard Inputs (no key-interrupts)
 - Simultaneous Action Handling (kinda done, buggy)
-- Multi-tick input consequences (i.e. slow moving)
+- Multi-tick input consequences (i.e. slow moving and animations)
 
 ### World Generator
 - Geology: Ore Deposits, Stone Types, Solubility / Brittleness, etc / Soil Quality
