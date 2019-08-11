@@ -92,27 +92,42 @@ void View::cleanup(){
   SDL_Quit();
 }
 
-void View::loadChunkModels(World world){
-  //Find models that need to be deleted! Don't delete all of them (ideally)!
-  models.clear();
+void View::loadChunkModels(World &world){
+  //Update the Models for the Chunks
 
-  //Loop over the loaded chunks
-  for(unsigned int i = 0; i < world.chunks.size(); i++){
-
-    //Construct a new model from the chunk, add to array
-    Model model;
-    model.fromChunk(world.chunks[i], LOD);
-    model.setup();
-
-    //Translate it according to the chunk position relative to the player position
-    glm::vec3 axis = world.chunks[i].pos-world.chunkPos;
-    axis.x *= world.chunkSize;
-    axis.y *= world.chunkSize;
-    axis.z *= world.chunkSize;
-    axis -= world.playerPos;
-    model.translate(axis);
-    models.push_back(model);
+  if(updateLOD){
+    //If we have changed LOD, we have to udpate all models.
+    models.clear();
   }
+  else{
+    //Otherwise, only remove the ones where the chunks were also removed.
+    while(!world.updateModels.empty()){
+      models.erase(models.begin()+world.updateModels.top());
+      world.updateModels.pop();
+    }
+  }
+
+  //Loop over all chunks
+  for(unsigned int i = 0; i < world.chunks.size(); i++){
+    //If we are at capacity, add a new item
+    if(i == models.size()){
+      Model model;
+      //model.fromOctree(world.chunks[i].data, LOD, glm::vec3(0.0));
+      model.fromChunk(world.chunks[i], LOD);
+      model.setup();
+      models.push_back(model);
+    }
+
+    //Old chunks need to be translated too. Translate according to player position.
+    glm::vec3 axis = (world.chunks[i].pos-world.chunkPos)*(float)world.chunkSize-world.playerPos;
+
+    //Translate the guy
+    models[i].reset();
+    models[i].translate(axis);
+
+  }
+  //Make sure updateLOD is false
+  updateLOD = false;
 }
 
 bool View::setupShadow(){
@@ -279,7 +294,6 @@ void View::renderScene(){
   cubeShader.setMat4("camera", camera);
   cubeShader.setMat4("dbmvp", biasMatrix * depthProjection * depthCamera * glm::mat4(1.0f));
   cubeShader.setMat4("dmvp", depthProjection * depthCamera * glm::mat4(1.0f));
-
 
   //Activate and Bind the Texture
   glActiveTexture(GL_TEXTURE0);

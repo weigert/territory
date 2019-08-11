@@ -12,16 +12,13 @@ public:
   // Create variables for storing the ID of our VAO and VBO
 	GLuint vbo[3], vao[1];
 
-	// The positons of the position and color data within the VAO
-	const uint32_t positionAttributeIndex = 0, colorAttributeIndex = 1, normalAttributeIndex = 2;
-
   //Read File Functions
-  std::vector<GLfloat> ReadFile(const char* file);
   void setup();
   void cleanup();
 
   //Model Generation Functions
   void fromChunk(Chunk _chunk, int LOD);
+  //void fromOctree(Octree _octree, int LOD, glm::vec3 translate);
 
   //Position Handling Functions
   void reset();
@@ -30,4 +27,49 @@ public:
 
   //Render Function to Render Stuff with the shader, so we can do this to each model individually
   void render();
+
+  //Face Stuff
+  //Construct the Coordinates
+  GLfloat front[18] = { -0.5,  0.5, 0.5,
+                       0.5,  0.5, 0.5,
+                       0.5, -0.5, 0.5,
+                      -0.5,  0.5, 0.5,
+                       0.5, -0.5, 0.5,
+                      -0.5, -0.5, 0.5};
+
+  GLfloat top[18] = {   -0.5,  0.5,  0.5,
+                       0.5,  0.5, -0.5,
+                       0.5,  0.5,  0.5,
+                      -0.5,  0.5,  0.5,
+                      -0.5,  0.5, -0.5,
+                       0.5,  0.5, -0.5};
+
+  GLfloat right[18] = {  0.5, -0.5,  0.5,
+                       0.5,  0.5,  0.5,
+                       0.5,  0.5, -0.5,
+                       0.5, -0.5,  0.5,
+                       0.5,  0.5, -0.5,
+                       0.5, -0.5, -0.5};
+
+  GLfloat back[18] = {  -0.5,  0.5, -0.5,
+                       0.5, -0.5, -0.5,
+                       0.5,  0.5, -0.5,
+                      -0.5,  0.5, -0.5,
+                      -0.5, -0.5, -0.5,
+                       0.5, -0.5, -0.5};
+
+  GLfloat bottom[18] = {-0.5, -0.5,  0.5,
+                       0.5, -0.5,  0.5,
+                       0.5, -0.5, -0.5,
+                      -0.5, -0.5,  0.5,
+                       0.5, -0.5, -0.5,
+                      -0.5, -0.5, -0.5};
+
+   GLfloat left[18] = { -0.5, -0.5,  0.5,
+                      -0.5,  0.5, -0.5,
+                      -0.5,  0.5,  0.5,
+                      -0.5, -0.5,  0.5,
+                      -0.5, -0.5, -0.5,
+                      -0.5,  0.5, -0.5};
+
 };

@@ -5,7 +5,6 @@ bool Octree::trySimplify(){
   //Output the Current dive Depth
   //If we are at a node, return true
   if(subTree.empty()){
-    std::cout<<"We are at node. No simplification possible."<<std::endl;
     return true;
   }
 
@@ -17,7 +16,6 @@ bool Octree::trySimplify(){
     //Check if subelement is simple!
     if(!subTree[i].trySimplify()){
       //We have a non-simple subelement -> can't combine
-      std::cout<<"Can't combine sub-element. Non-simple."<<std::endl;
       fail = true;
     }
     //Add the subtree's element to the type list! (even for failed)
@@ -59,7 +57,6 @@ bool Octree::trySimplify(){
 
     //Set the Majority Class
     type = majType;
-    std::cout<<"Majority Class Set."<<std::endl;
     return false;
   }
 
@@ -70,7 +67,6 @@ bool Octree::trySimplify(){
     //One of our subelements is non-simple or non-matching, so we can't combine
     subTree.clear();
     type = _type[0];
-    std::cout<<"Node simplified"<<std::endl;
     return true;
   }
 
@@ -78,16 +74,14 @@ bool Octree::trySimplify(){
   return false;
 }
 
-bool Octree::contains(int x, int y, int z){
+bool Octree::contains(glm::vec3 _pos){
   //This only checks if the x, y, z coordinates are within the width of the octree element
   int width = pow(2,depth);
-  if(x < width && y < width && z < width && x >= 0 && y >= 0 && z >= 0){
-    return true;
-  }
-  return false;
+
+  return glm::all(glm::lessThan(_pos, glm::vec3(width))) && glm::all(glm::greaterThanEqual(_pos, glm::vec3(0)));
 }
 
-bool Octree::setPosition(int x, int y, int z, BlockType _type){
+bool Octree::setPosition(glm::vec3 _pos, BlockType _type){
   //If we are at a node in the octree, that contains the element
   if(subTree.empty()){
     //Values are identical
@@ -105,7 +99,7 @@ bool Octree::setPosition(int x, int y, int z, BlockType _type){
 
   //Get the Position we want to set.
   int width = pow(2,depth-1);
-  glm::vec3 _p = glm::vec3(x/width, y/width, z/width);
+  glm::vec3 _p = glm::floor(_pos/glm::vec3(width));
   int _index = getIndex(_p);
 
   //Loop over our subTree, see if we can find the node with the right index.
@@ -113,7 +107,7 @@ bool Octree::setPosition(int x, int y, int z, BlockType _type){
     //If we have the node at the right position...
     if(subTree[i].index == _index){
       //Set the position in that node.
-      return subTree[i].setPosition(x - _p.x*width, y - _p.y*width, z - _p.z*width, _type);
+      return subTree[i].setPosition(_pos - _p*glm::vec3(width), _type);
     }
   }
 
@@ -122,15 +116,15 @@ bool Octree::setPosition(int x, int y, int z, BlockType _type){
   element.depth = depth-1;
   element.type = type;
   element.index = _index;
-  element.setPosition(x - _p.x*width, y - _p.y*width, z - _p.z*width, _type);
+  element.setPosition(_pos - _p*glm::vec3(width), _type);
   subTree.push_back(element);
 
   return true;
 }
 
-BlockType Octree::getPosition(int x, int y, int z, int LOD){
+BlockType Octree::getPosition(glm::vec3 _pos, int LOD){
   //Check if we are at the bottom of the line
-  if(subTree.empty() || depth == 0 || LOD == 0){
+  if(subTree.empty() || LOD == 0){
     return type;
   }
   //Find the subtree element that contains the value
@@ -140,9 +134,9 @@ BlockType Octree::getPosition(int x, int y, int z, int LOD){
     int width = pow(2, depth-1);
 
     //Check if the subtree contains it
-    if(subTree[i].contains(x - p.x*width, y - p.y*width, z - p.z*width)){
+    if(subTree[i].contains(_pos - p*glm::vec3(width))){
       //We found the element that we wish to try to replace now.
-      return subTree[i].getPosition(x-p.x*width, y-p.y*width, z-p.z*width, LOD-1);
+      return subTree[i].getPosition(_pos - p*glm::vec3(width), LOD-1);
     }
   }
   return BLOCK_AIR;
@@ -158,7 +152,42 @@ glm::vec3 Octree::getPos(int index){
   return glm::vec3(_x, _y, _z);
 }
 
-int Octree::getIndex(glm::vec3 pos){
+int Octree::getIndex(glm::vec3 _pos){
   //Decode the Binary into Decimals
-  return pos.x*4+pos.y*2+pos.z*1;
+  return _pos.x*4+_pos.y*2+_pos.z*1;
+}
+
+glm::vec4 Octree::getColorByID(BlockType _type){
+  //Switch the value and return a vector
+  glm::vec4 color;
+  switch(_type){
+    case BLOCK_GRASS:
+      color = glm::vec4(0.54f, 0.7f, 0.34f, 1.0f);
+      break;
+    case BLOCK_DIRT:
+      color = glm::vec4(0.74f, 0.5f, 0.36f, 1.0f);
+      break;
+    case BLOCK_WATER:
+      color = glm::vec4(0.02f, 0.61f, 0.75f, 1.0f);
+      break;
+    case BLOCK_SAND:
+      color = glm::vec4(0.93f, 0.91f, 0.38f, 1.0f);
+      break;
+    case BLOCK_CLAY:
+      color = glm::vec4(0.97f, 0.5f, 0.44f, 1.0f);
+      break;
+    case BLOCK_STONE:
+      color = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f);
+      break;
+    case BLOCK_LEAVES:
+      color = glm::vec4(0.38f, 0.48f, 0.26f, 0.8f);
+      break;
+    case BLOCK_WOOD:
+      color = glm::vec4(0.6f, 0.375f, 0.14f, 1.0f);
+      break;
+    default:
+      color = glm::vec4(1.0f, 1.0f, 1.0f, 0.5f);
+      break;
+  }
+  return color;
 }
