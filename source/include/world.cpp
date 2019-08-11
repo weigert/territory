@@ -9,11 +9,15 @@ void World::generate(){
   srand(SEED);
 
   //Generate Height
-  generateHeight();
-  generateTrees();
+  std::cout<<"Generating Heightmap"<<std::endl;
+  flatForest();
+
+  std::cout<<"Placing Trees"<<std::endl;
+  //generateTrees();
 
   //Place the Player
-  placePlayer();
+  std::cout<<"Placing Player"<<std::endl;
+  //placePlayer();
 }
 
 
@@ -60,7 +64,7 @@ void World::generateHeight(){
         }
 
         //Try to simplify the chunk
-        //chunk.data.trySimplify();
+        chunk.data.trySimplify();
         //Write the chunk to the region file
         saveChunk(chunk);
       }
@@ -90,7 +94,6 @@ void World::generateTrees(){
 }
 
 void World::placePlayer(){
-
 }
 
 bool World::getValidMove(glm::vec3 pos, int height){
@@ -147,7 +150,6 @@ void World::bufferChunks(){
   glm::vec3 a = chunkPos - renderDistance;
   glm::vec3 b = chunkPos + renderDistance;
 
-
   //Can't exceed a certain size
   a = glm::clamp(a, glm::vec3(0), glm::vec3(worldSize-1, worldHeight-1, worldSize-1));
   b = glm::clamp(b, glm::vec3(0), glm::vec3(worldSize-1, worldHeight-1, worldSize-1));
@@ -180,7 +182,6 @@ void World::bufferChunks(){
       //Add the chunk to the erase pile
       remove.push(i);
 
-      //Loop over the load vector, see if the guy we are looking at is identical, remove it in that case
       for(unsigned int j = 0; j < load.size(); j++){
         if(load[j].x == chunks[i].pos.x && load[j].y == chunks[i].pos.y && load[j].z == chunks[i].pos.z){
           //Remove the element from load, as it is already inside this guy
