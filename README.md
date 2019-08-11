@@ -38,7 +38,6 @@ If the world name doesn't exist, it will generate a world. If it does, it will l
 ### Renderer
 - Drop-Shadow for sprites
 - Sprite animation support
-- Higher Efficiency in Chunk Rendering (don't regenerate whole models when moving around -> trickyyyy)
 - Sprite Outlines and Block Outlines (-> picking)
 - Shader Effects: Fog, Bloom, Blur, Grain, Particles
 
