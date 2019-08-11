@@ -159,6 +159,7 @@ void eventHandler::handle(World &world, View &view){
       //LOD Change Here
       if((int)(view.zoom*1000) == 50){
         view.LOD -= 1;
+        view.updateLOD = true;
         world.renderDistance += glm::vec3(1,1,1);
         world.bufferChunks();
         view.loadChunkModels(world);
@@ -166,6 +167,7 @@ void eventHandler::handle(World &world, View &view){
       //LOD Change Here
       else if((int)(view.zoom*1000) == 100){
         view.LOD -= 1;
+        view.updateLOD = true;
         world.renderDistance += glm::vec3(1,1,1);
         world.bufferChunks();
         view.loadChunkModels(world);
@@ -173,6 +175,7 @@ void eventHandler::handle(World &world, View &view){
       //And Again
       else if((int)(view.zoom*1000) == 200){
         view.LOD = 1;
+        view.updateLOD = true;
         view.loadChunkModels(world);
       }
       scroll.pop_back();
@@ -185,6 +188,7 @@ void eventHandler::handle(World &world, View &view){
       //LOD Change Here
       if((int)(view.zoom*1000) == 50){
         view.LOD += 1;
+        view.updateLOD = true;
         world.renderDistance -= glm::vec3(1,1,1);
         world.bufferChunks();
         view.loadChunkModels(world);
@@ -192,6 +196,7 @@ void eventHandler::handle(World &world, View &view){
       //LOD Change Here
       else if((int)(view.zoom*1000) == 99){
         view.LOD += 1;
+        view.updateLOD = true;
         world.renderDistance -= glm::vec3(1,1,1);
         world.bufferChunks();
         view.loadChunkModels(world);
@@ -199,6 +204,7 @@ void eventHandler::handle(World &world, View &view){
       //LOD Change Here
       else if((int)(view.zoom*1000) == 199){
         view.LOD = 2;
+        view.updateLOD = true;
         view.loadChunkModels(world);
       }
       scroll.pop_back();

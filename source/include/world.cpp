@@ -183,15 +183,17 @@ void World::bufferChunks(){
       }
       //Add the chunk to the erase pile
       remove.push(i);
-
-      for(unsigned int j = 0; j < load.size(); j++){
-        if(load[j].x == chunks[i].pos.x && load[j].y == chunks[i].pos.y && load[j].z == chunks[i].pos.z){
-          //Remove the element from load, as it is already inside this guy
-          load.erase(load.begin()+j);
-        }
+    }
+    //Make sure that the chunk that we determined will not be removed is also
+    for(unsigned int j = 0; j < load.size(); j++){
+      if(load[j].x == chunks[i].pos.x && load[j].y == chunks[i].pos.y && load[j].z == chunks[i].pos.z){
+        //Remove the element from load, as it is already inside this guy
+        load.erase(load.begin()+j);
       }
     }
   }
+
+  updateModels = remove;
 
   //Loop over the erase pile, delete the relevant chunks.
   while(!remove.empty()){

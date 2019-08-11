@@ -92,15 +92,24 @@ void View::cleanup(){
   SDL_Quit();
 }
 
-void View::loadChunkModels(World world){
+void View::loadChunkModels(World &world){
   //Find models that need to be deleted! Don't delete all of them (ideally)!
-  models.clear();
+  if(updateLOD){
+    models.clear();
+  }
+  else{
+    while(!world.updateModels.empty()){
+      models.erase(models.begin()+world.updateModels.top());
+      world.updateModels.pop();
+    }
+  }
 
   //Loop over the loaded chunks
-  for(unsigned int i = 0; i < world.chunks.size(); i++){
+  for(unsigned int i = models.size(); i < world.chunks.size(); i++){
 
     //Construct a new model from the chunk, add to array
     Model model;
+    //model.fromOctree(world.chunks[i].data, LOD, glm::vec3(0.0));
     model.fromChunk(world.chunks[i], LOD);
     model.setup();
 
@@ -113,6 +122,9 @@ void View::loadChunkModels(World world){
     model.translate(axis);
     models.push_back(model);
   }
+
+  //Make sure updateLOD is false
+  updateLOD = false;
 }
 
 bool View::setupShadow(){

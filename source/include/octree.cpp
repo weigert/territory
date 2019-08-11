@@ -126,7 +126,7 @@ bool Octree::setPosition(int x, int y, int z, BlockType _type){
 
 BlockType Octree::getPosition(int x, int y, int z, int LOD){
   //Check if we are at the bottom of the line
-  if(subTree.empty() || depth == 0 || LOD == 0){
+  if(subTree.empty() || LOD == 0){
     return type;
   }
   //Find the subtree element that contains the value
@@ -157,4 +157,39 @@ glm::vec3 Octree::getPos(int index){
 int Octree::getIndex(glm::vec3 pos){
   //Decode the Binary into Decimals
   return pos.x*4+pos.y*2+pos.z*1;
+}
+
+glm::vec4 Octree::getColorByID(BlockType _type){
+  //Switch the value and return a vector
+  glm::vec4 color;
+  switch(_type){
+    case BLOCK_GRASS:
+      color = glm::vec4(0.54f, 0.7f, 0.34f, 1.0f);
+      break;
+    case BLOCK_DIRT:
+      color = glm::vec4(0.74f, 0.5f, 0.36f, 1.0f);
+      break;
+    case BLOCK_WATER:
+      color = glm::vec4(0.02f, 0.61f, 0.75f, 1.0f);
+      break;
+    case BLOCK_SAND:
+      color = glm::vec4(0.93f, 0.91f, 0.38f, 1.0f);
+      break;
+    case BLOCK_CLAY:
+      color = glm::vec4(0.97f, 0.5f, 0.44f, 1.0f);
+      break;
+    case BLOCK_STONE:
+      color = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f);
+      break;
+    case BLOCK_LEAVES:
+      color = glm::vec4(0.38f, 0.48f, 0.26f, 0.8f);
+      break;
+    case BLOCK_WOOD:
+      color = glm::vec4(0.6f, 0.375f, 0.14f, 1.0f);
+      break;
+    default:
+      color = glm::vec4(1.0f, 1.0f, 1.0f, 0.5f);
+      break;
+  }
+  return color;
 }

@@ -34,6 +34,9 @@ public:
   glm::vec3 getPos(int index);
   int getIndex(glm::vec3 pos);
 
+  //Get Color Data
+  glm::vec4 getColorByID(BlockType _type);
+
   //We need setters, getters, volume setters, etc.
   bool setPosition(int x, int y, int z, BlockType _type);
   BlockType getPosition(int x, int y, int z, int LOD);

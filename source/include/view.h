@@ -10,6 +10,7 @@ class View{
     float zoom = 0.01;
     float zoomInc = 0.001;
     int LOD = 4;
+    bool updateLOD = false;
     float rotation = 0.0;
     int renderDistance = 1;
     bool mapView = false;
@@ -17,7 +18,7 @@ class View{
 
     //Loaded Chunk Models
     std::vector<Model> models;
-    void loadChunkModels(World world);  //When chunks are displayed
+    void loadChunkModels(World &world);  //When chunks are displayed
 
     // Shadow Textures in Here
     GLuint depthMap;

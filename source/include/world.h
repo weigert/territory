@@ -10,6 +10,7 @@ public:
   }
   //Block Data in Octree
   std::vector<Chunk> chunks; //Loaded Chunks
+  std::stack<int> updateModels;
   int SEED = 10;
   int chunkSize = 16;
   int worldSize = 50;    //In Chunks^2
@@ -18,7 +19,7 @@ public:
 
   //Player Position
   glm::vec3 playerPos = glm::vec3(0, 0, 0);  //Position of the player in chunkspace
-  glm::vec3 chunkPos = glm::vec3(25, 5, 25);           //Position of the player in worldspace
+  glm::vec3 chunkPos = glm::vec3(25, 3, 25);           //Position of the player in worldspace
 
   //World Information Data
   std::string saveFile;
