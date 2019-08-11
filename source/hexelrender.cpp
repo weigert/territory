@@ -44,6 +44,7 @@ int main( int argc, char* args[] ) {
 
 		//Render the View
 		view.render(world);
+
 		//view.calcFPS();
 	}
 

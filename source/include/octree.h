@@ -28,16 +28,16 @@ public:
 
   //Filling and Combining Operations for Subtrees
   bool trySimplify();
-  bool contains(int x, int y, int z);
+  bool contains(glm::vec3 _pos);
 
   //Index Functions
   glm::vec3 getPos(int index);
-  int getIndex(glm::vec3 pos);
+  int getIndex(glm::vec3 _pos);
 
   //Get Color Data
   glm::vec4 getColorByID(BlockType _type);
 
   //We need setters, getters, volume setters, etc.
-  bool setPosition(int x, int y, int z, BlockType _type);
-  BlockType getPosition(int x, int y, int z, int LOD);
+  bool setPosition(glm::vec3 _pos, BlockType _type);
+  BlockType getPosition(glm::vec3 _pos, int LOD);
 };

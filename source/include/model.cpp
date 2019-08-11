@@ -77,7 +77,7 @@ void Model::fromChunk(Chunk chunk, int LOD){
       for(int k = 0; k < width; k++){
 
         //Get the current block type
-        BlockType _type = chunk.data.getPosition(scale*i,scale*j,scale*k, LOD);
+        BlockType _type = chunk.data.getPosition(glm::vec3(scale)*glm::vec3(i,j,k), LOD);
 
         //Make sure it isn't air
         if(_type != 0){
@@ -90,7 +90,7 @@ void Model::fromChunk(Chunk chunk, int LOD){
           //In the future, this could be made even more efficient (if deemed necessary)
 
           //Only exposed surfaces!
-          if(k+1 == width || chunk.data.getPosition(scale*i,scale*j,scale*(k+1), LOD) == 0){
+          if(k+1 == width || chunk.data.getPosition(glm::vec3(scale)*glm::vec3(i,j,k+1), LOD) == 0){
             for(int l = 0; l < 6; l++){
               positions.push_back(scale*(front[l*3]+i));
               positions.push_back(scale*(front[l*3+1]+j));
@@ -101,7 +101,7 @@ void Model::fromChunk(Chunk chunk, int LOD){
             faces++;
           }
 
-          if(j+1 == width || chunk.data.getPosition(scale*i,scale*(j+1),scale*k, LOD) == 0){
+          if(j+1 == width || chunk.data.getPosition(glm::vec3(scale)*glm::vec3(i,j+1,k), LOD) == 0){
             //Draw the Back Face
             for(int l = 0; l < 6; l++){
               positions.push_back(scale*(top[l*3]+i));
@@ -112,7 +112,7 @@ void Model::fromChunk(Chunk chunk, int LOD){
             faces++;
           }
 
-          if(i+1 == width || chunk.data.getPosition(scale*(i+1),scale*j,scale*k, LOD) == 0){
+          if(i+1 == width || chunk.data.getPosition(glm::vec3(scale)*glm::vec3(i+1,j,k), LOD) == 0){
             //Draw the Top Face
             for(int l = 0; l < 6; l++){
               positions.push_back(scale*(right[l*3]+i));
@@ -122,7 +122,7 @@ void Model::fromChunk(Chunk chunk, int LOD){
 
             faces++;
           }
-          if(k-1 < 0 || chunk.data.getPosition(scale*i,scale*j,scale*(k-1), LOD) == 0){
+          if(k-1 < 0 || chunk.data.getPosition(glm::vec3(scale)*glm::vec3(i,j,k-1), LOD) == 0){
             for(int l = 0; l < 6; l++){
               positions.push_back(scale*(back[l*3]+i));
               positions.push_back(scale*(back[l*3+1]+j));
@@ -142,7 +142,7 @@ void Model::fromChunk(Chunk chunk, int LOD){
             }
             faces++;
           }*/
-          if(i-1 < 0 || chunk.data.getPosition(scale*(i-1),scale*j,scale*k, LOD) == 0){
+          if(i-1 < 0 || chunk.data.getPosition(glm::vec3(scale)*glm::vec3(i-1,j,k), LOD) == 0){
             //Draw the Right Face
             for(int l = 0; l < 6; l++){
               positions.push_back(scale*(left[l*3]+i));
@@ -153,7 +153,7 @@ void Model::fromChunk(Chunk chunk, int LOD){
           }
 
           //We need to get a color
-          glm::vec4 color = chunk.data.getColorByID(chunk.data.getPosition(scale*i, scale*j, scale*k, LOD));
+          glm::vec4 color = chunk.data.getColorByID(chunk.data.getPosition(glm::vec3(scale)*glm::vec3(i,j,k), LOD));
           //For all 36 triangles we add a color (12*3)
           for(int m = 0; m < 6*faces; m++){
             colors.push_back(color.x);
