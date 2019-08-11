@@ -1,10 +1,22 @@
 //Hexelrender Mainfile
 #include "hexelrender.h"
 
+/*
+Need a logger class that logs errors and stuff.
+*/
+
 //Main Function
 int main( int argc, char* args[] ) {
+
+	//Handle the Console Arguments
+	if(argc<2){
+		std::cout<<"[Territory] Error >>Missing World Name"<<std::endl;
+		std::cout<<"Usage: ./territory [worldname]"<<std::endl;
+		return 0;
+	}
+
 	//Setup the World, View, events
-	World world("test_perlin");
+	World world((std::string)args[1]);
 	View view;
 	eventHandler events;
 
@@ -28,7 +40,7 @@ int main( int argc, char* args[] ) {
 	while(!quit){
 		//Handle User Input
 		events.input(&e, quit);
-		events.handle(world, view);
+		events.update(world, view);
 
 		//Render the View
 		view.render(world);

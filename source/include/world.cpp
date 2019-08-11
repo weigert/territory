@@ -10,7 +10,7 @@ void World::generate(){
 
   //Generate Height
   std::cout<<"Generating Heightmap"<<std::endl;
-  generateHeight();
+  flatForest();
 
   std::cout<<"Placing Trees"<<std::endl;
   //generateTrees();
@@ -20,13 +20,19 @@ void World::generate(){
   //placePlayer();
 }
 
+/*
+===================================================
+          WORLD GENERATING FUNCTIONS
+===================================================
+*/
+
 
 void World::generateHeight(){
   //Perlin Noise Generator
   noise::module::Perlin perlin;
-  perlin.SetOctaveCount(16);
+  perlin.SetOctaveCount(12);
   perlin.SetFrequency(5);
-  perlin.SetPersistence(0.6);
+  perlin.SetPersistence(0.5);
 
   //Loop over all Chunks in the World
   for(int i = 0; i < worldSize; i++){
@@ -93,14 +99,6 @@ void World::generateTrees(){
   }*/
 }
 
-void World::placePlayer(){
-}
-
-bool World::getValidMove(glm::vec3 pos, int height){
-  return true;
-}
-
-
 void World::flatForest(){
   //Loop over all Chunks in the World
   for(int i = 0; i < worldSize; i++){
@@ -143,6 +141,81 @@ void World::flatForest(){
     }
   }
 }
+
+/*
+===================================================
+          OPTIMIZING UTILITY FUNCTIONS
+===================================================
+*/
+
+bool World::addEditBuffer(glm::vec3 _pos, BlockType _type){
+  //Check validity
+  if(glm::any(glm::lessThan(_pos, glm::vec3(0))) || glm::any(glm::greaterThanEqual(_pos, glm::vec3(chunkSize*worldSize)))){
+    //Invalid Position
+    return false;
+  }
+
+  //Add a new bufferObject
+  editBuffer.push_back(bufferObject());
+  editBuffer.back().pos = _pos;
+  editBuffer.back().type = _type;
+
+  //Push it on
+  return true;
+
+  /*
+  In the future, it might be possible to add the buffer object in a smarter way...
+  i.e. pre-sort it a bit so later it is easier to do.
+  Depends on how the sort-algorithm afterwards works.
+  */
+}
+
+bool World::evaluateEditBuffer(){
+  //Check if the editBuffer isn't empty!
+  if(editBuffer.empty()){
+    std::cout<<"editBuffer is empty."<<std::endl;
+    return false;
+  }
+
+  /*
+  Sort the editBuffer by chunk, write a chunk object and then write it to file in the appropriate order.
+  */
+
+  //We should know if the region files exist or not, load them in an appropriate order and shit, and then write that stuff all at once?
+  //somehow...
+
+  /*
+  -> Sort the Edit Buffer
+  -> For every single chunk we can isolate, construct a chunk
+  -> Then edit the chunk with the edits
+  -> Append the chunks in the correct order, so we only need to one file opening.
+  (for initial writing, this doesn't matter, but if we load that shit up again then we need to do this)
+
+
+  This only really makes sense if we are overwriting chunks right?
+  Cause if we're not, we just want to write to specific positions
+  */
+
+
+
+
+
+
+
+
+  return true;
+
+}
+
+
+
+/*
+===================================================
+          FILE IO HANDLING FUNCTIONS
+===================================================
+*/
+
+
 
 void World::bufferChunks(){
   //Load / Reload all Visible Chunks
@@ -256,51 +329,6 @@ bool World::overwriteChunk(int i, int j, int k, Chunk chunk){
   return true;
 }
 
-namespace boost {
-namespace serialization {
-
-//Chunk Serializer
-template<class Archive>
-void serialize(Archive & ar, Chunk & _chunk, const unsigned int version)
-{
-  ar & _chunk.pos.x;
-  ar & _chunk.pos.y;
-  ar & _chunk.pos.z;
-  ar & _chunk.size;
-  ar & _chunk.biome;
-  ar & _chunk.data;
-}
-
-//Octree Serializer
-template<class Archive>
-void serialize(Archive & ar, Octree & _octree, const unsigned int version)
-{
-  ar & _octree.depth;
-  ar & _octree.index;
-  ar & _octree.type;
-  ar & _octree.subTree;
-}
-
-//World Serializer
-template<class Archive>
-void serialize(Archive & ar, World & _world, const unsigned int version)
-{
-  ar & _world.saveFile;
-  ar & _world.chunkSize;
-  ar & _world.worldSize;
-  ar & _world.worldHeight;
-  ar & _world.playerPos.x;
-  ar & _world.playerPos.y;
-  ar & _world.playerPos.z;
-  ar & _world.chunkPos.x;
-  ar & _world.chunkPos.y;
-  ar & _world.chunkPos.z;
-}
-
-
-} // namespace serialization
-} // namespace boost
-
 bool World::loadWorld(){
   //Get current path
   boost::filesystem::path data_dir(boost::filesystem::current_path());
@@ -346,3 +374,49 @@ bool World::saveWorld(){
   generate();
   return true;
 }
+
+
+namespace boost {
+namespace serialization {
+
+//Chunk Serializer
+template<class Archive>
+void serialize(Archive & ar, Chunk & _chunk, const unsigned int version)
+{
+  ar & _chunk.pos.x;
+  ar & _chunk.pos.y;
+  ar & _chunk.pos.z;
+  ar & _chunk.size;
+  ar & _chunk.biome;
+  ar & _chunk.data;
+}
+
+//Octree Serializer
+template<class Archive>
+void serialize(Archive & ar, Octree & _octree, const unsigned int version)
+{
+  ar & _octree.depth;
+  ar & _octree.index;
+  ar & _octree.type;
+  ar & _octree.subTree;
+}
+
+//World Serializer
+template<class Archive>
+void serialize(Archive & ar, World & _world, const unsigned int version)
+{
+  ar & _world.saveFile;
+  ar & _world.chunkSize;
+  ar & _world.worldSize;
+  ar & _world.worldHeight;
+  ar & _world.playerPos.x;
+  ar & _world.playerPos.y;
+  ar & _world.playerPos.z;
+  ar & _world.chunkPos.x;
+  ar & _world.chunkPos.y;
+  ar & _world.chunkPos.z;
+}
+
+
+} // namespace serialization
+} // namespace boost

@@ -13,9 +13,7 @@ void eventHandler::input(SDL_Event *e, bool &quit){
       else if(e->key.keysym.sym == SDLK_DOWN  && rotate.empty()){
         rotate.push_front(e);
       }
-      //Any other type of event
       else{
-        //Add the other key press to inputs
         inputs.push_front(e);
       }
     }
@@ -25,106 +23,27 @@ void eventHandler::input(SDL_Event *e, bool &quit){
   }
 }
 
-void eventHandler::handle(World &world, View &view){
+void eventHandler::update(World &world, View &view){
   //Check for rotation
   if(!inputs.empty()){
-    //Handle the input at the back
-    if(inputs.back()->key.keysym.sym == SDLK_w){
-      if(world.playerPos.z > 0){
-        world.playerPos.z--;
-        glm::vec3 axis = glm::vec3(0,0,1);
-        for(unsigned int i = 0; i < view.models.size(); i++){
-          view.models[i].translate(axis);
-        }
-      }
-      else if(world.chunkPos.z > 0){
-        world.chunkPos.z--; //Increment Chunkposition
-        world.playerPos.z = world.chunkSize-1; //Reset Playerposition
-        //Load new chunks
-        world.bufferChunks();
-        view.loadChunkModels(world); //This can be made more efficient to only reload new chunks
-      }
+    //Handle the Player Move
+    if(inputs.front()->key.keysym.sym == SDLK_w){
+      handlePlayerMove(world, view, 0);
     }
-    else if(inputs.back()->key.keysym.sym == SDLK_d){
-      //Increment the Players Position
-      if(world.playerPos.x < world.chunkSize-1){
-        world.playerPos.x++;
-        glm::vec3 axis = glm::vec3(-1,0,0);
-        for(unsigned int i = 0; i < view.models.size(); i++){
-          view.models[i].translate(axis);
-        }
-      }
-      else if(world.chunkPos.x < world.worldSize -1){
-        world.chunkPos.x++;
-        world.playerPos.x = 0;
-        //Load new chunks
-        world.bufferChunks();
-        view.loadChunkModels(world); //This can be made more efficient to only reload new chunks
-      }
+    else if(inputs.front()->key.keysym.sym == SDLK_a){
+      handlePlayerMove(world, view, 1);
     }
-    else if(inputs.back()->key.keysym.sym == SDLK_s){
-      if(world.playerPos.z < world.chunkSize-1){
-        world.playerPos.z++;
-        glm::vec3 axis = glm::vec3(0,0,-1);
-        for(unsigned int i = 0; i < view.models.size(); i++){
-          view.models[i].translate(axis);
-        }
-      }
-      else if(world.chunkPos.z < world.worldSize -1){
-        world.chunkPos.z++;
-        world.playerPos.z = 0;
-        //Load new chunks
-        world.bufferChunks();
-        view.loadChunkModels(world); //This can be made more efficient to only reload new chunks
-      }
+    else if(inputs.front()->key.keysym.sym == SDLK_s){
+      handlePlayerMove(world, view, 2);
     }
-    else if(inputs.back()->key.keysym.sym == SDLK_a){
-      //Check for move legality
-      if(world.playerPos.x > 0){
-        world.playerPos.x--;
-        glm::vec3 axis = glm::vec3(1,0,0);
-        for(unsigned int i = 0; i < view.models.size(); i++){
-          view.models[i].translate(axis);
-        }
-      }
-      else if(world.chunkPos.x > 0){
-        world.chunkPos.x--;
-        world.playerPos.x = world.chunkSize-1;
-        world.bufferChunks();
-        view.loadChunkModels(world); //This can be made more efficient to only reload new chunks
-      }
+    else if(inputs.front()->key.keysym.sym == SDLK_d){
+      handlePlayerMove(world, view, 3);
     }
-    else if(inputs.back()->key.keysym.sym == SDLK_SPACE){
-      if(world.playerPos.y < world.chunkSize-1){
-        world.playerPos.y++;
-        glm::vec3 axis = glm::vec3(0,-1,0);
-        for(unsigned int i = 0; i < view.models.size(); i++){
-          view.models[i].translate(axis);
-        }
-      }
-      else if(world.chunkPos.y < world.worldSize -1){
-        world.chunkPos.y++;
-        world.playerPos.y = 0;
-        //Load new chunks
-        world.bufferChunks();
-        view.loadChunkModels(world); //This can be made more efficient to only reload new chunks
-      }
+    else if(inputs.front()->key.keysym.sym == SDLK_SPACE){
+      handlePlayerMove(world, view, 4);
     }
-    else if(inputs.back()->key.keysym.sym == SDLK_LSHIFT){
-      //Check for move legality
-      if(world.playerPos.y > 0){
-        world.playerPos.y--;
-        glm::vec3 axis = glm::vec3(0,1,0);
-        for(unsigned int i = 0; i < view.models.size(); i++){
-          view.models[i].translate(axis);
-        }
-      }
-      else if(world.chunkPos.y > 0){
-        world.chunkPos.y--;
-        world.playerPos.y = world.chunkSize-1;
-        world.bufferChunks();
-        view.loadChunkModels(world); //This can be made more efficient to only reload new chunks
-      }
+    else if(inputs.front()->key.keysym.sym == SDLK_LSHIFT){
+      handlePlayerMove(world, view, 5);
     }
     //Remove the command
     inputs.pop_back();
@@ -223,5 +142,53 @@ void eventHandler::handle(World &world, View &view){
       view.sprite.model = glm::rotate(view.sprite.model, glm::radians(1.5f), axis);
       scroll.pop_back();
     }
+  }
+}
+
+void eventHandler::handlePlayerMove(World &world, View &view, int a){
+  //Movement Vector
+  glm::vec3 m;
+
+  //Get the type of movement
+  switch(a){
+    //W
+    case 0:
+      m = glm::vec3(0,0,-1);
+      break;
+    //A
+    case 1:
+      m = glm::vec3(-1,0,0);
+      break;
+    //S
+    case 2:
+      m = glm::vec3(0,0,1);
+      break;
+    //D
+    case 3:
+      m = glm::vec3(1,0,0);
+      break;
+    case 4:
+      m = glm::vec3(0,1,0);
+      break;
+    case 5:
+      m = glm::vec3(0,-1,0);
+      break;
+  }
+
+  //Check if the Player stays in-bounds of Chunk
+  if( glm::all(glm::greaterThanEqual(world.playerPos+m, glm::vec3(0))) && glm::all(glm::lessThanEqual(world.playerPos+m, glm::vec3(world.chunkSize-1)))){
+    //Shift the Player's Position
+    world.playerPos += m;
+    for(unsigned int i = 0; i < view.models.size(); i++){
+      view.models[i].translate(-m);
+    }
+  }
+  else if(glm::all(glm::greaterThanEqual(world.chunkPos+m, glm::vec3(0))) && glm::all(glm::lessThanEqual(world.chunkPos+m, glm::vec3(world.worldSize-1)))){
+    //Shift the Chunk Position
+    world.chunkPos += m;
+    //Shift the Player Position
+    world.playerPos = glm::mod( world.playerPos + glm::vec3(world.chunkSize) + m , glm::vec3(world.chunkSize));
+    world.bufferChunks();
+    view.loadChunkModels(world); //This can be made more efficient to only reload new chunks
   }
 }

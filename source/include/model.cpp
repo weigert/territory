@@ -1,22 +1,5 @@
 #include "model.h"
 
-std::vector<GLfloat> Model::ReadFile(const char* file){
-  // Open file
-  std::ifstream t(file);
-	std::vector<GLfloat> result;
-	std::cout << "Reading : " << file << std::endl;
-
-	while (t.good())
-	{
-		std::string str;
-		t >> str;
-		GLfloat f = std::atof(str.c_str());
-		result.push_back(f);
-	}
-
-	return result;
-}
-
 void Model::setup(){
   //Reset the Model Matrix
   reset();
@@ -73,33 +56,6 @@ void Model::render(){
   glBindVertexArray(vao[0]);
   glDrawArrays(GL_TRIANGLES, 0, positions.size()/3);
 }
-
-/*
-void Model::fromOctree(Octree _octree, int LOD, glm::vec3 translate){
-  //Dive down the octree, construct the appropriately sized cube, etc.
-
-  //we can construct the current cube into the model
-  if((_octree.subTree.empty() || _octree.depth == 0 || LOD == 0) && _octree.type != BLOCK_AIR){
-
-    //Really, we should only dive down the Octree!
-  }
-
-  //We need to add subelements to the model instead.
-  else{
-    //Find the subtree element that contains the value
-    for(unsigned int i = 0; i < _octree.subTree.size(); i++){
-
-      //Binary Representation in 3 Coords
-      glm::vec3 p = _octree.getPos(_octree.subTree[i].index);
-      //Width of the Sub-Elements
-      int width = pow(2, _octree.depth-1);
-
-      //Construct the Vertices from the Octree Too!
-      fromOctree(_octree.subTree[i], LOD - 1, translate + p*(float)width);
-    }
-  }
-}*/
-
 
 void Model::fromChunk(Chunk chunk, int LOD){
 
@@ -172,7 +128,6 @@ void Model::fromChunk(Chunk chunk, int LOD){
               positions.push_back(scale*(back[l*3+1]+j));
               positions.push_back(scale*(back[l*3+2]+k));
             }
-
 
             //Draw the Bottom Face
             faces++;

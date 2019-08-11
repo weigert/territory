@@ -13,13 +13,12 @@ public:
 	GLuint vbo[3], vao[1];
 
   //Read File Functions
-  std::vector<GLfloat> ReadFile(const char* file);
   void setup();
   void cleanup();
 
   //Model Generation Functions
   void fromChunk(Chunk _chunk, int LOD);
-  void fromOctree(Octree _octree, int LOD, glm::vec3 translate);
+  //void fromOctree(Octree _octree, int LOD, glm::vec3 translate);
 
   //Position Handling Functions
   void reset();
