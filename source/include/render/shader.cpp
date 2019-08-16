@@ -6,7 +6,7 @@ void Shader::setup(std::string vs, std::string fs){
 
   //Current Path
   boost::filesystem::path data_dir(boost::filesystem::current_path());
-  data_dir /= "source/include/shader";
+  data_dir /= "source/include/render/shader";
 
   //Add the two shaders
   vertexShader = addShader((data_dir/vs).string(), GL_VERTEX_SHADER);

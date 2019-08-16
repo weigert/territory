@@ -5,8 +5,10 @@ bool Sprite::loadImage(std::string fileName){
   boost::filesystem::path data_dir(boost::filesystem::current_path());
   data_dir /= "resource/sprite";
 
+
   //Load the Image to a surface
   SDL_Surface *TextureImage = IMG_Load((data_dir/fileName).c_str());
+
 
   //Load the File
   if(TextureImage == NULL){
@@ -18,9 +20,10 @@ bool Sprite::loadImage(std::string fileName){
   glGenTextures( 1, &texture );
   glBindTexture( GL_TEXTURE_2D, texture );
 
+
+
   //Load the Image to the Texture
   glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, TextureImage->w, TextureImage->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, TextureImage->pixels );
-  glGenerateMipmap(GL_TEXTURE_2D);
 
   //Texture Parameters
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
@@ -33,13 +36,6 @@ bool Sprite::loadImage(std::string fileName){
 }
 
 void Sprite::setupBuffer(){
-/*
-Bottom Left
-Top Left
-Top Right
-Bottom Right
-*/
-
   GLfloat vert[] = {-0.8, 0.0, 0.0,
                     -0.8, 3.2, 0.0,
                     0.8, 0.0, 0.0,
@@ -65,6 +61,13 @@ Bottom Right
    glBufferData(GL_ARRAY_BUFFER, 8*sizeof(GLfloat), &tex[0], GL_STATIC_DRAW);
    glEnableVertexAttribArray(1);
    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
+}
+
+void Sprite::resetModel(){
+  //Stuff to get the sprite looking right
+  model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.5f, 0.0f));
+  glm::vec3 axis = glm::vec3(0.0f, 1.0f, 0.0f);
+  model = glm::rotate(model, glm::radians(45.0f), axis);
 }
 
 void Sprite::cleanup(){

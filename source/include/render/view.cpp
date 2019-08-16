@@ -1,3 +1,13 @@
+//Load Dependencies
+#include "../world/world.h"
+#include "sprite.h"
+#include "shader.h"
+#include "model.h"
+#include "../taskbot/population.h"
+#include "../taskbot/bot.h"
+#include "../game/player.h"
+
+//Load our Own Type!
 #include "view.h"
 
 bool View::Init(){
@@ -33,13 +43,6 @@ bool View::Init(){
   //Setup Shaders
   setupShaders();
   setupShadow();
-  sprite.loadImage("hunter.png");
-  sprite.setupBuffer();
-
-  //Stuff to get the sprite looking right
-  sprite.model = glm::translate(sprite.model, glm::vec3(0.0f, 0.5f, 0.0f));
-  glm::vec3 axis = glm::vec3(0.0f, 1.0f, 0.0f);
-  sprite.model = glm::rotate(sprite.model, glm::radians(45.0f), axis);
 
   return true;
 }
@@ -92,7 +95,7 @@ void View::cleanup(){
   SDL_Quit();
 }
 
-void View::loadChunkModels(World &world){
+void View::loadChunkModels(World &world, Player player){
   //Update the Models for the Chunks
 
   if(updateLOD){
@@ -119,7 +122,7 @@ void View::loadChunkModels(World &world){
     }
 
     //Old chunks need to be translated too. Translate according to player position.
-    glm::vec3 axis = (world.chunks[i].pos-world.chunkPos)*(float)world.chunkSize-world.playerPos;
+    glm::vec3 axis = (world.chunks[i].pos-player.chunkPos)*(float)world.chunkSize-player.playerPos;
 
     //Translate the guy
     models[i].reset();
@@ -186,43 +189,43 @@ bool View::setupShadow(){
 }
 
 
-void View::render(World world){
+void View::render(World world, Player player, Population population){
   //Move the light ayy
   //depthCamera = glm::rotate(depthCamera, glm::radians(-0.1f), glm::vec3(0.0, 1.0, 0.0));
-  if(!mapView){
-    //Render the Regular View
-    renderShadow();
-    renderScene();
-    renderSprite();
-  }
-  else{
-    //Render the Map View
-    //Somehow with LOD
-  }
-
-  if(debug){
-    //Render the Depth Debugquad
-    renderDepth();
-  }
+  //Render the Regular View
+  renderShadow();
+  renderScene();
+  renderSprites(player, population);
 
   //Swap the Window
   SDL_GL_SwapWindow(gWindow);
 }
 
-void View::renderSprite(){
+void View::renderSprites(Player player, Population population){
   //Render the Sprite
   spriteShader.useProgram();
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, sprite.texture);
-  spriteShader.setInt("spriteTexture", 0);
 
-  //Set the Scale Uniform?
-  spriteShader.setMat4("mvp", projection*camera*sprite.model);
+  //Loop over the guys
+  for(unsigned int i = 0; i < population.bots.size(); i++){
+    //Here we should check if the sprite should even be rendered.
 
-  //Draw
-  glBindVertexArray(sprite.vao[0]);
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    //Bind the Appropriate Texture and add it to the shader as a uniform
+    glBindTexture(GL_TEXTURE_2D, population.bots[i].sprite.texture);
+    spriteShader.setInt("spriteTexture", 0);
+
+    //Set the Position of the Sprite relative to the player
+    population.bots[i].sprite.resetModel();
+    population.bots[i].sprite.model = glm::translate(population.bots[i].sprite.model, population.bots[i].pos - player.chunkPos*glm::vec3(16)-player.playerPos);
+    population.bots[i].sprite.model = glm::rotate(population.bots[i].sprite.model, glm::radians(-rotation), glm::vec3(0, 1, 0));
+
+    spriteShader.setMat4("mvp", projection*camera*population.bots[i].sprite.model);
+
+    //Draw
+    glBindVertexArray(population.bots[i].sprite.vao[0]);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+  }
 }
 
 void View::renderDepth(){
@@ -307,6 +310,22 @@ void View::renderScene(){
     //Render the Model
     models[i].render();               //Render
   }
+}
+
+bool View::switchLOD(World &world, Player &player, int _LOD){
+  //Make sure we don't switch the LOD to often
+  if(_LOD == LOD || LOD > log2(world.chunkSize)){
+    return false;
+  }
+
+  //Change the LOD, update the stuff
+  player.renderDistance += glm::vec3(2)*glm::vec3(LOD-_LOD);
+  LOD = _LOD;
+  updateLOD = true;
+  world.bufferChunks( player );
+  loadChunkModels(world, player);
+
+  return true;
 }
 
 void View::calcFPS(){

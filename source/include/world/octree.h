@@ -1,15 +1,5 @@
-enum BlockType{
-  BLOCK_AIR = 0,
-  BLOCK_GRASS = 1,
-  BLOCK_DIRT = 2,
-  BLOCK_SAND = 3,
-  BLOCK_CLAY = 4,
-  BLOCK_GRAVEL = 5,
-  BLOCK_STONE = 6,
-  BLOCK_WATER = 7,
-  BLOCK_LEAVES = 8,
-  BLOCK_WOOD = 9
-};
+#pragma once
+#include "../forward/octree.fwd.h"
 
 class Octree{
 public:

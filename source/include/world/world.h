@@ -1,5 +1,10 @@
+//Include Forward Declaration
 #pragma once
-class View;
+#include "../forward/world.fwd.h"
+//Dependency Forward Declaration
+#include "../forward/chunk.fwd.h"
+#include "../forward/octree.fwd.h"
+#include "../forward/player.fwd.h"
 
 //EditBuffer Struct
 struct bufferObject {
@@ -25,11 +30,10 @@ public:
   int chunkSize = 16;
   int worldSize = 20;    //In Chunks^2
   int worldHeight = 5;  //In Chunks
-  glm::vec3 renderDistance = glm::vec3(1, 2, 1);
 
-  //Player Position
-  glm::vec3 playerPos = glm::vec3(8, 0, 8); //Position of the player in chunkspace
-  glm::vec3 chunkPos = glm::vec3(5, 0, 5);  //Position of the player in worldspace
+  //Movement Weights
+  int moveWeight(BlockType _type);
+  BlockType getBlock(glm::vec3 _pos);
 
   //Generate Function / Chunk Handlers
   void generate();
@@ -47,7 +51,7 @@ public:
   bool loadWorld();
   bool saveWorld();
   bool writeChunk(Chunk chunk);
-  bool loadChunk(int i, int j, int k, Chunk &chunk);
-  bool overwriteChunk(int i, int j, int k, Chunk chunk);
-  void bufferChunks();    //Reloads all relevant chunks from file
+  bool loadChunk(glm::vec3 _c, Chunk &chunk);
+  void bufferChunks(Player player);    //Reloads all relevant chunks from file
+
 };

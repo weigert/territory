@@ -1,4 +1,10 @@
-#include "events.h"
+//Include our Class Definition
+//Include Dependencies
+#include "../world/world.h"
+#include "../render/view.h"
+#include "player.h"
+
+#include "event.h"
 
 void eventHandler::input(SDL_Event *e, bool &quit){
   //User input detected
@@ -23,27 +29,30 @@ void eventHandler::input(SDL_Event *e, bool &quit){
   }
 }
 
-void eventHandler::update(World &world, View &view){
+void eventHandler::update(World &world, Player &player, Population &population, View &view){
   //Check for rotation
   if(!inputs.empty()){
     //Handle the Player Move
     if(inputs.front()->key.keysym.sym == SDLK_w){
-      handlePlayerMove(world, view, 0);
+      handlePlayerMove(world, player, view, 0);
     }
     else if(inputs.front()->key.keysym.sym == SDLK_a){
-      handlePlayerMove(world, view, 1);
+      handlePlayerMove(world, player, view, 1);
     }
     else if(inputs.front()->key.keysym.sym == SDLK_s){
-      handlePlayerMove(world, view, 2);
+      handlePlayerMove(world, player, view, 2);
     }
     else if(inputs.front()->key.keysym.sym == SDLK_d){
-      handlePlayerMove(world, view, 3);
+      handlePlayerMove(world, player, view, 3);
     }
     else if(inputs.front()->key.keysym.sym == SDLK_SPACE){
-      handlePlayerMove(world, view, 4);
+      handlePlayerMove(world, player, view, 4);
     }
     else if(inputs.front()->key.keysym.sym == SDLK_LSHIFT){
-      handlePlayerMove(world, view, 5);
+      handlePlayerMove(world, player, view, 5);
+    }
+    else if(inputs.front()->key.keysym.sym == SDLK_m){
+      population._update = true;
     }
     //Remove the command
     inputs.pop_back();
@@ -77,25 +86,11 @@ void eventHandler::update(World &world, View &view){
 
       //LOD Change Here
       if((int)(view.zoom*1000) == 50){
-        view.LOD -= 1;
-        view.updateLOD = true;
-        world.renderDistance += glm::vec3(1,1,1);
-        world.bufferChunks();
-        view.loadChunkModels(world);
+        view.switchLOD(world, player, 3);
       }
       //LOD Change Here
       else if((int)(view.zoom*1000) == 100){
-        view.LOD -= 1;
-        view.updateLOD = true;
-        world.renderDistance += glm::vec3(1,1,1);
-        world.bufferChunks();
-        view.loadChunkModels(world);
-      }
-      //And Again
-      else if((int)(view.zoom*1000) == 200){
-        view.LOD = 1;
-        view.updateLOD = true;
-        view.loadChunkModels(world);
+        view.switchLOD(world, player, 2);
       }
       scroll.pop_back();
     }
@@ -106,25 +101,12 @@ void eventHandler::update(World &world, View &view){
 
       //LOD Change Here
       if((int)(view.zoom*1000) == 50){
-        view.LOD += 1;
-        view.updateLOD = true;
-        world.renderDistance -= glm::vec3(1,1,1);
-        world.bufferChunks();
-        view.loadChunkModels(world);
+        view.switchLOD(world, player, 4);
+
       }
       //LOD Change Here
       else if((int)(view.zoom*1000) == 99){
-        view.LOD += 1;
-        view.updateLOD = true;
-        world.renderDistance -= glm::vec3(1,1,1);
-        world.bufferChunks();
-        view.loadChunkModels(world);
-      }
-      //LOD Change Here
-      else if((int)(view.zoom*1000) == 199){
-        view.LOD = 2;
-        view.updateLOD = true;
-        view.loadChunkModels(world);
+        view.switchLOD(world, player, 3);
       }
       scroll.pop_back();
     }
@@ -132,20 +114,20 @@ void eventHandler::update(World &world, View &view){
       glm::vec3 axis(0.0f, 1.0f, 0.0f);
       view.rotation += 1.5f;
       view.camera = glm::rotate(view.camera, glm::radians(1.5f), axis);
-      view.sprite.model = glm::rotate(view.sprite.model, glm::radians(-1.5f), axis);
+      //view.sprite.model = glm::rotate(view.sprite.model, glm::radians(-1.5f), axis);
       scroll.pop_back();
     }
     else if(scroll.back()->wheel.x > 0.8){
       glm::vec3 axis(0.0f, 1.0f, 0.0f);
       view.rotation -= 1.5f;
       view.camera = glm::rotate(view.camera, glm::radians(-1.5f), axis);
-      view.sprite.model = glm::rotate(view.sprite.model, glm::radians(1.5f), axis);
+      //view.sprite.model = glm::rotate(view.sprite.model, glm::radians(1.5f), axis);
       scroll.pop_back();
     }
   }
 }
 
-void eventHandler::handlePlayerMove(World &world, View &view, int a){
+void eventHandler::handlePlayerMove(World &world, Player &player, View &view, int a){
   //Movement Vector
   glm::vec3 m;
 
@@ -176,19 +158,19 @@ void eventHandler::handlePlayerMove(World &world, View &view, int a){
   }
 
   //Check if the Player stays in-bounds of Chunk
-  if( glm::all(glm::greaterThanEqual(world.playerPos+m, glm::vec3(0))) && glm::all(glm::lessThanEqual(world.playerPos+m, glm::vec3(world.chunkSize-1)))){
+  if( glm::all(glm::greaterThanEqual(player.playerPos+m, glm::vec3(0))) && glm::all(glm::lessThanEqual(player.playerPos+m, glm::vec3(world.chunkSize-1)))){
     //Shift the Player's Position
-    world.playerPos += m;
+    player.playerPos += m;
     for(unsigned int i = 0; i < view.models.size(); i++){
       view.models[i].translate(-m);
     }
   }
-  else if(glm::all(glm::greaterThanEqual(world.chunkPos+m, glm::vec3(0))) && glm::all(glm::lessThanEqual(world.chunkPos+m, glm::vec3(world.worldSize-1)))){
+  else if(glm::all(glm::greaterThanEqual(player.chunkPos+m, glm::vec3(0))) && glm::all(glm::lessThanEqual(player.chunkPos+m, glm::vec3(world.worldSize-1)))){
     //Shift the Chunk Position
-    world.chunkPos += m;
+    player.chunkPos += m;
     //Shift the Player Position
-    world.playerPos = glm::mod( world.playerPos + glm::vec3(world.chunkSize) + m , glm::vec3(world.chunkSize));
-    world.bufferChunks();
-    view.loadChunkModels(world); //This can be made more efficient to only reload new chunks
+    player.playerPos = glm::mod( player.playerPos + glm::vec3(world.chunkSize) + m , glm::vec3(world.chunkSize));
+    world.bufferChunks( player );
+    view.loadChunkModels(world, player); //This can be made more efficient to only reload new chunks
   }
 }

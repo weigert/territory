@@ -1,8 +1,7 @@
-enum BiomeType{
-  BIOME_VOID = 0,
-  BIOME_DESERT = 1,
-  BIOME_FOREST = 2,
-};
+//
+#pragma once
+#include "../forward/chunk.fwd.h"
+#include "../forward/octree.fwd.h"
 
 class Chunk{
 public:

@@ -2,33 +2,48 @@
 #include "territory.h"
 
 /*
-Need a logger class that logs errors and stuff.
+I need to make loading a vector of chunks quick!
+Just like the editBuffer.
+Do this for the player, then when it's ultra fast...
+Maybe I can specify a list of coordinates for a bot and see if they want to pathfind through a construct of chunks somehow...
 */
+
+
+
 
 //Main Function
 int main( int argc, char* args[] ) {
+	//Logger
+	Logger _log;
 
 	//Handle the Console Arguments
 	if(argc<2){
-		std::cout<<"[Territory] Error >>Missing World Name"<<std::endl;
-		std::cout<<"Usage: ./territory [worldname]"<<std::endl;
+		_log.error("Missing Filename.");
 		return 0;
 	}
 
-	//Setup the World, View, events
+	//Load / Generate a World
 	World world((std::string)args[1]);
+
+	//Add a Renderer
 	View view;
+
+	//Add an Eventhandler
 	eventHandler events;
 
 	//Initialize the View
 	if(!view.Init()){
-		std::cout<<"View could not be initialized."<<std::endl;
+		_log.error("View could not be initialized.");
 		return 0;
 	}
 
+	//Add a Population
+	Player player;
+	Population population( world );
+
 	//Generate the World and Chunks
-	world.bufferChunks();
-	view.loadChunkModels(world);
+	world.bufferChunks( player );
+	view.loadChunkModels( world , player);
 
 	//Game Loop
 	bool quit = false;
@@ -40,10 +55,16 @@ int main( int argc, char* args[] ) {
 	while(!quit){
 		//Handle User Input
 		events.input(&e, quit);
-		events.update(world, view);
+		events.update(world, player, population, view);
+
+		//Update the Population
+		if(SDL_GetTicks()%10 == 0){
+			population.update(world);
+		}
+
 
 		//Render the View
-		view.render(world);
+		view.render(world, player, population);
 
 		//view.calcFPS();
 	}

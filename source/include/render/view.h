@@ -1,3 +1,14 @@
+#pragma once
+#include "../forward/view.fwd.h"
+//Dependencies
+#include "../forward/world.fwd.h"
+#include "../forward/sprite.fwd.h"
+#include "../forward/shader.fwd.h"
+#include "../forward/model.fwd.h"
+#include "../forward/population.fwd.h"
+#include "../forward/bot.fwd.h"
+#include "../forward/player.fwd.h"
+
 class View{
   public:
     //Initialization
@@ -7,30 +18,24 @@ class View{
     SDL_GLContext gContext;
     const unsigned int SCREEN_WIDTH = 1200, SCREEN_HEIGHT = 800;
     const unsigned int SHADOW_WIDTH = 2000, SHADOW_HEIGHT = 2000;
+
+    //LOD Handling
+    bool switchLOD(World &world, Player &player, int _LOD);
+    int LOD = 4;
     float zoom = 0.01;
     float zoomInc = 0.001;
-    int LOD = 4;
     bool updateLOD = false;
-    float rotation = 0.0;
-    int renderDistance = 1;
-    bool mapView = false;
-    bool debug = false;
 
     //Loaded Chunk Models
+    void loadChunkModels(World &world, Player player);  //When chunks are displayed
     std::vector<Model> models;
-    void loadChunkModels(World &world);  //When chunks are displayed
 
     // Shadow Textures in Here
+    bool setupShadow();
     GLuint depthMap;
     GLuint depthMapFBO;
-
-    //Thingy
     GLuint depthVAO[1];
     GLuint depthVBO[2];
-
-    bool setupShadow();
-
-    Sprite sprite;
 
     //Shaders
     void setupShaders();
@@ -40,11 +45,11 @@ class View{
     Shader spriteShader;
 
     //Render the entire drawing pipeline
-    void render(World world);
+    void render(World world, Player player, Population population);
     void renderScene();
     void renderShadow();
     void renderDepth();
-    void renderSprite();
+    void renderSprites(Player player, Population population);
 
     //View Projector
     glm::mat4 camera = glm::lookAt(glm::vec3(10,12,10), glm::vec3(0,2,0), glm::vec3(0,1,0));
@@ -54,6 +59,7 @@ class View{
     glm::vec3 lightPos = glm::vec3(3.0f, 6.0f, 2.0f);
     glm::vec3 lightCol = glm::vec3(1.0f, 1.0f, 0.9f);
     //glm::vec3 lightCol = glm::vec3(0.15f, 0.05f, 0.15f); //Purple
+    float rotation = 0.0;
 
     glm::mat4 depthModelMatrix = glm::mat4(1.0);
     glm::mat4 depthProjection = glm::ortho<float>(-60,60,-60,60,-30,100);

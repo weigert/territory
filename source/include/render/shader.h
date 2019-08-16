@@ -1,3 +1,8 @@
+#pragma once
+#include "../forward/shader.fwd.h"
+//Depdendencies
+
+
 class Shader{
   public:
     //Variables

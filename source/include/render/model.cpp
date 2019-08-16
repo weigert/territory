@@ -1,4 +1,6 @@
 #include "model.h"
+//Dependencies
+#include "../world/chunk.h"
 
 void Model::setup(){
   //Reset the Model Matrix

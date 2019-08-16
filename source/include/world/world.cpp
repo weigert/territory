@@ -1,10 +1,122 @@
 //Include Header File
+//Dependencies
+#include "chunk.h"
+#include "octree.h"
+#include "../game/player.h"
 #include "world.h"
 
 /*
 ===================================================
           WORLD GENERATING FUNCTIONS
 ===================================================
+Proposed Pipeline:
+  -> Generate Blank Chunks
+
+  -> Generate Base Height-Map
+    -> Low lying areas, flat and! hilly
+    -> High lying areas, flat and! hilly
+
+  -> Add Geological Deposits based on elemental distribution maps in 3D!
+    -> Generate Perlin Maps for all Elements, then cluster to common minerals and rare stuff too!
+    -> Scale the perlin maps by the relative abundance of elements on earth for instance
+    -> Mineral Types Need: Brittleness, Solubility, Porosity,
+    -> This is still deterministic based on the perlin map!
+
+  -> Generate a Volcanism Map Randomly, with varying degrees of intensity in certain spots
+    -> Underground temperature field comes from volcanism
+    -> From this is derived a pressure field, which moves groundwater around
+    -> Groundwater is empty at first, but is filled later
+
+  -> Generate large bodies of water
+    -> Randomly pick minima on the map and grow them up
+    -> Sufficiently large volumes (i.e. > critical mass) are then filled
+    -> If it reaches the edge, it is flood-filled upto "sea-level" with salt-water
+
+  -> Alternatingly Perform:
+    -> Weather Cycle
+    -> Vegetation Cycle
+    -> Erosion Cycle
+
+  -> Weather Cycle (@ chunk-resolution):
+    -> Compute Wind-Speed Map
+      -> Slope of Land affects wind Speed
+      -> Plant Coverage hinders winds
+      -> Heavy wind dropping / rising in P / T very rapidly causes tornadoes?
+    -> Compute Humidity Map
+      -> Humidity is moved around by wind and diffuses
+      -> Bodies of Water add humidity in dependency of temp
+      -> Plants remove humidity from the air
+      -> Rain removes humidity from the air in dependency of temp
+      -> Snow removes humidity from the air
+      -> Evaporation lowers the water level of lakes
+    -> Compute Temperature Map
+      -> Air temperature is moved around by wind and diffuses
+      -> Sunlight adds Temperature
+      -> Plants block sunlight
+      -> Higher elevation has less temperature
+      -> Evaporation from water sources cools the temp
+      -> Temperature / sunlight will melt snow and ice
+    -> Compute Clouds
+      -> Temperature and Humidity give cloud-coverage
+      -> Critical Values then give rain vs. snow in some areas
+      -> Heavy rain causes lightning in hot areas
+      -> Clouds reflect sunlight
+
+  -> Vegation Cycle:
+    -> Plants have a feature vector for their desired weather values (wind / temp / humidity / elevation / sunlight, etc.)
+    -> Plants also have a vector of how they affect those values in turn (wind-blockage, sunlight blockage, soil retention)
+    -> Depending on the predictor vectors in a chunk, we can sample from a distribution of plants given by distance to the plant prototypes
+    -> Place the plants in appropriate locations near other plants of the same type on subsequent cycles
+
+  -> Erosion / Sedimenation Cycle
+    -> Water Erosion:
+      -> Rain spawns particles that move down the map at the steepest slope
+      -> Particles are eroded based on their solubility
+      -> Particles have a certain mass and certain amount of soil the can carry based on mass / speed
+      -> Deposited soil becomes dirt / mud
+      -> Steeper Slopes / Faster Speeds means more sediment capacity
+      -> Particles have inertia based on mass, which moves them along a direction
+      -> When particles (nearly) stop and they still have volume, they spawn an amount of water
+      -> Particles lose mass over time as they move over porous rock / soil
+
+      How does this make rivers as blocks though?
+        -> Track particle frequency of paths and the most frequent areas become rivers based on some width?
+        -> Particles inside rivers lose momentum much less?
+        -> Something like that (i.e. if they hit a body of water, they are propelled forward / lose inertia much less!!)
+
+    -> Glacial Erosion:
+      -> Snow deposits where it falls, lots of snow compacts to ice
+      -> Ice needs to move downhill and away from peaks of course, so you get nice exposed ridges!
+      -> Sunlight will melt snow and ice and spawn particles too
+      -> Ice will also move downhill slowly, leading to erosion based on rock brittleness
+      -> Large rock amounts will be broken off and placed into the ice
+      -> As the ice melts in lower / hotter regions, these large rocks are placed at the mouth of the glacier
+
+    -> Wind Erosion:
+      -> Based on wind-speeds particles are removed and made into a fine sand.
+      -> Sand and loose particles are moved around appropriately
+      -> Wind carry-capacity is dependent on the speed, as it drops, particles leave the wind.
+
+    -> Ground Water Cycle
+      -> Water from the particles of sedimentation will move into porous ground and add to the water amount
+      -> High pressure regions will move to low-pressure regions, based on rock porosity
+      -> Temperature increases the pressure
+      -> Underground pressure is given by the volcanism
+      -> Temperature /pressure above a critical amount will lead to geysering / dissolution of rock
+      -> Also leads to springs when water is moved to certain regions!
+
+    -> Erosion Cycle / Water / Soil Movement
+      -> Water also seeps into the ground when rain falls on flat areas that are porous
+      -> This leads to a larger amount of groundwater
+      -> Water underground flows to more porous areas
+      -> When pressure is above a certain value, you can get geyser formation
+      -> Otherwise groundwater can be moved upwards to natural springs
+      -> Once lakes are overfilled, they can spill over
+      -> Rivers and streams are created by tracking a drainage map over certain areas and growing it!
+      -> Fast winds can move loose soil and erode the sides of rock-faces it runs past.
+      -> Depending on wind-speed model will incentivize different erosion types
+      -> Glaciers move downhill and actively grind the mountain, brittle rocks will be moved by the glacier
+      -> Glaciers melt from sunlight and form strong rivers, they move large rocks down the mountain too
 */
 
 void World::generate(){
@@ -101,7 +213,7 @@ void World::generateFlat(){
 void World::generatePerlin(){
   //Perlin Noise Generator
   noise::module::Perlin perlin;
-  perlin.SetOctaveCount(12);
+  perlin.SetOctaveCount(10);
   perlin.SetFrequency(5);
   perlin.SetPersistence(0.5);
 
@@ -327,19 +439,54 @@ bool World::evaluateEditBuffer(){
   return true;
 }
 
+
+/*
+===================================================
+          MOVEMENT RELATED FUNCTIONS
+===================================================
+*/
+
+int World::moveWeight(BlockType _type){
+  switch(_type){
+    case BLOCK_AIR:
+      return 1;
+    case BLOCK_WATER:
+      return 5;
+    default:
+      return 10;
+  }
+}
+
+BlockType World::getBlock(glm::vec3 _pos){
+  //Get External and Internal Chunk Coordinates
+  glm::vec3 c = glm::floor(_pos/glm::vec3(chunkSize));
+  glm::vec3 p = glm::mod(_pos, glm::vec3(chunkSize));
+
+  //Load the Relevant Chunk
+  Chunk _chunk;
+  loadChunk(c, _chunk);
+
+  //Get the Element Inside the Chunk
+  return _chunk.data.getPosition(p, log2(chunkSize));
+}
+
+
+
+
+
 /*
 ===================================================
           FILE IO HANDLING FUNCTIONS
 ===================================================
 */
 
-void World::bufferChunks(){
+void World::bufferChunks(Player player){
   //Load / Reload all Visible Chunks
 
   //Non-Brute Force Method
   //Chunks that should be loaded
-  glm::vec3 a = chunkPos - renderDistance;
-  glm::vec3 b = chunkPos + renderDistance;
+  glm::vec3 a = player.chunkPos - player.renderDistance;
+  glm::vec3 b = player.chunkPos + player.renderDistance;
 
   //Can't exceed a certain size
   a = glm::clamp(a, glm::vec3(0), glm::vec3(worldSize-1, worldHeight-1, worldSize-1));
@@ -368,7 +515,7 @@ void World::bufferChunks(){
       //Check if the chunk was updated
       if(chunks[i].updated){
         //Save chunk to file
-        overwriteChunk(chunks[i].pos.x, chunks[i].pos.y, chunks[i].pos.z, chunks[i]);
+        //Add the updated stuff the the buffer and evaluate it
       }
       //Add the chunk to the erase pile
       remove.push(i);
@@ -390,11 +537,15 @@ void World::bufferChunks(){
     remove.pop();
   }
 
+  //Theoretically, we only need to load the file once.
+  //we can sort the load vector, then access the relevant chunks ONCE and close the file!
+  //Sort the editBuffer
+
   //Loop over the guys we want to load
   while(!load.empty()){
     //Make sure the vector we are trying to load is legit
     Chunk _chunk;
-    loadChunk(load.back().x, load.back().y, load.back().z, _chunk);
+    loadChunk(load.back(), _chunk);
     //Add the chunk
     chunks.push_back(_chunk);
     load.pop_back();
@@ -417,7 +568,7 @@ bool World::writeChunk(Chunk chunk){
   return true;
 }
 
-bool World::loadChunk(int i, int j, int k, Chunk &chunk){
+bool World::loadChunk(glm::vec3 _c, Chunk &chunk){
   //Get the Working Directory
   boost::filesystem::path data_dir(boost::filesystem::current_path());
   data_dir /= "save";
@@ -428,7 +579,7 @@ bool World::loadChunk(int i, int j, int k, Chunk &chunk){
   std::ifstream in(data_dir.string());
 
   //Skip the Lines
-  int n = i*worldSize*worldHeight+j*worldSize+k;
+  int n = _c.x*worldSize*worldHeight+_c.y*worldSize+_c.z;
   while(n>0){
     in.ignore(100000,'\n');
     n--;
@@ -438,10 +589,6 @@ bool World::loadChunk(int i, int j, int k, Chunk &chunk){
     boost::archive::text_iarchive ia(in);
     ia >> chunk;
   }
-  return true;
-}
-
-bool World::overwriteChunk(int i, int j, int k, Chunk chunk){
   return true;
 }
 
@@ -525,14 +672,7 @@ void serialize(Archive & ar, World & _world, const unsigned int version)
   ar & _world.chunkSize;
   ar & _world.worldSize;
   ar & _world.worldHeight;
-  ar & _world.playerPos.x;
-  ar & _world.playerPos.y;
-  ar & _world.playerPos.z;
-  ar & _world.chunkPos.x;
-  ar & _world.chunkPos.y;
-  ar & _world.chunkPos.z;
 }
-
 
 } // namespace serialization
 } // namespace boost

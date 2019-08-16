@@ -1,3 +1,8 @@
+#pragma once
+#include "../forward/model.fwd.h"
+//Dependencies
+#include "../forward/chunk.fwd.h"
+
 class Model{
 public:
   //Model Information
