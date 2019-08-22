@@ -30,7 +30,7 @@ Pathfinding:
 -> Maybe I should simulate some woodland creatures first....
 */
 
-Task::Task(std::string taskName, int taskBotID, bool (Task::*taskHandle)(World&, Population&, int (&)[10])){
+Task::Task(std::string taskName, int taskBotID, bool (Task::*taskHandle)(World&, Population&, State &_args)){
   name = taskName;
   botID = taskBotID;
   handle = taskHandle;
@@ -46,16 +46,14 @@ bool Task::perform(World &world, Population &population){
 }
 
 //Special Functions
-bool Task::Dummy(World &world, Population &population, int (&arguments)[10]){
+bool Task::Dummy(World &world, Population &population, State &_args){
   //Set Intial Tasks
   if(initFlag){
     //Construct Tasks
     //Add Arguments
     //Push unto task queue
     Task walk("Follow Player", botID, &Task::walk);
-    walk.args[0] = rand()%world.worldSize*world.chunkSize;
-    walk.args[1] = 1;
-    walk.args[2] = rand()%world.worldSize*world.chunkSize;
+    walk.args.pos = glm::vec3(rand()%world.worldSize*world.chunkSize,1,rand()%world.worldSize*world.chunkSize);
     queue.push(walk);
 
     initFlag = false;
@@ -82,7 +80,7 @@ bool Task::Dummy(World &world, Population &population, int (&arguments)[10]){
 }
 
 //Primitives (Single Step)
-bool Task::step(World &world, Population &population, int (&arguments)[10]){
+bool Task::step(World &world, Population &population, State &_args){
   /*
   Task: Step
 
@@ -102,15 +100,15 @@ bool Task::step(World &world, Population &population, int (&arguments)[10]){
   //std::cout<<"A:"<<population.bots[botID].path.empty()<<std::endl;
   if(population.bots[botID].path.empty()){
     //Calculate a Path Here.
-    population.bots[botID].path = calculatePath(botID, glm::vec3(arguments[0], arguments[1], arguments[2]), population, world);
+    population.bots[botID].path = calculatePath(botID, _args.pos, population, world);
     //If the Path is still empty
     if(population.bots[botID].path.empty()){
       //No valid Path!
 
       //if(debug){std::cout<<botID<<": No valid path."<<std::endl;}
-
+/*
       //Make this location unreachable if it is in memory and reachable
-      glm::vec3 point = glm::vec3(arguments[0], arguments[1], arguments[2]);
+      glm::vec3 point = _args.pos;
       Memory query;
       query.location = point;
       query.queryable[2] = true;
@@ -122,7 +120,7 @@ bool Task::step(World &world, Population &population, int (&arguments)[10]){
 
       //Overwrite any specified points in memory in all memories matching all points in query
       population.bots[botID].updateMemory(query, true, memory);
-
+*/
       return true;
     }
     //We now have a valid path.
@@ -152,7 +150,7 @@ bool Task::step(World &world, Population &population, int (&arguments)[10]){
   return false;
 }
 
-bool Task::consume(World &world, Population &population, int (&arguments)[10]){
+bool Task::consume(World &world, Population &population, State &_args){
 
   /*
   population.bots[botID].carry = 0;
@@ -161,13 +159,13 @@ bool Task::consume(World &world, Population &population, int (&arguments)[10]){
   return true;
 }
 
-bool Task::move(World &world, Population &population, int (&arguments)[10]){
+bool Task::move(World &world, Population &population, State &_args){
   //Set the Bot Position
-  population.bots[botID].pos = glm::vec3(arguments[0], arguments[1], arguments[2]);
+  population.bots[botID].pos = _args.pos;
   return true;
 }
 
-bool Task::take(World &world, Population &population, int (&arguments)[10]){
+bool Task::take(World &world, Population &population, State &_args){
   /*
   Task: Take
 
@@ -202,13 +200,13 @@ bool Task::take(World &world, Population &population, int (&arguments)[10]){
   return true;
 }
 
-bool Task::swap(World &world, Population &population, int (&arguments)[10]){
+bool Task::swap(World &world, Population &population, State &_args){
   //Pickup what's on the ground, put what's in your hand on the ground
 
   return true;
 }
 
-bool Task::store(World &world, Population &population, int (&arguments)[10]){
+bool Task::store(World &world, Population &population, State &_args){
   //Pick up the item at the location
 
   //Whatever you're carrying, put it in your inventory!
@@ -217,9 +215,9 @@ bool Task::store(World &world, Population &population, int (&arguments)[10]){
   return true;
 }
 
-bool Task::look(World &world, Population &population, int (&arguments)[10]){
+bool Task::look(World &world, Population &population, State &_args){
   //Parse Arguments
-  int rad = arguments[0]; //View Square Size
+  int rad = _args.dist; //View Square Size
 
   //Character Searches on Grid and Adds what it finds.
   for(int i = population.bots[botID].pos.x-rad; i <= population.bots[botID].pos.x+rad; i++){
@@ -233,10 +231,10 @@ bool Task::look(World &world, Population &population, int (&arguments)[10]){
   return true;
 }
 
-bool Task::wait(World &world, Population &population, int (&arguments)[10]){
+bool Task::wait(World &world, Population &population, State &_args){
   //Wait
-  while(arguments[1] > 0){
-    arguments[1]--;
+  while(_args.time > 0){
+    _args.time--;
     return false;
   }
   //Finished Waiting
@@ -244,7 +242,7 @@ bool Task::wait(World &world, Population &population, int (&arguments)[10]){
 }
 
 //Secondaries (Multi-Step, Multi-Task)
-bool Task::search(World &world, Population &population, int (&arguments)[10]){
+bool Task::search(World &world, Population &population, State &_args){
   //Arguments:
   //id
   //item
@@ -326,7 +324,7 @@ bool Task::search(World &world, Population &population, int (&arguments)[10]){
   return false;
 }
 
-bool Task::forage(World &world, Population &population, int (&arguments)[10]){
+bool Task::forage(World &world, Population &population, State &_args){
 /*
   //Task Starting from the Beginning
   if(initFlag){
@@ -378,7 +376,7 @@ bool Task::forage(World &world, Population &population, int (&arguments)[10]){
   return true;
 }
 
-bool Task::walk(World &world, Population &population, int (&arguments)[10]){
+bool Task::walk(World &world, Population &population, State &_args){
   /*
   //Check if they are in an occupied space
   if(!world.getPassable(population.bots[botID].pos[0], population.bots[botID].pos[1], population.bots[botID].fly)){
@@ -391,7 +389,7 @@ bool Task::walk(World &world, Population &population, int (&arguments)[10]){
     return false;
   }*/
 
-  glm::vec3 goal = glm::vec3(arguments[0],arguments[1],arguments[2]);
+  glm::vec3 goal = _args.pos;
 
   //Check If The Goal Position is Free
   if(world.getBlock(goal) != BLOCK_AIR){
@@ -410,15 +408,13 @@ bool Task::walk(World &world, Population &population, int (&arguments)[10]){
   }
 
   Task step("Step", botID, &Task::step);
-  step.args[0] = goal.x;
-  step.args[1] = goal.y;
-  step.args[2] = goal.z;
+  step.args.pos = goal;
 
   if(!step.perform(world, population)){return false;}
   return true;
 }
 
-bool Task::idle(World &world, Population &population, int (&arguments)[10]){
+bool Task::idle(World &world, Population &population, State &_args){
   //if(debug){std::cout<<"Bot with ID: "<<botID<<" idling."<<std::endl;}
 
 /*

@@ -6,40 +6,103 @@
 #include "mandate.h"
 
 //Constructor
-Mandate::Mandate(short _issuer, short _bot, short _group, const bool _repeat, Task *_request, short _urgency){
+Mandate::Mandate(short _issuer, short _bot, short _group, const bool _repeat, short _urgency){
   //Set the Quantities
   issuer = _issuer;
   bot = _bot;
   group = _group;
   repeat = _repeat;
-  request = _request;
   urgency = _urgency;
   viability = 0;
-  //The goal and current states will thereby be identical.
-  //The learning effect will be null, unless a goal state is added.
-}
-
-void Mandate::initStates(World &world, Population &population, int bot){
-    //Add the current and shit here
-    curr.retrieveState(world, population, bot);
-    goal.retrieveState(world, population, bot);
 }
 
 //Retreive the suggestions
 void Mandate::getSuggest(){
   //Mastertask to hold found tasks
-  Task *masterTask = new Task("Execute Mandate.", (int)bot, &Task::Dummy);
-
   //Interpret the Goal State
   /*
-  1. Identify unsatisfied conditions (now - goal)
-  2. Create an order of precedence for state variables
-  3. For every unsatisfied condition in precedence order:
-    1. Search subconscious for tasks that either make dGoal of that state 0, or would change it towards (using a cost function minimizer)
-    2. Add that dCurr to the current state, and reevaluate the precedence order (incase tasks need to be interjected)
-    3. Add the associated task with correct metadata to the list
-    4. Repeat until the difference to goal disappears, or until 10 tasks are allocated.
-  4. Add the requested task at the and, so all preconditions are fulfilled.
+  If the responsible person for the mandate is not you
+    -> If they are lower in the group hierarchy, delegate
+    -> If they are unknown / etc, delete it
+    -> If they are somewhere above, make a request
+
+  If the bot can't figure a list of task, getSuggest fails.
+  It has a choice between deleting the mandate or asking for people how to do it.
+  Or delegating.
+
+  If the issuer is not the same bot, then at the end of the task list we will add a "report result" task to the bot, so that they can share the experience of what happened did, and the other bot can associate it with their delegation task.
+  */
+
+  /*
+  In our memory, what will we have saved?
+  -> Do we remember task metadata?
+  -> Do we remember the goal state or the current state, or just the effect?
+
+  Simple Example:
+    Get Axe -> Chop Wood -> Sell Wood
+
+    Goal State:
+      -> Position
+
+    How do we walk to the fucking position?
+      By taking the goal state and plugging it directly into a walking action
+
+    How do we know the walking action will succeed for this specific goal state?
+      By remembering that
+
+    We need to iterate:
+    TaskMeta is a function of the memories and the goal state
+      TaskMeta = (Memory, Goal)
+
+
+
+
+
+    Mandate{
+      absolute_goal
+      relative_goal
+
+      ternary_indicator_vector[]
+    }
+
+    Memory{
+      relative_to_start
+      relative_to_end
+    }
+
+    For every item in ternary indicator vector, if it is -1, it is irrelevant
+
+    if it is zero, we observe it as a relative requirement
+    if it is one, we observe it as an absolute requirement
+
+    A lot of tasks take absolute values as their input.
+
+
+
+
+
+    In our memory, we then have:
+    -> What was the difference to our starting state
+    -> The difference to the desired end state
+    ->
+
+    -> What is our Mandate?
+    -> What is in our Memory?
+    -> How do we reconstruct a list of tasks?
+
+
+    Goal -> deltaGold += 1
+    To solve this, the bot searches for memories where he remembers deltaGold being +1
+    Then he has a task, but lacks context:
+      -> What was the task metadata?
+      -> What were the previous requirements?
+
+
+  1. Goal State is Either Differential or Absolute, not Both!
+  2. What if two different aspects are differential / absolute?
+
+    e.g. time is differential, so therefore wait
+  3.
   */
 
 /*
@@ -55,10 +118,10 @@ Examples we want: Find food, eat.
 */
 
   //Requested Task is added at the end
-  masterTask->queue.push(*request);
+//  masterTask->queue.push(*request);
 
   //Finally, the suggested task is the mastertask.
-  suggest = masterTask;
+  //suggest = masterTask;
 
 
   /*
@@ -70,22 +133,8 @@ Examples we want: Find food, eat.
   */
 }
 
-//Set the Goal State so it is ready for saving.
-void Mandate::setGoal(World &world, Population &population, int bot){
-  //Get the now state
-  State now;
-  now.retrieveState(world, population, bot);
 
-  //Overloaded Operators Required
-  dCurr = now - curr;
-  dGoal = goal - now;
-
-  //Now Update Goal and Curr to Reflect
-  curr = now; //Curr becomes what it ended up as
-}
-
-
-short Mandate::getViability(){
+void Mandate::getViability(){
   //This returns the probability of executing a task chain
   //Multiply with some property of the bot.
 /*
@@ -99,8 +148,13 @@ short Mandate::getViability(){
       This is the score.
 
 */
+  //For now, shorter list is more viable
+  //Otherwise, add the times for each task
+  //
+
+
   //Put some condition here
-  return -1;
+  viability = 0;
 }
 
 bool Mandate::completed(World &world, Population &population, int bot){

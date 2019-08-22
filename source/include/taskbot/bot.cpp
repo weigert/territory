@@ -47,8 +47,6 @@ void Bot::executeTask(World &world, Population &population){
     interrupt = false;
   }
 
-  //Here we should do an animation frame
-
   //Execute Current Task, upon success overwrite.
   if((current->perform)(world, population)){
     //Task is successful, we can reevaluate our mandates.
@@ -60,17 +58,13 @@ void Bot::evaluateMandates(World &world, Population &population){
   //This should account for fulfilled mandate goals!!
   //Check for No Mandates (this should be done somewhere else)
   if(mandates.empty()){
-    //The bot should never have no mandates. It will die at this point.
-    //Or we load a set of standard mandates that is specific to the bot's species
-
-
     //We construct a new mandate and add it to our stack
     //This should be some general species initializer.
-    Task *masterTask = new Task("Do Ant Stuff.", ID, &Task::Dummy);
+    Task *masterTask = new Task("Do Dumb Stuff.", ID, &Task::Dummy);
 
     //Construct a new blank species mandate
-    Mandate *mandate = new Mandate(ID, ID, 0, true, masterTask, 1);
-    (mandate->initStates)(world, population, ID);
+    Mandate *mandate = new Mandate(ID, ID, 0, true, 1);
+    mandate->suggest = masterTask;
     mandates.push_back(*mandate);
   }
 
@@ -82,11 +76,6 @@ void Bot::evaluateMandates(World &world, Population &population){
     //Check for complete condition
     if(mandates[i].completed(world, population, ID)){
 
-      //Improve our mandate information
-      mandates[i].setGoal(world, population, ID);
-      //Add the Mandate Result to our subconscious
-      addSubcon(mandates[i]);
-
       //Check if this mandate should be repeated
       if(!mandates[i].repeat){
         //Remove Mandate from Queue
@@ -96,27 +85,14 @@ void Bot::evaluateMandates(World &world, Population &population){
 
     //Get the Suggested Task for every mandate.
     mandates[i].getSuggest();
+    mandates[i].getViability();
 
     //Calculate the viability
-    if(mandates[i].getViability() < tempViab){
+    if(mandates[i].viability > tempViab){
       //For a lower viability, change our current executing task
       current = mandates[i].suggest;
-      tempViab = mandates[i].getViability();
-
-      //Update the Mandate Start State before executing task
-      //This makes cause and effect more coherent!
-      mandates[i].curr.retrieveState(world, population, ID);
+      tempViab = mandates[i].viability;
     }
-  }
-}
-
-void Bot::addSubcon(Mandate experience){
-  //Add the Experience to Subconscious
-  subconsc.push_front( experience );
-
-  //Cap the Queue
-  if(subconsc.size() > subconSize){
-    subconsc.pop_back();
   }
 }
 
@@ -163,14 +139,13 @@ std::deque<Memory> Bot::recallMemories(Memory &query, bool all){
 void Bot::addMemory(World world, glm::vec3 _pos){
   //Create new memory
   Memory memory;
-  memory.location = _pos;
-  memory.object = world.getBlock(memory.location);
-  memory.task = task;
-  memory.reachable = (memory.object == BLOCK_AIR)?true:false;
+  memory.state.pos = _pos;
+  memory.state.block = world.getBlock(memory.state.pos);
+  memory.state.task = task;
+  memory.state.reachable = (memory.state.block == BLOCK_AIR)?true:false;
 
   Memory query;
-  query.location = _pos;
-  query.queryable[2] = true;
+  query.state.pos = _pos;
 
   //Overwrite any locations we already have a memory of.
   //Ideally, if an object disappears, and we look at that location,

@@ -62,7 +62,6 @@ int main( int argc, char* args[] ) {
 			population.update(world);
 		}
 
-
 		//Render the View
 		view.render(world, player, population);
 

@@ -9,7 +9,10 @@ void Population::addBot(World world){
   Bot bot(bots.size());
   bot.setupSprite();
   bot.pos = glm::vec3(88, 1, 88);
+  Task *masterTask = new Task("Do Dumb Stuff.", bot.ID, &Task::Dummy);
+  bot.current = masterTask;
   bots.push_back(bot);
+
   //Evaluate its mandates
   bots.back().evaluateMandates(world, *this);
 }

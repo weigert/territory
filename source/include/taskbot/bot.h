@@ -39,8 +39,6 @@ class Bot{
 
     //Subconscious
     std::deque<Mandate> mandates; //Mandates Memory
-    std::deque<Mandate> subconsc; //Subconscious Task Memory
-    void addSubcon(Mandate experience);
     void evaluateMandates(World &world, Population &population);
 
     //Memories / Brain
