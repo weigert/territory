@@ -33,6 +33,7 @@ enum BlockType{
 #include <noise/noise.h>
 #include <vector>
 #include <deque>
+#include <unordered_map>
 
 //File / General IO
 #include <iostream>

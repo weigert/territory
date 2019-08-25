@@ -42,7 +42,12 @@ bool Task::perform(World &world, Population &population){
   //Change the Name and Execute the Task
   population.bots[botID].task = name;
 
-  return (*this.*handle)(world, population, args);
+  if(population.bots[botID].sprite.doAnimationFrame()){
+    //Return what happens after the task executes
+    population.bots[botID].sprite.setAnimation(0);
+    return (*this.*handle)(world, population, args);
+  }
+  return false;
 }
 
 //Special Functions
@@ -53,9 +58,8 @@ bool Task::Dummy(World &world, Population &population, State &_args){
     //Add Arguments
     //Push unto task queue
     Task walk("Follow Player", botID, &Task::walk);
-    walk.args.pos = glm::vec3(rand()%world.worldSize*world.chunkSize,1,rand()%world.worldSize*world.chunkSize);
+    walk.args.pos = glm::vec3(rand()%(world.worldSize*world.chunkSize),1,rand()%(world.worldSize*world.chunkSize));
     queue.push(walk);
-
     initFlag = false;
   }
 
@@ -106,21 +110,19 @@ bool Task::step(World &world, Population &population, State &_args){
       //No valid Path!
 
       //if(debug){std::cout<<botID<<": No valid path."<<std::endl;}
-/*
+
       //Make this location unreachable if it is in memory and reachable
       glm::vec3 point = _args.pos;
       Memory query;
-      query.location = point;
-      query.queryable[2] = true;
+      query.state.pos = point;
 
       //Overwrite Memory, which is unreachable
       Memory memory;
-      memory.reachable = false;
-      memory.queryable[3] = true;
+      memory.state.reachable = false;
 
       //Overwrite any specified points in memory in all memories matching all points in query
       population.bots[botID].updateMemory(query, true, memory);
-*/
+
       return true;
     }
     //We now have a valid path.
@@ -142,76 +144,30 @@ bool Task::step(World &world, Population &population, State &_args){
     //Otherwise we can indeed step there.
 
   }*/
+  Task move("Move to Position", botID, &Task::move);
+  move.args.pos = population.bots[botID].path.back();
+
+  //Set the Animation
+  if(initFlag){
+    population.bots[botID].sprite.setAnimation(1);
+    population.bots[botID].sprite.animation.translate = glm::vec3(move.args.pos - population.bots[botID].pos)/glm::vec3(4);
+    initFlag = false;
+  }
+
+  //The move is always successful
+  if(move.perform(world, population)){
+    //Remove that path element
+    population.bots[botID].path.pop_back();
+    return true;
+  }
 
   //We now have a valid path. Take a step along that path.
-  population.bots[botID].pos = population.bots[botID].path.back();
-  population.bots[botID].path.pop_back();
-
   return false;
 }
 
-bool Task::consume(World &world, Population &population, State &_args){
-
-  /*
-  population.bots[botID].carry = 0;
-  */
-
-  return true;
-}
-
 bool Task::move(World &world, Population &population, State &_args){
-  //Set the Bot Position
+  //Set the bots position
   population.bots[botID].pos = _args.pos;
-  return true;
-}
-
-bool Task::take(World &world, Population &population, State &_args){
-  /*
-  Task: Take
-
-  Description:
-    Pick up an item at the current location with error handling.
-    If somebody else picks up an item in the same tick we just saw, we will wait a tick.
-    Otherwise we will pick up the item.
-
-  Expansion:
-    Specify the direction where the character should look, and maybe an item they should search if its a pile
-  */
-
-  /*
-  if(initFlag){
-    //Add a Swap Task
-    Task swap("Swap Item", botID, &Task::swap);
-    //Add a Wait Task (1 Tick)
-    Task wait("Swap Item", botID, &Task::wait);
-    wait.args[0] = 1;
-
-    //Check if we are looking at air - then wait one tick.
-    if(world.fill[population.bots[botID].pos[0]][population.bots[botID].pos[1]] == 0){
-      wait.perform(world, population);
-      return true;
-    }
-    //Otherwise perform the Swap Task DIRECTLY
-    swap.perform(world, population);
-    return true;
-  }*/
-
-  //Queue is Empty
-  return true;
-}
-
-bool Task::swap(World &world, Population &population, State &_args){
-  //Pickup what's on the ground, put what's in your hand on the ground
-
-  return true;
-}
-
-bool Task::store(World &world, Population &population, State &_args){
-  //Pick up the item at the location
-
-  //Whatever you're carrying, put it in your inventory!
-
-
   return true;
 }
 
@@ -377,24 +333,22 @@ bool Task::forage(World &world, Population &population, State &_args){
 }
 
 bool Task::walk(World &world, Population &population, State &_args){
-  /*
-  //Check if they are in an occupied space
-  if(!world.getPassable(population.bots[botID].pos[0], population.bots[botID].pos[1], population.bots[botID].fly)){
-    //Bot is in an occupied Space, move them to the colony home.
-    population.bots[botID].pos[0] = rand()%100;
-    population.bots[botID].pos[1] = rand()%100;
-    //Log This
-    if(debug){std::cout<<"Bot with ID:"<<botID<<" was in occupied space. Shifted position."<<std::endl;}
-    //Repeat this Task next tick
-    return false;
-  }*/
-
+  //Goal Position
   glm::vec3 goal = _args.pos;
+
+  /*
+  What happens if this task is run every tick? Does it check if bot passes through??
+  How do we do this??
+  */
+
+  //Check if bot is outside position or inside
+  //Check if Goal is outside the position or inside
+
+  //If Goal and Start are outside
+    //Simply teleport + cooldown
 
   //Check If The Goal Position is Free
   if(world.getBlock(goal) != BLOCK_AIR){
-    //Log this
-    std::cout<<"Goal position for bot with ID: "<<botID<<" is occupied."<<std::endl;
     //Terminate this Task
     return true;
   }
@@ -402,16 +356,78 @@ bool Task::walk(World &world, Population &population, State &_args){
   //Check if we're already there
   if(population.bots[botID].pos == goal){
     //Log this
-    std::cout<<"Bot with ID: "<<botID<<" - Arrived At: x="<<goal.x<<", y="<<goal.y<<"."<<std::endl;
+    //std::cout<<"Bot with ID: "<<botID<<" - Arrived At: x="<<goal.x<<", y="<<goal.y<<"."<<std::endl;
     //Terminate the Task
     return true;
   }
 
-  Task step("Step", botID, &Task::step);
-  step.args.pos = goal;
+  //Do the Stuff
+  if(queue.empty()){
+    //Setup some tasks
+    Task step("Step", botID, &Task::step);
+    step.args.pos = goal;
+    queue.push(step);
 
-  if(!step.perform(world, population)){return false;}
+    initFlag = false;
+  }
+
+  //Only perform the queue as specified!
+  if(!queue.empty()){
+    //Get the Top Task
+    Task newtask = queue.top();
+    queue.pop();
+
+    //If our new Task is not performed successfully
+    if(!newtask.perform(world, population)){
+      queue.push(newtask);
+      return false;
+    }
+    //If it was successful, we leave it off
+    return false;
+  }
+
+  //Return Case for Mastertask
   return true;
+
+  /*
+  glm::vec3 start = population.bots[botID].pos;
+
+  //Replace Formally with viewdistance.
+  //This needs the player's position.
+
+  glm::vec3 a = glm::floor(start/glm::vec3(world.chunkSize)) - glm::vec3(1,2,1);
+  glm::vec3 b = glm::floor(start/glm::vec3(world.chunkSize)) + glm::vec3(1,2,1);
+
+  //Can't exceed a certain size
+  a = glm::clamp(a, glm::vec3(0), glm::vec3(world.worldSize-1, world.worldHeight-1, world.worldSize-1));
+  b = glm::clamp(b, glm::vec3(0), glm::vec3(world.worldSize-1, world.worldHeight-1, world.worldSize-1));
+
+  if(glm::any(glm::lessThan(start, a)) || glm::any(glm::greaterThan(start, b))){
+    //Goal is outside
+    std::cout<<"Start is outside distance"<<std::endl;
+  }
+
+  if(glm::any(glm::lessThan(goal, a)) || glm::any(glm::greaterThan(goal, b))){
+    //Goal is outside
+    std::cout<<"Goal is outside distance"<<std::endl;
+  }*/
+
+  /*
+  If the goal is outside the field, cut the goal path, to that edge point
+  sliced = true;
+
+  This way we can chack if bots are coming in or leaving or what.
+
+  Try to find any valid path in that general direction that works, i.e. slice it
+  Walk to that position
+  If the player moves, this is recalculated every single frame, doesn't matter.
+  If they are at that position, then they immediately teleport to the location and wait there for the remaining manhattan distance.
+
+  If they bot is outside the area, then they should wait the manhattan distance to the nearest point in the frame
+  Then they should teleport immediately in and walk to the designated position.
+
+  If they are out and the place is out, they just cooldown then teleport
+  */
 }
 
 bool Task::idle(World &world, Population &population, State &_args){

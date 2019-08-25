@@ -30,8 +30,8 @@ using namespace std;
 
 int GetMap(World &world, int x, int y, int z)
 {
-  return 1;
-  //return world.moveWeight(world.getBlock(glm::vec3(x,y,z)));
+  //Get the Element we Need
+  return world.moveWeight(world.getBlock(glm::vec3(x,y,z)));
 
   //This needs to be fixed, as bots currently can't see around themselves, i.e. file access is sloooow!
 }
@@ -134,11 +134,11 @@ bool MapSearchNode::GetSuccessors(World &world, AStarSearch<MapSearchNode> *asta
 		astarsearch->AddSuccessor( NewNode );
 	}
 
-	if( (GetMap(world, x, y-1, z) < 9)
+	if( (GetMap(world, x, y, z-1) < 9)
 		&& !((parent_x == x) && (parent_y == y-1) && (parent_z == z))
 	  )
 	{
-		NewNode = MapSearchNode( x, y-1 , z);
+		NewNode = MapSearchNode( x, y , z-1);
 		astarsearch->AddSuccessor( NewNode );
 	}
 
@@ -151,15 +151,15 @@ bool MapSearchNode::GetSuccessors(World &world, AStarSearch<MapSearchNode> *asta
 	}
 
 
-	if( (GetMap(world, x, y+1, z ) < 9)
+	if( (GetMap(world, x, y, z+1 ) < 9)
 		&& !((parent_x == x) && (parent_y == y+1) && (parent_z == z))
 		)
 	{
-		NewNode = MapSearchNode( x, y+1, z );
+		NewNode = MapSearchNode( x, y, z+1 );
 		astarsearch->AddSuccessor( NewNode );
 	}
 
-//Z Stuff
+//Y Stuff
   if( (GetMap(world, x, y+1, z+1 ) < 9)
 		&& !((parent_x == x) && (parent_y == y+1) && (parent_z == z+1))
 		)
@@ -194,37 +194,37 @@ bool MapSearchNode::GetSuccessors(World &world, AStarSearch<MapSearchNode> *asta
     astarsearch->AddSuccessor( NewNode );
   }
 
-  if( (GetMap(world, x+1, y, z+1 ) < 9)
+  if( (GetMap(world, x+1, y+1, z ) < 9)
 		&& !((parent_x == x+1) && (parent_y == y) && (parent_z == z+1))
 		)
 	{
-		NewNode = MapSearchNode( x+1, y, z+1 );
+		NewNode = MapSearchNode( x+1, y+1, z );
 		astarsearch->AddSuccessor( NewNode );
 	}
 
 
-  if( (GetMap(world, x+1, y, z-1 ) < 9)
+  if( (GetMap(world, x+1, y-1, z ) < 9)
     && !((parent_x == x+1) && (parent_y == y) && (parent_z == z-1))
     )
   {
-    NewNode = MapSearchNode( x+1, y, z-1 );
+    NewNode = MapSearchNode( x+1, y-1, z );
     astarsearch->AddSuccessor( NewNode );
   }
 
-  if( (GetMap(world, x-1, y, z+1 ) < 9)
+  if( (GetMap(world, x-1, y+1, z ) < 9)
 		&& !((parent_x == x-1) && (parent_y == y) && (parent_z == z+1))
 		)
 	{
-		NewNode = MapSearchNode( x-1, y, z+1 );
+		NewNode = MapSearchNode( x-1, y+1, z );
 		astarsearch->AddSuccessor( NewNode );
 	}
 
 
-  if( (GetMap(world, x-1, y, z-1 ) < 9)
+  if( (GetMap(world, x-1, y-1, z ) < 9)
     && !((parent_x == x-1) && (parent_y == y) && (parent_z == z-1))
     )
   {
-    NewNode = MapSearchNode( x-1, y, z-1 );
+    NewNode = MapSearchNode( x-1, y-1, z );
     astarsearch->AddSuccessor( NewNode );
   }
 

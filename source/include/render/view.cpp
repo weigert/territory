@@ -122,12 +122,11 @@ void View::loadChunkModels(World &world, Player player){
     }
 
     //Old chunks need to be translated too. Translate according to player position.
-    glm::vec3 axis = (world.chunks[i].pos-player.chunkPos)*(float)world.chunkSize-player.playerPos;
+    glm::vec3 axis = (world.chunks[i].pos)*(float)world.chunkSize-viewPos;
 
     //Translate the guy
     models[i].reset();
     models[i].translate(axis);
-
   }
   //Make sure updateLOD is false
   updateLOD = false;
@@ -210,16 +209,29 @@ void View::renderSprites(Player player, Population population){
   for(unsigned int i = 0; i < population.bots.size(); i++){
     //Here we should check if the sprite should even be rendered.
 
+    //I need to actually check if the sprite is outside the renderdistance!
+    if(glm::any(glm::greaterThan(glm::abs(glm::floor(population.bots[i].pos/glm::vec3(16))-glm::floor(viewPos/glm::vec3(16))), renderDistance))){
+      //Skip this sprite
+      continue;
+    }
+
     //Bind the Appropriate Texture and add it to the shader as a uniform
     glBindTexture(GL_TEXTURE_2D, population.bots[i].sprite.texture);
     spriteShader.setInt("spriteTexture", 0);
 
     //Set the Position of the Sprite relative to the player
-    population.bots[i].sprite.resetModel();
-    population.bots[i].sprite.model = glm::translate(population.bots[i].sprite.model, population.bots[i].pos - player.chunkPos*glm::vec3(16)-player.playerPos);
+    glm::vec3 a = population.bots[i].pos-viewPos;
+    population.bots[i].sprite.model = glm::translate(population.bots[i].sprite.model, glm::vec3(a));
+    glm::vec3 axis = glm::vec3(0.0f, 1.0f, 0.0f);
+    population.bots[i].sprite.model = glm::rotate(population.bots[i].sprite.model, glm::radians(45.0f), axis);
     population.bots[i].sprite.model = glm::rotate(population.bots[i].sprite.model, glm::radians(-rotation), glm::vec3(0, 1, 0));
-
     spriteShader.setMat4("mvp", projection*camera*population.bots[i].sprite.model);
+
+    //The Matrix for Transforming the animation thingy
+    spriteShader.setFloat("nframe", (float)population.bots[i].sprite.animation.nframe);
+    spriteShader.setFloat("animation", (float)population.bots[i].sprite.animation.ID);
+    spriteShader.setFloat("width", (float)population.bots[i].sprite.animation.w);
+    spriteShader.setFloat("height", (float)population.bots[i].sprite.animation.h);
 
     //Draw
     glBindVertexArray(population.bots[i].sprite.vao[0]);
@@ -322,7 +334,7 @@ bool View::switchLOD(World &world, Player &player, int _LOD){
   player.renderDistance += glm::vec3(2)*glm::vec3(LOD-_LOD);
   LOD = _LOD;
   updateLOD = true;
-  world.bufferChunks( player );
+  world.bufferChunks( *this );
   loadChunkModels(world, player);
 
   return true;

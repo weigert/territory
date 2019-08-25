@@ -8,9 +8,6 @@ Do this for the player, then when it's ultra fast...
 Maybe I can specify a list of coordinates for a bot and see if they want to pathfind through a construct of chunks somehow...
 */
 
-
-
-
 //Main Function
 int main( int argc, char* args[] ) {
 	//Logger
@@ -42,7 +39,7 @@ int main( int argc, char* args[] ) {
 	Population population( world );
 
 	//Generate the World and Chunks
-	world.bufferChunks( player );
+	world.bufferChunks( view );
 	view.loadChunkModels( world , player);
 
 	//Game Loop
@@ -58,14 +55,12 @@ int main( int argc, char* args[] ) {
 		events.update(world, player, population, view);
 
 		//Update the Population
-		if(SDL_GetTicks()%10 == 0){
+		if(SDL_GetTicks()%2 == 0){
 			population.update(world);
 		}
 
 		//Render the View
 		view.render(world, player, population);
-
-		//view.calcFPS();
 	}
 
 	view.cleanup();

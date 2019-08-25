@@ -12,6 +12,7 @@ class Shader{
 
     //Set Uniforms
     void setInt(std::string name, int value);
+    void setFloat(std::string name, float value);
     void setMat4(std::string name, const glm::mat4 mat);
     void setVec3(std::string name, const glm::vec3 vec);
 

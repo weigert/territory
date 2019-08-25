@@ -2,6 +2,8 @@
 #pragma once
 #include "../forward/world.fwd.h"
 //Dependency Forward Declaration
+#include "../forward/view.fwd.h"
+#include "../forward/shader.fwd.h"
 #include "../forward/chunk.fwd.h"
 #include "../forward/octree.fwd.h"
 #include "../forward/player.fwd.h"
@@ -52,6 +54,5 @@ public:
   bool saveWorld();
   bool writeChunk(Chunk chunk);
   bool loadChunk(glm::vec3 _c, Chunk &chunk);
-  void bufferChunks(Player player);    //Reloads all relevant chunks from file
-
+  void bufferChunks(View view);    //Reloads all relevant chunks from file
 };

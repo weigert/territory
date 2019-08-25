@@ -157,20 +157,22 @@ void eventHandler::handlePlayerMove(World &world, Player &player, View &view, in
       break;
   }
 
-  //Check if the Player stays in-bounds of Chunk
-  if( glm::all(glm::greaterThanEqual(player.playerPos+m, glm::vec3(0))) && glm::all(glm::lessThanEqual(player.playerPos+m, glm::vec3(world.chunkSize-1)))){
+  //Check if chunks need to be reloaded
+  if(glm::any(glm::lessThan(glm::mod(view.viewPos, glm::vec3(world.chunkSize))+m, glm::vec3(0))) || glm::any(glm::greaterThanEqual(glm::mod(view.viewPos, glm::vec3(world.chunkSize))+m, glm::vec3(world.chunkSize)))){
+    //Do the thing
+    view.viewPos += m;
+    world.bufferChunks( view );
+    view.loadChunkModels(world, player); //This can be made more efficient to only reload new chunks
+  }
+
+  //Regularly shift player's position
+  else if(glm::all(glm::greaterThanEqual(view.viewPos+m, glm::vec3(0))) && glm::all(glm::lessThanEqual(view.viewPos+m, glm::vec3(world.worldSize*world.chunkSize, world.worldHeight*world.chunkSize, world.worldSize*world.chunkSize)-glm::vec3(1)))){
     //Shift the Player's Position
-    player.playerPos += m;
+    view.viewPos += m;
     for(unsigned int i = 0; i < view.models.size(); i++){
       view.models[i].translate(-m);
     }
   }
-  else if(glm::all(glm::greaterThanEqual(player.chunkPos+m, glm::vec3(0))) && glm::all(glm::lessThanEqual(player.chunkPos+m, glm::vec3(world.worldSize-1)))){
-    //Shift the Chunk Position
-    player.chunkPos += m;
-    //Shift the Player Position
-    player.playerPos = glm::mod( player.playerPos + glm::vec3(world.chunkSize) + m , glm::vec3(world.chunkSize));
-    world.bufferChunks( player );
-    view.loadChunkModels(world, player); //This can be made more efficient to only reload new chunks
-  }
+
+
 }

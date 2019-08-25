@@ -3,6 +3,8 @@
 #include "chunk.h"
 #include "octree.h"
 #include "../game/player.h"
+#include "../render/shader.h"
+#include "../render/view.h"
 #include "world.h"
 
 /*
@@ -132,8 +134,8 @@ void World::generate(){
 
   //Generate Height
   std::cout<<"Filling World"<<std::endl;
-  generatePerlin();
-  //generateFlat();
+  //generatePerlin();
+  generateFlat();
 
   //Place the Player
   std::cout<<"Placing Player"<<std::endl;
@@ -151,7 +153,6 @@ void World::generateBlank(){
         Chunk chunk;
         chunk.biome = BIOME_VOID;
         chunk.size = chunkSize;
-        chunk.data.depth = log2(chunkSize); //Set the remaining depth
         chunk.pos = glm::vec3(i, j, k);
 
         //Write the Chunk to File
@@ -401,14 +402,14 @@ bool World::evaluateEditBuffer(){
     //Now we have a chunk that corresponds the the editBuffer element
     while(!editBuffer.empty() && _chunk.pos == editBuffer.back().cpos){
       //Set the block in the chunk.
-      _chunk.data.setPosition(glm::mod(editBuffer.back().pos, glm::vec3(chunkSize)), editBuffer.back().type);
+      _chunk.setPosition(glm::mod(editBuffer.back().pos, glm::vec3(chunkSize)), editBuffer.back().type);
 
       //Erase the first element
       editBuffer.pop_back();
     }
 
     //Write the guy to file
-    _chunk.data.trySimplify();
+    //_chunk.data.trySimplify();
     //Write the chunk to file
     {
       boost::archive::text_oarchive oa(out);
@@ -458,16 +459,17 @@ int World::moveWeight(BlockType _type){
 }
 
 BlockType World::getBlock(glm::vec3 _pos){
-  //Get External and Internal Chunk Coordinates
-  glm::vec3 c = glm::floor(_pos/glm::vec3(chunkSize));
-  glm::vec3 p = glm::mod(_pos, glm::vec3(chunkSize));
-
-  //Load the Relevant Chunk
-  Chunk _chunk;
-  loadChunk(c, _chunk);
-
-  //Get the Element Inside the Chunk
-  return _chunk.data.getPosition(p, log2(chunkSize));
+  //Check if the position is inside, if not return 0, otherwise return the block
+  for(unsigned int i = 0; i < chunks.size(); i++){
+    glm::vec3 c = glm::floor(_pos/glm::vec3(chunkSize));
+    //Check the Chunkpos
+    if(c == chunks[i].pos){
+      //Read the Goy
+      glm::vec3 p = glm::mod(_pos, glm::vec3(chunkSize));
+      return chunks[i].getPosition(p, 0);
+    }
+  }
+  return BLOCK_STONE;
 }
 
 
@@ -480,13 +482,13 @@ BlockType World::getBlock(glm::vec3 _pos){
 ===================================================
 */
 
-void World::bufferChunks(Player player){
+void World::bufferChunks(View view){
   //Load / Reload all Visible Chunks
 
   //Non-Brute Force Method
   //Chunks that should be loaded
-  glm::vec3 a = player.chunkPos - player.renderDistance;
-  glm::vec3 b = player.chunkPos + player.renderDistance;
+  glm::vec3 a = glm::floor(view.viewPos/glm::vec3(chunkSize))-view.renderDistance;
+  glm::vec3 b = glm::floor(view.viewPos/glm::vec3(chunkSize))+view.renderDistance;
 
   //Can't exceed a certain size
   a = glm::clamp(a, glm::vec3(0), glm::vec3(worldSize-1, worldHeight-1, worldSize-1));

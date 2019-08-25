@@ -112,3 +112,8 @@ void Shader::setInt(std::string name, int value){
   ///Set the Uniform
   glUniform1i(glGetUniformLocation(shaderProgram, name.c_str()), value);
 }
+
+void Shader::setFloat(std::string name, float value){
+  ///Set the Uniform
+  glUniform1f(glGetUniformLocation(shaderProgram, name.c_str()), value);
+}

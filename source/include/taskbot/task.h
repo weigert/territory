@@ -32,9 +32,6 @@ class Task{
     bool wait(World &world, Population &population, State &_args);
     bool look(World &world, Population &population, State &_args);
     bool step(World &world, Population &population, State &_args);
-    bool swap(World &world, Population &population, State &_args);
-    bool store(World &world, Population &population, State &_args);
-    bool consume(World &world, Population &population, State &_args);
     bool move(World &world, Population &population, State &_args);
 
     //Error-Handling Primaries
@@ -42,7 +39,6 @@ class Task{
     bool idle(World &world, Population &population, State &_args);
     bool search(World &world, Population &population, State &_args);
     bool forage(World &world, Population &population, State &_args);
-    bool take(World &world, Population &population, State &_args);
 
     //Behaviors
     bool Dummy(World &world, Population &population, State &_args);

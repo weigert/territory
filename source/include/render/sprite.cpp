@@ -20,8 +20,6 @@ bool Sprite::loadImage(std::string fileName){
   glGenTextures( 1, &texture );
   glBindTexture( GL_TEXTURE_2D, texture );
 
-
-
   //Load the Image to the Texture
   glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, TextureImage->w, TextureImage->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, TextureImage->pixels );
 
@@ -66,8 +64,33 @@ void Sprite::setupBuffer(){
 void Sprite::resetModel(){
   //Stuff to get the sprite looking right
   model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.5f, 0.0f));
-  glm::vec3 axis = glm::vec3(0.0f, 1.0f, 0.0f);
-  model = glm::rotate(model, glm::radians(45.0f), axis);
+}
+
+void Sprite::setAnimation(int id){
+  //Set the id in Animation
+  animation.ID = id;
+  animation.nframe = 0;
+  animation.translate = glm::vec3(0.0f);
+  resetModel();
+
+  if(id == 0){
+    animation.frames = 1;
+  }
+  else if(id == 1){
+    animation.frames = 4;
+  }
+}
+
+bool Sprite::doAnimationFrame(){
+  //Increast the animation frame
+  animation.nframe++;
+  if(animation.nframe >= animation.frames){
+    return true;
+  }
+
+  //Translate the model, not complete!
+  model = glm::translate(model, animation.translate);
+  return false;
 }
 
 void Sprite::cleanup(){

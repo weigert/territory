@@ -19,6 +19,10 @@ class View{
     const unsigned int SCREEN_WIDTH = 1200, SCREEN_HEIGHT = 800;
     const unsigned int SHADOW_WIDTH = 2000, SHADOW_HEIGHT = 2000;
 
+    //Viewposition
+    glm::vec3 viewPos = glm::vec3(88, 1, 88);
+    glm::vec3 renderDistance = glm::vec3(1, 2, 1);
+
     //LOD Handling
     bool switchLOD(World &world, Player &player, int _LOD);
     int LOD = 4;

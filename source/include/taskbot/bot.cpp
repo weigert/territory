@@ -39,17 +39,13 @@ void Bot::executeTask(World &world, Population &population){
   //Check for interrupt!
   if(interrupt){
     //Reevaluate Mandates, so we can respond
-    //Here, you could put some way to save the game state?
-    //This is where error handling would happen if you observe bugs
-    //We have been interrupted and should check if we change our state.
-    //Potentially do a listen task?
     evaluateMandates(world, population);
     interrupt = false;
   }
 
+
   //Execute Current Task, upon success overwrite.
   if((current->perform)(world, population)){
-    //Task is successful, we can reevaluate our mandates.
     evaluateMandates(world, population);
   }
 }
@@ -173,7 +169,7 @@ void Bot::addMemory(World world, glm::vec3 _pos){
 
 void Bot::setupSprite(){
   //Load the Sprite Thing
-  sprite.loadImage("hunter.png");
+  sprite.loadImage("hunterfull.png");
   sprite.setupBuffer();
   sprite.resetModel();
 }
