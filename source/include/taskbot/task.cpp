@@ -5,6 +5,11 @@
 
 #include "task.h"
 
+/*
+=========================================================
+                      CONSTRUCTORS
+=========================================================
+*/
 Task::Task(std::string taskName, int taskBotID, bool (Task::*taskHandle)(World&, Population&, State &_args)){
   name = taskName;
   botID = taskBotID;
@@ -19,9 +24,14 @@ Task::Task(std::string taskName, int taskBotID, int animationID, glm::vec3 anima
   translate = animationTranslate;
 }
 
+/*
+=========================================================
+                    TASK HANDLING TASKS
+=========================================================
+*/
+
 //Execute Task Function
 bool Task::perform(World &world, Population &population){
-  //if(debug){std::cout<<"Bot with ID: "<<botID<<" performing task: "<<name<<std::endl;}
   //Change the Name and Execute the Task
   population.bots[botID].task = name;
 
@@ -32,7 +42,7 @@ bool Task::perform(World &world, Population &population){
 
   //When the animation is complete, reset the animation.
   if(population.bots[botID].sprite.doAnimationFrame()){
-    //Animation is completed, execute the task
+    //We actually want to set the animation after it is completed
     if((*this.*handle)(world, population, args)){
       return true;
     }
@@ -43,6 +53,7 @@ bool Task::perform(World &world, Population &population){
   return false;
 }
 
+//Handle the Queue
 bool Task::handleQueue(World &world, Population &population){
   //If the Queue isn't empty, handle top task
   if(!queue.empty()){
@@ -52,8 +63,8 @@ bool Task::handleQueue(World &world, Population &population){
 
     //Perform the Task and Put it back on when successful
     if(!newtask.perform(world, population)){
+      //We need to repeat the animation
       queue.push(newtask);
-      return false;
     }
     //Task was performed successfully, we leave it off.
     return false;
@@ -64,62 +75,29 @@ bool Task::handleQueue(World &world, Population &population){
   return true;
 }
 
-//Special Functions
-bool Task::Dummy(World &world, Population &population, State &_args){
-  //Set Intial Tasks
-  if(initFlag){
-    Task walk("Walk Around", botID, &Task::walk);
-    int _pos[2] = {rand()%(world.worldSize*world.chunkSize), rand()%(world.worldSize*world.chunkSize)};
-    walk.args.pos = glm::vec3(_pos[0], world.getTop(glm::vec2(_pos[0], _pos[1])), _pos[1]);
-    queue.push(walk);
-
-    //Wait Task
-    Task wait("Wait a second...", botID, &Task::wait);
-    wait.args.time = 5;
-    wait.animation = 2;
-    queue.push(wait);
-  }
-
-  //Only perform the queue as specified!
-  return handleQueue(world, population);
+//Empty Task
+bool Task::null(World &world, Population &population, State &_args){
+  //Simply Return True
+  return true;
 }
 
-bool Task::walk(World &world, Population &population, State &_args){
-  //Goal Position
-  glm::vec3 goal = _args.pos;
+/*
+=========================================================
+                      MOVING TASKS
+=========================================================
+*/
 
-  /*
-  Check if bot is outside position or inside
-  Check if goal is outside position or inside
-
-  If goal and start are outside, teleport and wiat
-  If otherwise you need to crop the two endpoints and include waiting
-  */
-
-  //Check If The Goal Position is Free
-  if(world.getBlock(goal) != BLOCK_AIR){
-    return true;
-  }
-
-  //Check if we're already there
-  if(population.bots[botID].pos == goal){
-    return true;
-  }
-
-  //Do the Stuff
-  if(initFlag){
-    //Setup some tasks
-    Task step("Step", botID, &Task::step);
-    step.args.pos = goal;
-    queue.push(step);
-  }
-
-  //Only perform the queue as specified!
-  return handleQueue(world, population);
+//Move - Teleport to Location
+bool Task::move(World &world, Population &population, State &_args){
+  //Do the Value-Change
+  population.bots[botID].pos = _args.pos;
+  population.bots[botID].path.pop_back();
+  return true;
 }
 
-//Primitives (Single Step)
+//Step - Multiple Moves Along a Path
 bool Task::step(World &world, Population &population, State &_args){
+
   //We now want to step towards our goal. Check if we have a path.
   if(population.bots[botID].path.empty()){
     //Calculate a Path Here.
@@ -157,11 +135,58 @@ bool Task::step(World &world, Population &population, State &_args){
   return handleQueue(world, population);
 }
 
-bool Task::move(World &world, Population &population, State &_args){
-  //Do the Value-Change
-  population.bots[botID].pos = _args.pos;
-  population.bots[botID].path.pop_back();
-  return true;
+//Walk - Multiple Steps with Error Handling
+bool Task::walk(World &world, Population &population, State &_args){
+  //Goal Position
+  glm::vec3 goal = _args.pos;
+
+  /*
+  Check if bot is outside position or inside
+  Check if goal is outside position or inside
+
+  If goal and start are outside, teleport and wiat
+  If otherwise you need to crop the two endpoints and include waiting
+  */
+
+  //Check If The Goal Position is Free
+  if(world.getBlock(goal) != BLOCK_AIR){
+    return true;
+  }
+
+  //Check if we're already there
+  if(population.bots[botID].pos == goal){
+    return true;
+  }
+
+  //Do the Stuff
+  if(initFlag){
+    //Setup some tasks
+    Task step("Step", botID, &Task::step);
+    step.args.pos = goal;
+    queue.push(step);
+  }
+
+  //Only perform the queue as specified!
+  return handleQueue(world, population);
+}
+
+/*
+=========================================================
+                      OTHER TASKS
+=========================================================
+*/
+
+//Special Functions
+bool Task::Dummy(World &world, Population &population, State &_args){
+  //Set Intial Tasks
+  if(initFlag){
+    Task idle("Walk Around", botID, &Task::idle);
+    idle.args.time = 5;
+    queue.push(idle);
+  }
+
+  //Only perform the queue as specified!
+  return handleQueue(world, population);
 }
 
 bool Task::look(World &world, Population &population, State &_args){
@@ -181,20 +206,22 @@ bool Task::look(World &world, Population &population, State &_args){
 }
 
 bool Task::wait(World &world, Population &population, State &_args){
-  //Wait
-  while(_args.time > 0){
-    _args.time--;
-    return false;
+  //Set the Stuff
+  if(initFlag){
+    Task null("Wait", botID, &Task::null);
+    null.animation = 2;
+    //Add the Tasks
+    for(int i = 0; i < _args.time; i++){
+      queue.push(null);
+    }
   }
-  //Finished Waiting
-  return true;
+
+  //Handle the Queue
+  return handleQueue(world, population);
 }
 
 //Secondaries (Multi-Step, Multi-Task)
 bool Task::search(World &world, Population &population, State &_args){
-  //Arguments:
-  //id
-  //item
   /*
 
   Task inspect("Inspect", botID, &Task::look);
@@ -326,18 +353,16 @@ bool Task::forage(World &world, Population &population, State &_args){
 }
 
 bool Task::idle(World &world, Population &population, State &_args){
-  //if(debug){std::cout<<"Bot with ID: "<<botID<<" idling."<<std::endl;}
-
-/*
-  Task walk("Walk", botID, &Task::walk);
-  walk.args[1] = population.loc[0];
-  walk.args[2] = population.loc[1];
-
-  Task wait("Wait", botID, &Task::wait);
-  wait.args[0] = arguments[0];
-
   //Check for initial flag
   if(initFlag){
+    Task walk("Walk", botID, &Task::walk);
+    int _shift[2] = {rand()%10-5, rand()%10-5};
+    glm::vec2 _pos = glm::vec2(population.bots[botID].pos.x,population.bots[botID].pos.z ) + glm::vec2(_shift[0], _shift[1]);
+    walk.args.pos = glm::vec3(_pos.x, world.getTop(_pos), _pos.y);
+
+    Task wait("Wait", botID, &Task::wait);
+    wait.args.time = _args.time;
+
     //Add the Tasks for Idle
     queue.push(wait);
     queue.push(walk); //Walk will be executed first
@@ -346,21 +371,7 @@ bool Task::idle(World &world, Population &population, State &_args){
     initFlag = false;
   }
 
-  //Execute the Queue in the Form it was entered.
-  if(!queue.empty()){
-    //Get the Top Task
-    Task newtask = queue.top();
-    queue.pop();
-    //If our new Task is not performed successfully
-    if(!newtask.perform(world, population)){
-      queue.push(newtask);
-      return false;
-    }
-    //If it was successful, we leave it off
-    return false;
-  }
-  //Final Sucess of Supertask*/
-  return true;
+  return handleQueue(world, population);
 }
 
 // Needs to be expanded to 3D

@@ -28,12 +28,13 @@ class Task{
     Task(std::string taskName, int taskBotID, bool (Task::*taskHandle)(World&, Population&, State&));
     Task(std::string taskName, int taskBotID, int animationID, glm::vec3 animationTranslate, bool (Task::*taskHandle)(World&, Population&, State &_args));
 
-    //Launch a Task
+    //Task Handling Tasks
     bool perform(World &world, Population &population);
     bool handleQueue(World &world, Population &population);
 
     //0-Level Algorithmic
     bool wait(World &world, Population &population, State &_args);
+    bool null(World &world, Population &population, State &_args);
     bool look(World &world, Population &population, State &_args);
     bool step(World &world, Population &population, State &_args);
     bool move(World &world, Population &population, State &_args);
