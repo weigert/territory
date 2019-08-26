@@ -36,6 +36,7 @@ public:
   //Movement Weights
   int moveWeight(BlockType _type);
   BlockType getBlock(glm::vec3 _pos);
+  int getTop(glm::vec2 _pos);
 
   //Generate Function / Chunk Handlers
   void generate();

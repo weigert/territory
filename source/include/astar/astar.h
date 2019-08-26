@@ -22,18 +22,10 @@ using namespace std;
 
 using namespace std;
 
-// Global data
-
-// The world map
-
-// map helper functions
-
 int GetMap(World &world, int x, int y, int z)
 {
   //Get the Element we Need
-  return world.moveWeight(world.getBlock(glm::vec3(x,y,z)));
-
-  //This needs to be fixed, as bots currently can't see around themselves, i.e. file access is sloooow!
+  return (world.moveWeight(world.getBlock(glm::vec3(x,y,z))) + 9 - world.moveWeight(world.getBlock(glm::vec3(x,y-1,z))));
 }
 
 // Definitions

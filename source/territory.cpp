@@ -50,10 +50,11 @@ int main( int argc, char* args[] ) {
 
 	//Main Game Loop
 	while(!quit){
+		//Create this guy
 		//Handle User Input
 		events.input(&e, quit);
 		events.update(world, player, population, view);
-
+		
 		//Update the Population
 		if(SDL_GetTicks()%2 == 0){
 			population.update(world);

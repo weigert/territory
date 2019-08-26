@@ -43,9 +43,15 @@ bool Task::perform(World &world, Population &population){
   population.bots[botID].task = name;
 
   if(population.bots[botID].sprite.doAnimationFrame()){
+
     //Return what happens after the task executes
     population.bots[botID].sprite.setAnimation(0);
-    return (*this.*handle)(world, population, args);
+    auto start = std::chrono::high_resolution_clock::now();
+    bool a = (*this.*handle)(world, population, args);
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    std::cout << botID<<", "<<name << ": " << duration.count() << std::endl;
+    return a;
   }
   return false;
 }
@@ -57,8 +63,9 @@ bool Task::Dummy(World &world, Population &population, State &_args){
     //Construct Tasks
     //Add Arguments
     //Push unto task queue
-    Task walk("Follow Player", botID, &Task::walk);
-    walk.args.pos = glm::vec3(rand()%(world.worldSize*world.chunkSize),1,rand()%(world.worldSize*world.chunkSize));
+    Task walk("Walk Around", botID, &Task::walk);
+    int _pos[2] = {rand()%(world.worldSize*world.chunkSize), rand()%(world.worldSize*world.chunkSize)};
+    walk.args.pos = glm::vec3(_pos[0], world.getTop(glm::vec2(_pos[0], _pos[1])), _pos[1]);
     queue.push(walk);
     initFlag = false;
   }
@@ -69,12 +76,10 @@ bool Task::Dummy(World &world, Population &population, State &_args){
     Task newtask = queue.top();
     queue.pop();
 
-    //If our new Task is not performed successfully
     if(!newtask.perform(world, population)){
       queue.push(newtask);
       return false;
     }
-    //If it was successful, we leave it off
     return false;
   }
 
@@ -108,9 +113,7 @@ bool Task::step(World &world, Population &population, State &_args){
     //If the Path is still empty
     if(population.bots[botID].path.empty()){
       //No valid Path!
-
-      //if(debug){std::cout<<botID<<": No valid path."<<std::endl;}
-
+      //if(debug){std::cout<<botID<<": No valid path."<<std::endl;
       //Make this location unreachable if it is in memory and reachable
       glm::vec3 point = _args.pos;
       Memory query;
@@ -122,13 +125,10 @@ bool Task::step(World &world, Population &population, State &_args){
 
       //Overwrite any specified points in memory in all memories matching all points in query
       population.bots[botID].updateMemory(query, true, memory);
-
       return true;
     }
     //We now have a valid path.
   }
-
-
   //We have a path, but we should check our step validity first.
   /*
   else{
@@ -154,13 +154,10 @@ bool Task::step(World &world, Population &population, State &_args){
     initFlag = false;
   }
 
-  //The move is always successful
   if(move.perform(world, population)){
     //Remove that path element
     population.bots[botID].path.pop_back();
-    return true;
   }
-
   //We now have a valid path. Take a step along that path.
   return false;
 }
@@ -362,12 +359,11 @@ bool Task::walk(World &world, Population &population, State &_args){
   }
 
   //Do the Stuff
-  if(queue.empty()){
+  if(initFlag){
     //Setup some tasks
     Task step("Step", botID, &Task::step);
     step.args.pos = goal;
     queue.push(step);
-
     initFlag = false;
   }
 
@@ -473,6 +469,8 @@ std::vector<glm::vec3> calculatePath(int id, glm::vec3 _dest, Population &popula
     //Vector to Return
     std::vector<glm::vec3> path;
 
+    std::cout<<"X: "<<_dest.x<<", Y: "<<_dest.y<<", Z: "<<_dest.z<<std::endl;
+
   	AStarSearch<MapSearchNode> astarsearch;
 
 		// Create a start state
@@ -492,7 +490,7 @@ std::vector<glm::vec3> calculatePath(int id, glm::vec3 _dest, Population &popula
 		astarsearch.SetStartAndGoalStates( nodeStart, nodeEnd );
 
 		unsigned int SearchState;
-
+    auto start = std::chrono::high_resolution_clock::now();
 		do{ SearchState = astarsearch.SearchStep(world); }
 		while( SearchState == AStarSearch<MapSearchNode>::SEARCH_STATE_SEARCHING );
 
@@ -510,11 +508,16 @@ std::vector<glm::vec3> calculatePath(int id, glm::vec3 _dest, Population &popula
         }
 				// Once you're done with the solution you can free the nodes up
 				astarsearch.FreeSolutionNodes();
-
 		}
 		else if( SearchState == AStarSearch<MapSearchNode>::SEARCH_STATE_FAILED ){
-    //  if(debug){cout << "Search terminated. Did not find goal state\n";}
+      //  if(debug){cout << "Search terminated. Did not find goal state\n";}
+      std::cout<<"Search Failed"<<std::endl;
+      path.clear();
 		}
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    std::cout << "Calculating Path: " << duration.count() << std::endl;
+
 		astarsearch.EnsureMemoryFreed();
     return path;
 }

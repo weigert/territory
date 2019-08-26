@@ -161,12 +161,7 @@ bool Mandate::completed(World &world, Population &population, int bot){
   //Retrieve Now State
   State now;
   now.retrieveState(world, population, bot);
-
-  //Check for Goal Condition
-  if(now == goal){
-    return true;
-  }
-
+  
   //We have not fulfilled our condition.
-  return false;
+  return true;
 }

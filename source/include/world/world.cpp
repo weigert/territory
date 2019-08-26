@@ -134,8 +134,8 @@ void World::generate(){
 
   //Generate Height
   std::cout<<"Filling World"<<std::endl;
-  //generatePerlin();
-  generateFlat();
+  generatePerlin();
+  //generateFlat();
 
   //Place the Player
   std::cout<<"Placing Player"<<std::endl;
@@ -472,9 +472,20 @@ BlockType World::getBlock(glm::vec3 _pos){
   return BLOCK_STONE;
 }
 
+//Get the Top-Free space position in the x-z position
+int World::getTop(glm::vec2 _pos){
+  //Highest Block you can Stand On
+  int max = 0;
 
-
-
+  //Loop over the height
+  for(int i = 1; i < worldHeight*chunkSize; i++){
+    //Check if we satisfy the conditions
+    if(getBlock(glm::vec3(_pos.x, i, _pos.y)) == BLOCK_AIR && getBlock(glm::vec3(_pos.x, i-1, _pos.y)) != BLOCK_AIR){
+      max = i;
+    }
+  }
+  return max;
+}
 
 /*
 ===================================================

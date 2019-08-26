@@ -43,7 +43,6 @@ void Bot::executeTask(World &world, Population &population){
     interrupt = false;
   }
 
-
   //Execute Current Task, upon success overwrite.
   if((current->perform)(world, population)){
     evaluateMandates(world, population);
@@ -59,7 +58,7 @@ void Bot::evaluateMandates(World &world, Population &population){
     Task *masterTask = new Task("Do Dumb Stuff.", ID, &Task::Dummy);
 
     //Construct a new blank species mandate
-    Mandate *mandate = new Mandate(ID, ID, 0, true, 1);
+    Mandate *mandate = new Mandate(ID, ID, 0, false, 1);
     mandate->suggest = masterTask;
     mandates.push_back(*mandate);
   }
@@ -68,10 +67,8 @@ void Bot::evaluateMandates(World &world, Population &population){
 
   //Cycle through the Mandates
   for(unsigned int i = 0; i < mandates.size(); i++){
-
     //Check for complete condition
     if(mandates[i].completed(world, population, ID)){
-
       //Check if this mandate should be repeated
       if(!mandates[i].repeat){
         //Remove Mandate from Queue
