@@ -166,7 +166,7 @@ void eventHandler::handlePlayerMove(World &world, Player &player, View &view, in
   }
 
   //Regularly shift player's position
-  else if(glm::all(glm::greaterThanEqual(view.viewPos+m, glm::vec3(0))) && glm::all(glm::lessThanEqual(view.viewPos+m, glm::vec3(world.worldSize*world.chunkSize, world.worldHeight*world.chunkSize, world.worldSize*world.chunkSize)-glm::vec3(1)))){
+  else if(glm::all(glm::greaterThanEqual(view.viewPos+m, glm::vec3(0))) && glm::all(glm::lessThanEqual(view.viewPos+m, glm::vec3(world.chunkSize)*world.dim-glm::vec3(1)))){
     //Shift the Player's Position
     view.viewPos += m;
     for(unsigned int i = 0; i < view.models.size(); i++){

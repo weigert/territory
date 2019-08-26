@@ -145,9 +145,9 @@ void World::generate(){
 void World::generateBlank(){
   //Add Blank Chunks to Region Files
   //Loop over all Chunks in the World
-  for(int i = 0; i < worldSize; i++){
-    for(int j = 0; j < worldHeight; j++){
-      for(int k = 0; k < worldSize; k++){
+  for(int i = 0; i < dim.x; i++){
+    for(int j = 0; j < dim.y; j++){
+      for(int k = 0; k < dim.z; k++){
 
         //Generate a new chunk at a specific location
         Chunk chunk;
@@ -165,8 +165,8 @@ void World::generateBlank(){
 void World::generateFlat(){
   //Flat Surface
   std::cout<<"Generating Flat Surface"<<std::endl;
-  for(int i = 0; i < worldSize*chunkSize; i++){
-    for(int j = 0; j < worldSize*chunkSize; j++){
+  for(int i = 0; i < dim.x*chunkSize; i++){
+    for(int j = 0; j < dim.z*chunkSize; j++){
       //Add to the editBuffer
       addEditBuffer(glm::vec3(i,0,j), BLOCK_GRASS);
     }
@@ -178,7 +178,7 @@ void World::generateFlat(){
   //Rocks
   std::cout<<"Adding Rocks"<<std::endl;
   for(int i = 0; i < 1000; i++){
-    int rock[2] = {rand()%(chunkSize*worldSize), rand()%(chunkSize*worldSize)};
+    int rock[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
     addEditBuffer(glm::vec3(rock[0], 1, rock[1]), BLOCK_STONE);
   }
 
@@ -188,7 +188,7 @@ void World::generateFlat(){
   //Trees
   std::cout<<"Adding Trees"<<std::endl;
   for(int i = 0; i < 1000; i++){
-    int tree[2] = {rand()%(chunkSize*worldSize), rand()%(chunkSize*worldSize)};
+    int tree[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
 
     //Add the shit to the editbuffer
     addEditBuffer(glm::vec3(tree[0], 1, tree[1]), BLOCK_WOOD);
@@ -220,17 +220,17 @@ void World::generatePerlin(){
 
   //Loop over the world-size
   std::cout<<"Generating Perlin Surface"<<std::endl;
-  for(int i = 0; i < worldSize*chunkSize; i++){
-    for(int k = 0; k < worldSize*chunkSize; k++){
+  for(int i = 0; i < dim.x*chunkSize; i++){
+    for(int k = 0; k < dim.z*chunkSize; k++){
 
       //Generate the Heightvalue
 
       //Normalize the Block's x,z coordinates
-      float x = (float)(i) / (float)(chunkSize*worldSize);
-      float z = (float)(k) / (float)(chunkSize*worldSize);
+      float x = (float)(i) / (float)(chunkSize*dim.x);
+      float z = (float)(k) / (float)(chunkSize*dim.z);
 
       float height = perlin.GetValue(x, SEED, z)/5+0.25;
-      height *= (worldHeight*chunkSize);
+      height *= (dim.y*chunkSize);
 
       //Now loop over the height and set the blocks
       for(int j = 0; j < (int)height-1; j++){
@@ -247,13 +247,13 @@ void World::generatePerlin(){
   //Rocks
   std::cout<<"Adding Rocks"<<std::endl;
   for(int i = 0; i < 1000; i++){
-    int rock[2] = {rand()%(chunkSize*worldSize), rand()%(chunkSize*worldSize)};
+    int rock[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
     //Normalize the Block's x,z coordinates
-    float x = (float)(rock[0]) / (float)(chunkSize*worldSize);
-    float z = (float)(rock[1]) / (float)(chunkSize*worldSize);
+    float x = (float)(rock[0]) / (float)(chunkSize*dim.x);
+    float z = (float)(rock[1]) / (float)(chunkSize*dim.z);
 
     float height = perlin.GetValue(x, SEED, z)/5+0.25;
-    height *= (worldHeight*chunkSize);
+    height *= (dim.y*chunkSize);
 
     addEditBuffer(glm::vec3(rock[0], (int)height, rock[1]), BLOCK_STONE);
   }
@@ -264,14 +264,14 @@ void World::generatePerlin(){
   //Add Trees
   std::cout<<"Adding Trees"<<std::endl;
   for(int i = 0; i < 5000; i++){
-    int tree[2] = {rand()%(chunkSize*worldSize), rand()%(chunkSize*worldSize)};
+    int tree[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
     int treeheight = rand()%6+6;
 
-    float x = (float)(tree[0]) / (float)(chunkSize*worldSize);
-    float z = (float)(tree[1]) / (float)(chunkSize*worldSize);
+    float x = (float)(tree[0]) / (float)(chunkSize*dim.x);
+    float z = (float)(tree[1]) / (float)(chunkSize*dim.z);
 
     float height = perlin.GetValue(x, SEED, z)/5+0.25;
-    height *= (worldHeight*chunkSize);
+    height *= (dim.y*chunkSize);
 
     for(int j = 0; j < treeheight; j++){
       //Add the shit to the editbuffer
@@ -297,7 +297,7 @@ void World::generatePerlin(){
 
 bool World::addEditBuffer(glm::vec3 _pos, BlockType _type){
   //Check validity
-  if(glm::any(glm::lessThan(_pos, glm::vec3(0))) || glm::any(glm::greaterThanEqual(_pos, glm::vec3(chunkSize)*glm::vec3(worldSize, worldHeight, worldSize)))){
+  if(glm::any(glm::lessThan(_pos, glm::vec3(0))) || glm::any(glm::greaterThanEqual(_pos, glm::vec3(chunkSize)*dim))){
     //Invalid Position
     return false;
   }
@@ -411,7 +411,7 @@ bool World::evaluateEditBuffer(){
   }
 
   //Fill up the rest
-  while(n_chunks < worldSize*worldSize*worldHeight){
+  while(n_chunks < dim.x*dim.y*dim.z){
     boost::archive::text_iarchive ia(in);
     boost::archive::text_oarchive oa(out);
     oa << _chunk;
@@ -470,7 +470,7 @@ int World::getTop(glm::vec2 _pos){
   int max = 0;
 
   //Loop over the height
-  for(int i = 1; i < worldHeight*chunkSize; i++){
+  for(int i = 1; i < dim.y*chunkSize; i++){
     //Check if we satisfy the conditions
     if(getBlock(glm::vec3(_pos.x, i, _pos.y)) == BLOCK_AIR && getBlock(glm::vec3(_pos.x, i-1, _pos.y)) == BLOCK_GRASS){
       if(i > max){
@@ -496,8 +496,8 @@ void World::bufferChunks(View view){
   glm::vec3 b = glm::floor(view.viewPos/glm::vec3(chunkSize))+view.renderDistance;
 
   //Can't exceed a certain size
-  a = glm::clamp(a, glm::vec3(0), glm::vec3(worldSize-1, worldHeight-1, worldSize-1));
-  b = glm::clamp(b, glm::vec3(0), glm::vec3(worldSize-1, worldHeight-1, worldSize-1));
+  a = glm::clamp(a, glm::vec3(0), dim-glm::vec3(1));
+  b = glm::clamp(b, glm::vec3(0), dim-glm::vec3(1));
 
   //Construct a vector so we can check which guys need loading
 
@@ -586,7 +586,7 @@ bool World::loadChunk(glm::vec3 _c, Chunk &chunk){
   std::ifstream in(data_dir.string());
 
   //Skip the Lines
-  int n = _c.x*worldSize*worldHeight+_c.y*worldSize+_c.z;
+  int n = _c.x*dim.z*dim.y+_c.y*dim.z+_c.z;
   while(n>0){
     in.ignore(100000,'\n');
     n--;
@@ -677,8 +677,9 @@ void serialize(Archive & ar, World & _world, const unsigned int version)
 {
   ar & _world.saveFile;
   ar & _world.chunkSize;
-  ar & _world.worldSize;
-  ar & _world.worldHeight;
+  ar & _world.dim.x;
+  ar & _world.dim.y;
+  ar & _world.dim.z;
 }
 
 } // namespace serialization

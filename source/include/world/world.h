@@ -30,8 +30,7 @@ public:
   std::stack<int> updateModels;
   int SEED = 10;
   int chunkSize = 16;
-  int worldSize = 20;    //In Chunks^2
-  int worldHeight = 5;  //In Chunks
+  glm::vec3 dim = glm::vec3(20, 5, 20);
 
   //Movement Weights
   int moveWeight(BlockType _type);
