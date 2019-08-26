@@ -36,11 +36,12 @@ int main( int argc, char* args[] ) {
 
 	//Add a Population
 	Player player;
-	Population population( world );
 
 	//Generate the World and Chunks
 	world.bufferChunks( view );
 	view.loadChunkModels( world , player);
+
+	Population population( world );
 
 	//Game Loop
 	bool quit = false;
@@ -54,7 +55,7 @@ int main( int argc, char* args[] ) {
 		//Handle User Input
 		events.input(&e, quit);
 		events.update(world, player, population, view);
-		
+
 		//Update the Population
 		if(SDL_GetTicks()%2 == 0){
 			population.update(world);

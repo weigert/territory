@@ -161,7 +161,6 @@ bool View::setupShadow(){
   glEnableVertexAttribArray(1);
   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
-
   //Generate Framebuffer and Texture
   glGenFramebuffers(1, &depthMapFBO);
   glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
@@ -194,13 +193,13 @@ void View::render(World world, Player player, Population population){
   //Render the Regular View
   renderShadow();
   renderScene();
-  renderSprites(player, population);
+  renderSprites(world, player, population);
 
   //Swap the Window
   SDL_GL_SwapWindow(gWindow);
 }
 
-void View::renderSprites(Player player, Population population){
+void View::renderSprites(World world, Player player, Population population){
   //Render the Sprite
   spriteShader.useProgram();
   glActiveTexture(GL_TEXTURE0);
@@ -210,7 +209,7 @@ void View::renderSprites(Player player, Population population){
     //Here we should check if the sprite should even be rendered.
 
     //I need to actually check if the sprite is outside the renderdistance!
-    if(glm::any(glm::greaterThan(glm::abs(glm::floor(population.bots[i].pos/glm::vec3(16))-glm::floor(viewPos/glm::vec3(16))), renderDistance))){
+    if(glm::any(glm::greaterThan(glm::abs(glm::floor(population.bots[i].pos/glm::vec3(world.chunkSize))-glm::floor(viewPos/glm::vec3(world.chunkSize))), renderDistance))){
       //Skip this sprite
       continue;
     }

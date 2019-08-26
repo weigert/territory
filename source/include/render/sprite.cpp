@@ -5,10 +5,8 @@ bool Sprite::loadImage(std::string fileName){
   boost::filesystem::path data_dir(boost::filesystem::current_path());
   data_dir /= "resource/sprite";
 
-
   //Load the Image to a surface
   SDL_Surface *TextureImage = IMG_Load((data_dir/fileName).c_str());
-
 
   //Load the File
   if(TextureImage == NULL){
@@ -66,11 +64,11 @@ void Sprite::resetModel(){
   model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.5f, 0.0f));
 }
 
-void Sprite::setAnimation(int id){
+void Sprite::setAnimation(int id, glm::vec3 _translate){
   //Set the id in Animation
   animation.ID = id;
   animation.nframe = 0;
-  animation.translate = glm::vec3(0.0f);
+  animation.translate =_translate;
   resetModel();
 
   if(id == 0){
@@ -85,9 +83,10 @@ bool Sprite::doAnimationFrame(){
   //Increast the animation frame
   animation.nframe++;
   if(animation.nframe >= animation.frames){
+    //Reset our Animation
+    setAnimation(0, glm::vec3(0));
     return true;
   }
-
   //Translate the model, not complete!
   model = glm::translate(model, animation.translate);
   return false;

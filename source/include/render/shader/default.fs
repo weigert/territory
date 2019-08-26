@@ -16,11 +16,14 @@ out vec4 fragColor;
 
 vec4 shade()
 {
-    // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
-    float closestDepth = texture(shadowMap, shadowCoord.xy).r;
-    float currentDepth = shadowCoord.z;
-
-    float shadow = (currentDepth-0.001 > closestDepth) ? .5 : 0.0;
+    float shadow = 0.0;
+    //Make sure shadow is inside the shadowCoord Box, otherwise don't draw shadows!
+    if(greaterThanEqual(shadowCoord.xy, vec2(0.0f)) == bvec2(true) && lessThanEqual(shadowCoord.xy, vec2(1.0f)) == bvec2(true)){
+      // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
+      float closestDepth = texture(shadowMap, shadowCoord.xy).r;
+      float currentDepth = shadowCoord.z;
+      shadow = (currentDepth-0.001 > closestDepth) ? .5 : 0.0;
+    }
 
     return vec4(vec3(1-shadow), 1.0f);
 }

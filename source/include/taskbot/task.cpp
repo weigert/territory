@@ -36,77 +36,108 @@ Task::Task(std::string taskName, int taskBotID, bool (Task::*taskHandle)(World&,
   handle = taskHandle;
 }
 
+Task::Task(std::string taskName, int taskBotID, int animationID, glm::vec3 animationTranslate, bool (Task::*taskHandle)(World&, Population&, State &_args)){
+  name = taskName;
+  botID = taskBotID;
+  handle = taskHandle;
+  animation = animationID;
+  translate = animationTranslate;
+}
+
 //Execute Task Function
 bool Task::perform(World &world, Population &population){
   //if(debug){std::cout<<"Bot with ID: "<<botID<<" performing task: "<<name<<std::endl;}
   //Change the Name and Execute the Task
   population.bots[botID].task = name;
 
-  if(population.bots[botID].sprite.doAnimationFrame()){
-
-    //Return what happens after the task executes
-    population.bots[botID].sprite.setAnimation(0);
-    auto start = std::chrono::high_resolution_clock::now();
-    bool a = (*this.*handle)(world, population, args);
-    auto stop = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-    std::cout << botID<<", "<<name << ": " << duration.count() << std::endl;
-    return a;
+  //When initially performing a task, make sure to set the animation!
+  if(initFlag){
+    population.bots[botID].sprite.setAnimation(animation, translate);
   }
+
+  //When the animation is complete, reset the animation.
+  if(population.bots[botID].sprite.doAnimationFrame()){
+    //Animation is completed, execute the task
+    if((*this.*handle)(world, population, args)){
+      return true;
+    }
+  }
+
+  //Task was executed but needs to be repeated, set initFlag
+  initFlag = false;
   return false;
+}
+
+bool Task::handleQueue(World &world, Population &population){
+  //If the Queue isn't empty, handle top task
+  if(!queue.empty()){
+    //Get the Top Task
+    Task newtask = queue.top();
+    queue.pop();
+
+    //Perform the Task and Put it back on when successful
+    if(!newtask.perform(world, population)){
+      queue.push(newtask);
+      return false;
+    }
+    //Task was performed successfully, we leave it off.
+    return false;
+  }
+
+  //Queue is empty, thereby we have been completed.
+  initFlag = true;
+  return true;
 }
 
 //Special Functions
 bool Task::Dummy(World &world, Population &population, State &_args){
   //Set Intial Tasks
   if(initFlag){
-    //Construct Tasks
-    //Add Arguments
-    //Push unto task queue
     Task walk("Walk Around", botID, &Task::walk);
     int _pos[2] = {rand()%(world.worldSize*world.chunkSize), rand()%(world.worldSize*world.chunkSize)};
     walk.args.pos = glm::vec3(_pos[0], world.getTop(glm::vec2(_pos[0], _pos[1])), _pos[1]);
     queue.push(walk);
-    initFlag = false;
   }
 
   //Only perform the queue as specified!
-  if(!queue.empty()){
-    //Get the Top Task
-    Task newtask = queue.top();
-    queue.pop();
+  return handleQueue(world, population);
+}
 
-    if(!newtask.perform(world, population)){
-      queue.push(newtask);
-      return false;
-    }
-    return false;
+bool Task::walk(World &world, Population &population, State &_args){
+  //Goal Position
+  glm::vec3 goal = _args.pos;
+
+  //Check if bot is outside position or inside
+  //Check if Goal is outside the position or inside
+
+  //If Goal and Start are outside
+  //Simply teleport + cooldown
+
+  //Check If The Goal Position is Free
+  if(world.getBlock(goal) != BLOCK_AIR){
+    return true;
   }
 
-  //Return Case for Mastertask
-  initFlag = true;
-  return true;
+  //Check if we're already there
+  if(population.bots[botID].pos == goal){
+    return true;
+  }
+
+  //Do the Stuff
+  if(initFlag){
+    //Setup some tasks
+    Task step("Step", botID, &Task::step);
+    step.args.pos = goal;
+    queue.push(step);
+  }
+
+  //Only perform the queue as specified!
+  return handleQueue(world, population);
 }
 
 //Primitives (Single Step)
 bool Task::step(World &world, Population &population, State &_args){
-  /*
-  Task: Step
-
-  Description:
-    Iteratively move to the specified position with error handling.
-
-  Arguments:
-    0 - X
-    1 - Y
-    2 - Z
-
-  Expansion:
-
-  */
-
   //We now want to step towards our goal. Check if we have a path.
-  //std::cout<<"A:"<<population.bots[botID].path.empty()<<std::endl;
   if(population.bots[botID].path.empty()){
     //Calculate a Path Here.
     population.bots[botID].path = calculatePath(botID, _args.pos, population, world);
@@ -129,42 +160,24 @@ bool Task::step(World &world, Population &population, State &_args){
     }
     //We now have a valid path.
   }
-  //We have a path, but we should check our step validity first.
-  /*
-  else{
-    //Make sure the next step of an OLD PATH is STILL valid
-    Point step = population.bots[botID].path.back();
-    if(!world.getPassable(step.x, step.y, population.bots[botID].fly)){
-      std::cout<<"Path no longer valid. Must calculate new."<<std::endl;
-      //Clear the path and let him try to step again.
-      population.bots[botID].path.clear();
-      std::cout<<"B:"<<population.bots[botID].path.empty()<<std::endl;
-      return false;
-    }
-    //Otherwise we can indeed step there.
 
-  }*/
-  Task move("Move to Position", botID, &Task::move);
-  move.args.pos = population.bots[botID].path.back();
+  /*Check for path stil valid in this next move!*/
 
-  //Set the Animation
-  if(initFlag){
-    population.bots[botID].sprite.setAnimation(1);
-    population.bots[botID].sprite.animation.translate = glm::vec3(move.args.pos - population.bots[botID].pos)/glm::vec3(4);
-    initFlag = false;
+  if(queue.empty()){
+    Task move("Move to Position", botID, &Task::move);
+    move.args.pos = population.bots[botID].path.back();
+    move.animation = 1;
+    move.translate = glm::vec3(move.args.pos - population.bots[botID].pos)/glm::vec3(4);
+    queue.push(move);
   }
 
-  if(move.perform(world, population)){
-    //Remove that path element
-    population.bots[botID].path.pop_back();
-  }
-  //We now have a valid path. Take a step along that path.
-  return false;
+  return handleQueue(world, population);
 }
 
 bool Task::move(World &world, Population &population, State &_args){
-  //Set the bots position
+  //Do the Value-Change
   population.bots[botID].pos = _args.pos;
+  population.bots[botID].path.pop_back();
   return true;
 }
 
@@ -329,103 +342,6 @@ bool Task::forage(World &world, Population &population, State &_args){
   return true;
 }
 
-bool Task::walk(World &world, Population &population, State &_args){
-  //Goal Position
-  glm::vec3 goal = _args.pos;
-
-  /*
-  What happens if this task is run every tick? Does it check if bot passes through??
-  How do we do this??
-  */
-
-  //Check if bot is outside position or inside
-  //Check if Goal is outside the position or inside
-
-  //If Goal and Start are outside
-    //Simply teleport + cooldown
-
-  //Check If The Goal Position is Free
-  if(world.getBlock(goal) != BLOCK_AIR){
-    //Terminate this Task
-    return true;
-  }
-
-  //Check if we're already there
-  if(population.bots[botID].pos == goal){
-    //Log this
-    //std::cout<<"Bot with ID: "<<botID<<" - Arrived At: x="<<goal.x<<", y="<<goal.y<<"."<<std::endl;
-    //Terminate the Task
-    return true;
-  }
-
-  //Do the Stuff
-  if(initFlag){
-    //Setup some tasks
-    Task step("Step", botID, &Task::step);
-    step.args.pos = goal;
-    queue.push(step);
-    initFlag = false;
-  }
-
-  //Only perform the queue as specified!
-  if(!queue.empty()){
-    //Get the Top Task
-    Task newtask = queue.top();
-    queue.pop();
-
-    //If our new Task is not performed successfully
-    if(!newtask.perform(world, population)){
-      queue.push(newtask);
-      return false;
-    }
-    //If it was successful, we leave it off
-    return false;
-  }
-
-  //Return Case for Mastertask
-  return true;
-
-  /*
-  glm::vec3 start = population.bots[botID].pos;
-
-  //Replace Formally with viewdistance.
-  //This needs the player's position.
-
-  glm::vec3 a = glm::floor(start/glm::vec3(world.chunkSize)) - glm::vec3(1,2,1);
-  glm::vec3 b = glm::floor(start/glm::vec3(world.chunkSize)) + glm::vec3(1,2,1);
-
-  //Can't exceed a certain size
-  a = glm::clamp(a, glm::vec3(0), glm::vec3(world.worldSize-1, world.worldHeight-1, world.worldSize-1));
-  b = glm::clamp(b, glm::vec3(0), glm::vec3(world.worldSize-1, world.worldHeight-1, world.worldSize-1));
-
-  if(glm::any(glm::lessThan(start, a)) || glm::any(glm::greaterThan(start, b))){
-    //Goal is outside
-    std::cout<<"Start is outside distance"<<std::endl;
-  }
-
-  if(glm::any(glm::lessThan(goal, a)) || glm::any(glm::greaterThan(goal, b))){
-    //Goal is outside
-    std::cout<<"Goal is outside distance"<<std::endl;
-  }*/
-
-  /*
-  If the goal is outside the field, cut the goal path, to that edge point
-  sliced = true;
-
-  This way we can chack if bots are coming in or leaving or what.
-
-  Try to find any valid path in that general direction that works, i.e. slice it
-  Walk to that position
-  If the player moves, this is recalculated every single frame, doesn't matter.
-  If they are at that position, then they immediately teleport to the location and wait there for the remaining manhattan distance.
-
-  If they bot is outside the area, then they should wait the manhattan distance to the nearest point in the frame
-  Then they should teleport immediately in and walk to the designated position.
-
-  If they are out and the place is out, they just cooldown then teleport
-  */
-}
-
 bool Task::idle(World &world, Population &population, State &_args){
   //if(debug){std::cout<<"Bot with ID: "<<botID<<" idling."<<std::endl;}
 
@@ -469,8 +385,6 @@ std::vector<glm::vec3> calculatePath(int id, glm::vec3 _dest, Population &popula
     //Vector to Return
     std::vector<glm::vec3> path;
 
-    std::cout<<"X: "<<_dest.x<<", Y: "<<_dest.y<<", Z: "<<_dest.z<<std::endl;
-
   	AStarSearch<MapSearchNode> astarsearch;
 
 		// Create a start state
@@ -490,7 +404,6 @@ std::vector<glm::vec3> calculatePath(int id, glm::vec3 _dest, Population &popula
 		astarsearch.SetStartAndGoalStates( nodeStart, nodeEnd );
 
 		unsigned int SearchState;
-    auto start = std::chrono::high_resolution_clock::now();
 		do{ SearchState = astarsearch.SearchStep(world); }
 		while( SearchState == AStarSearch<MapSearchNode>::SEARCH_STATE_SEARCHING );
 
@@ -514,10 +427,6 @@ std::vector<glm::vec3> calculatePath(int id, glm::vec3 _dest, Population &popula
       std::cout<<"Search Failed"<<std::endl;
       path.clear();
 		}
-    auto stop = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-    std::cout << "Calculating Path: " << duration.count() << std::endl;
-
 		astarsearch.EnsureMemoryFreed();
     return path;
 }

@@ -20,8 +20,8 @@ class View{
     const unsigned int SHADOW_WIDTH = 2000, SHADOW_HEIGHT = 2000;
 
     //Viewposition
-    glm::vec3 viewPos = glm::vec3(88, 1, 88);
-    glm::vec3 renderDistance = glm::vec3(1, 2, 1);
+    glm::vec3 viewPos = glm::vec3(88, 14, 88);
+    glm::vec3 renderDistance = glm::vec3(2, 2, 2);
 
     //LOD Handling
     bool switchLOD(World &world, Player &player, int _LOD);
@@ -53,11 +53,11 @@ class View{
     void renderScene();
     void renderShadow();
     void renderDepth();
-    void renderSprites(Player player, Population population);
+    void renderSprites(World world, Player player, Population population);
 
     //View Projector
     glm::mat4 camera = glm::lookAt(glm::vec3(10,12,10), glm::vec3(0,2,0), glm::vec3(0,1,0));
-    glm::mat4 projection = glm::ortho(-(float)SCREEN_WIDTH*zoom, (float)SCREEN_WIDTH*zoom, -(float)SCREEN_HEIGHT*zoom, (float)SCREEN_HEIGHT*zoom, -100.0f, 100.0f);
+    glm::mat4 projection = glm::ortho(-(float)SCREEN_WIDTH*zoom, (float)SCREEN_WIDTH*zoom, -(float)SCREEN_HEIGHT*zoom, (float)SCREEN_HEIGHT*zoom, -200.0f, 200.0f);
     //glm::mat4 projection = glm::perspective(glm::radians(50.0f), 1200.0f / 800.0f, 0.1f, 100.0f);
     //Light Variables
     glm::vec3 lightPos = glm::vec3(3.0f, 6.0f, 2.0f);
@@ -66,7 +66,7 @@ class View{
     float rotation = 0.0;
 
     glm::mat4 depthModelMatrix = glm::mat4(1.0);
-    glm::mat4 depthProjection = glm::ortho<float>(-60,60,-60,60,-30,100);
+    glm::mat4 depthProjection = glm::ortho<float>(-80,80,-80,80,-30,100);
     glm::mat4 depthCamera = glm::lookAt(lightPos, glm::vec3(0,0,0), glm::vec3(0,1,0));
 
     //FPS Calculator

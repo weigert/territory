@@ -33,7 +33,7 @@ public:
   //Animation Stuff
   Animation animation;
   bool doAnimationFrame();
-  void setAnimation(int id);
+  void setAnimation(int id, glm::vec3 _translate);
 
   void cleanup();
 };
