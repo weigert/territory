@@ -8,7 +8,7 @@ void Population::addBot(World world){
   //Add a bot
   Bot bot(bots.size());
   bot.setupSprite();
-  bot.pos = glm::vec3(88, world.getTop(glm::vec2(88,88)), 88);
+  bot.pos = glm::vec3(90, world.getTop(glm::vec2(90,90)), 90);
   Task *masterTask = new Task("Do Dumb Stuff.", bot.ID, &Task::Dummy);
   bot.current = masterTask;
   bots.push_back(bot);

@@ -29,17 +29,13 @@ enum BlockType{
 //Containers, Math, Other
 #include <stdlib.h>
 #include <string>
-#include <math.h>
 #include <noise/noise.h>
 #include <vector>
 #include <deque>
-#include <unordered_map>
-#include <chrono>
 
 //File / General IO
 #include <iostream>
 #include <fstream>
-#include <sstream>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/serialization/vector.hpp>

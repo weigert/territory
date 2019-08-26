@@ -77,6 +77,9 @@ void Sprite::setAnimation(int id, glm::vec3 _translate){
   else if(id == 1){
     animation.frames = 4;
   }
+  else if(id == 2){
+    animation.frames = 4;
+  }
 }
 
 bool Sprite::doAnimationFrame(){

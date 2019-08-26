@@ -1,13 +1,6 @@
 //Hexelrender Mainfile
 #include "territory.h"
 
-/*
-I need to make loading a vector of chunks quick!
-Just like the editBuffer.
-Do this for the player, then when it's ultra fast...
-Maybe I can specify a list of coordinates for a bot and see if they want to pathfind through a construct of chunks somehow...
-*/
-
 //Main Function
 int main( int argc, char* args[] ) {
 	//Logger

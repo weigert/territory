@@ -263,8 +263,9 @@ void World::generatePerlin(){
 
   //Add Trees
   std::cout<<"Adding Trees"<<std::endl;
-  for(int i = 0; i < 1000; i++){
+  for(int i = 0; i < 5000; i++){
     int tree[2] = {rand()%(chunkSize*worldSize), rand()%(chunkSize*worldSize)};
+    int treeheight = rand()%6+6;
 
     float x = (float)(tree[0]) / (float)(chunkSize*worldSize);
     float z = (float)(tree[1]) / (float)(chunkSize*worldSize);
@@ -272,25 +273,16 @@ void World::generatePerlin(){
     float height = perlin.GetValue(x, SEED, z)/5+0.25;
     height *= (worldHeight*chunkSize);
 
-    //Add the shit to the editbuffer
-    addEditBuffer(glm::vec3(tree[0], (int)height, tree[1]), BLOCK_WOOD);
-    addEditBuffer(glm::vec3(tree[0], (int)height+1, tree[1]), BLOCK_WOOD);
-    addEditBuffer(glm::vec3(tree[0], (int)height+2, tree[1]), BLOCK_WOOD);
-    addEditBuffer(glm::vec3(tree[0], (int)height+3, tree[1]), BLOCK_WOOD);
-    addEditBuffer(glm::vec3(tree[0], (int)height+4, tree[1]), BLOCK_WOOD);
-    addEditBuffer(glm::vec3(tree[0], (int)height+5, tree[1]), BLOCK_WOOD);
-    addEditBuffer(glm::vec3(tree[0], (int)height+6, tree[1]), BLOCK_WOOD);
-    addEditBuffer(glm::vec3(tree[0], (int)height+7, tree[1]), BLOCK_WOOD);
-    addEditBuffer(glm::vec3(tree[0], (int)height+8, tree[1]), BLOCK_WOOD);
-    addEditBuffer(glm::vec3(tree[0], (int)height+9, tree[1]), BLOCK_WOOD);
-    addEditBuffer(glm::vec3(tree[0], (int)height+10, tree[1]), BLOCK_WOOD);
-    addEditBuffer(glm::vec3(tree[0], (int)height+11, tree[1]), BLOCK_WOOD);
-    addEditBuffer(glm::vec3(tree[0], (int)height+12, tree[1]), BLOCK_WOOD);
-    addEditBuffer(glm::vec3(tree[0], (int)height+13, tree[1]), BLOCK_LEAVES);
-    addEditBuffer(glm::vec3(tree[0]+1, (int)height+12, tree[1]), BLOCK_LEAVES);
-    addEditBuffer(glm::vec3(tree[0]-1, (int)height+12, tree[1]), BLOCK_LEAVES);
-    addEditBuffer(glm::vec3(tree[0], (int)height+12, tree[1]+1), BLOCK_LEAVES);
-    addEditBuffer(glm::vec3(tree[0], (int)height+12, tree[1]-1), BLOCK_LEAVES);
+    for(int j = 0; j < treeheight; j++){
+      //Add the shit to the editbuffer
+      addEditBuffer(glm::vec3(tree[0], (int)height+j, tree[1]), BLOCK_WOOD);
+    }
+
+    addEditBuffer(glm::vec3(tree[0], (int)height+treeheight+1, tree[1]), BLOCK_LEAVES);
+    addEditBuffer(glm::vec3(tree[0]+1, (int)height+treeheight, tree[1]), BLOCK_LEAVES);
+    addEditBuffer(glm::vec3(tree[0]-1, (int)height+treeheight, tree[1]), BLOCK_LEAVES);
+    addEditBuffer(glm::vec3(tree[0], (int)height+treeheight, tree[1]+1), BLOCK_LEAVES);
+    addEditBuffer(glm::vec3(tree[0], (int)height+treeheight, tree[1]-1), BLOCK_LEAVES);
   }
 
   //Evaluate the Guy
@@ -480,8 +472,10 @@ int World::getTop(glm::vec2 _pos){
   //Loop over the height
   for(int i = 1; i < worldHeight*chunkSize; i++){
     //Check if we satisfy the conditions
-    if(getBlock(glm::vec3(_pos.x, i, _pos.y)) == BLOCK_AIR && getBlock(glm::vec3(_pos.x, i-1, _pos.y)) != BLOCK_AIR){
-      max = i;
+    if(getBlock(glm::vec3(_pos.x, i, _pos.y)) == BLOCK_AIR && getBlock(glm::vec3(_pos.x, i-1, _pos.y)) == BLOCK_GRASS){
+      if(i > max){
+        max = i;
+      }
     }
   }
   return max;

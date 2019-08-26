@@ -5,31 +5,6 @@
 
 #include "task.h"
 
-/*
-Pathfinding:
--> For small distance travel, far outside of the players visibility: Simply teleport with a cooldown
--> For large distance travel, outside or within players visibility: Create a road graph network and allow them to travel along the road
-  -> Additionally, if the player can't see it, just teleport between road nodes and shit.
-
--> For small distance travel, within a region of the players visibility: Use regular pathfinding
--> You can also do a truncate move where they exit the player's viewfield
-
--> How do you make sure their target location is reachable?
--> Something something waypoints as favorable nodes, so that paths are routed through them!
-
--> What if they randomly want to search for shit? idk fam...
--> When they're not loaded, I guess they won't be doing anything..
--> But all they're really doing now is just walking around...
--> They need much better pathfinding targets anyhow. Right now they don't make a lot of sense.
--> When they have proper pathfinding targets, we can think about other stuff.
-
--> They need more CONTENT to really showcase their complexity.
--> Follow will also have some complexity.
-
-
--> Maybe I should simulate some woodland creatures first....
-*/
-
 Task::Task(std::string taskName, int taskBotID, bool (Task::*taskHandle)(World&, Population&, State &_args)){
   name = taskName;
   botID = taskBotID;
@@ -97,6 +72,12 @@ bool Task::Dummy(World &world, Population &population, State &_args){
     int _pos[2] = {rand()%(world.worldSize*world.chunkSize), rand()%(world.worldSize*world.chunkSize)};
     walk.args.pos = glm::vec3(_pos[0], world.getTop(glm::vec2(_pos[0], _pos[1])), _pos[1]);
     queue.push(walk);
+
+    //Wait Task
+    Task wait("Wait a second...", botID, &Task::wait);
+    wait.args.time = 5;
+    wait.animation = 2;
+    queue.push(wait);
   }
 
   //Only perform the queue as specified!
@@ -107,11 +88,13 @@ bool Task::walk(World &world, Population &population, State &_args){
   //Goal Position
   glm::vec3 goal = _args.pos;
 
-  //Check if bot is outside position or inside
-  //Check if Goal is outside the position or inside
+  /*
+  Check if bot is outside position or inside
+  Check if goal is outside position or inside
 
-  //If Goal and Start are outside
-  //Simply teleport + cooldown
+  If goal and start are outside, teleport and wiat
+  If otherwise you need to crop the two endpoints and include waiting
+  */
 
   //Check If The Goal Position is Free
   if(world.getBlock(goal) != BLOCK_AIR){
@@ -424,7 +407,6 @@ std::vector<glm::vec3> calculatePath(int id, glm::vec3 _dest, Population &popula
 		}
 		else if( SearchState == AStarSearch<MapSearchNode>::SEARCH_STATE_FAILED ){
       //  if(debug){cout << "Search terminated. Did not find goal state\n";}
-      std::cout<<"Search Failed"<<std::endl;
       path.clear();
 		}
 		astarsearch.EnsureMemoryFreed();
