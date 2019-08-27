@@ -58,7 +58,9 @@ If the world name doesn't exist, it will generate a world. If it does, it will l
 
 **To-Do**:
 - Expand task library with more basic behavior elements.
-- 
+	- Tasks for: Skills/Crafts, Economy, Resources, Inventory, Fighting, Movement, Mandates, Communication, Memory, etc.
+- Implement a group structure with land-ownership rights
+- Add items for interaction, as well as storage of tasks and memories inside items
 
 ### World Generator
 **Done:**
