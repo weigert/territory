@@ -261,6 +261,21 @@ void World::generatePerlin(){
   //Evaluate the Guy
   evaluateEditBuffer();
 
+  //Pumpkings
+  std::cout<<"Adding Pumpkins"<<std::endl;
+  for(int i = 0; i < 1000; i++){
+    int rock[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
+    //Normalize the Block's x,z coordinates
+    float x = (float)(rock[0]) / (float)(chunkSize*dim.x);
+    float z = (float)(rock[1]) / (float)(chunkSize*dim.z);
+
+    float height = perlin.GetValue(x, SEED, z)/5+0.25;
+    height *= (dim.y*chunkSize);
+
+    addEditBuffer(glm::vec3(rock[0], (int)height, rock[1]), BLOCK_PUMPKIN);
+  }
+
+
   //Add Trees
   std::cout<<"Adding Trees"<<std::endl;
   for(int i = 0; i < 5000; i++){

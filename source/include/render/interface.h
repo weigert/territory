@@ -172,6 +172,17 @@ void Interface::render(View &view, World &world, Population &population, Player 
     }
 
     if(ImGui::BeginTabItem("View")){
+      //Projection Matrix
+      static bool projectionMatrix = false;
+      ImGui::Checkbox("Projection Matrix", &projectionMatrix);
+      if(projectionMatrix){
+        view.projection = glm::perspective(glm::radians(50.0f), 1200.0f / 800.0f, 0.1f, 100.0f);
+      }
+      else{
+        view.projection = glm::ortho(-(float)view.SCREEN_WIDTH*view.zoom, (float)view.SCREEN_WIDTH*view.zoom, -(float)view.SCREEN_HEIGHT*view.zoom, (float)view.SCREEN_HEIGHT*view.zoom, -200.0f, 200.0f);
+      }
+
+
       //Add an FPS Plot
       ImGui::PlotLines("FPS Counter", view.arr, IM_ARRAYSIZE(view.arr));
 

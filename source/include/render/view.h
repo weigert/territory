@@ -64,7 +64,6 @@ class View{
     //View Projector
     glm::mat4 camera = glm::lookAt(glm::vec3(10,12,10), glm::vec3(0,2,0), glm::vec3(0,1,0));
     glm::mat4 projection = glm::ortho(-(float)SCREEN_WIDTH*zoom, (float)SCREEN_WIDTH*zoom, -(float)SCREEN_HEIGHT*zoom, (float)SCREEN_HEIGHT*zoom, -200.0f, 200.0f);
-    //glm::mat4 projection = glm::perspective(glm::radians(50.0f), 1200.0f / 800.0f, 0.1f, 100.0f);
     //Light Variables
     glm::vec3 lightPos = glm::vec3(3.0f, 6.0f, 2.0f);
     glm::vec3 lightCol = glm::vec3(1.0f, 1.0f, 0.9f);
