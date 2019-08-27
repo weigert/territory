@@ -6,11 +6,11 @@
 If the world name doesn't exist, it will generate a world. If it does, it will load the world. Tested on Ubuntu 18
 
 ## Controls
-- Change Camera Position: WASD
-- Move Camera Up / Down: Space / LShift
-- Change View Angle: Scroll Left / Right
-- Zoom: Scroll Up / Down
-- Manipulate the Simulation through the control panel
+		- Change Camera Position: WASD
+		- Move Camera Up / Down: Space / LShift
+		- Change View Angle: Scroll Left / Right
+		- Zoom: Scroll Up / Down
+		- Manipulate the Simulation through the control panel
 
 ## Panel
 - Simulation: Control the Simulation Speed
