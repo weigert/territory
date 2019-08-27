@@ -30,7 +30,7 @@ In-simulation control panel allows for manipulating the simulation:
 		- Change Skybox Color
 		- Change Lighting Color
 
-![Example Rendering](https://github.com/weigert/territory/blob/master/territory.png)
+![Example Rendering](https://github.com/weigert/territory/blob/master/resource/test.png)
 
 ## Source
 ### Reading
