@@ -31,6 +31,7 @@ In-simulation control panel allows for manipulating the simulation:
 		- Change Lighting Color
 
 ![Example Rendering](https://github.com/weigert/territory/blob/master/resource/test.png)
+![Control Panel](https://github.com/weigert/territory/blob/master/resource/test2.png)
 
 ## Source
 ### Reading
