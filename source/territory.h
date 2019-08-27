@@ -15,7 +15,8 @@ enum BlockType{
   BLOCK_STONE = 6,
   BLOCK_WATER = 7,
   BLOCK_LEAVES = 8,
-  BLOCK_WOOD = 9
+  BLOCK_WOOD = 9,
+  BLOCK_PUMPKIN = 10,
 };
 
 //Dear IMgui Dependencies
