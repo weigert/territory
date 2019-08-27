@@ -3,10 +3,10 @@
 #include "sprite.h"
 #include "shader.h"
 #include "model.h"
+#include "interface.h"
 #include "../taskbot/population.h"
 #include "../taskbot/bot.h"
 #include "../game/player.h"
-
 //Load our Own Type!
 #include "view.h"
 
@@ -31,6 +31,16 @@ bool View::Init(){
 	SDL_GL_SetSwapInterval(1);
 	glewExperimental = GL_TRUE;
 	glewInit();
+
+  //Setup the Guy
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  io = ImGui::GetIO(); (void)io;
+
+  ImGui_ImplSDL2_InitForOpenGL(gWindow, gContext);
+  ImGui_ImplOpenGL3_Init("#version 130");
+
+  ImGui::StyleColorsCustom();
 
   //Configure Global OpenGL State
   glEnable( GL_DEPTH_TEST);
@@ -86,6 +96,11 @@ void View::cleanup(){
   glDeleteTextures(1, &depthMap);
   glDeleteFramebuffers(1, &depthMapFBO);
 
+  //Shutdown IMGUI
+  ImGui_ImplOpenGL3_Shutdown();
+  ImGui_ImplSDL2_Shutdown();
+  ImGui::DestroyContext();
+
   //Destroy Context and Window
 	SDL_GL_DeleteContext( gContext );
 	SDL_DestroyWindow( gWindow );
@@ -95,7 +110,7 @@ void View::cleanup(){
   SDL_Quit();
 }
 
-void View::loadChunkModels(World &world, Player player){
+void View::loadChunkModels(World &world){
   //Update the Models for the Chunks
 
   if(updateLOD){
@@ -187,7 +202,7 @@ bool View::setupShadow(){
 }
 
 
-void View::render(World world, Player player, Population population){
+void View::render(World &world, Player &player, Population &population){
   //Move the light ayy
   //depthCamera = glm::rotate(depthCamera, glm::radians(-0.1f), glm::vec3(0.0, 1.0, 0.0));
   //Render the Regular View
@@ -195,8 +210,28 @@ void View::render(World world, Player player, Population population){
   renderScene();
   renderSprites(world, player, population);
 
+  renderGUI(world, player, population);
+
   //Swap the Window
   SDL_GL_SwapWindow(gWindow);
+}
+
+void View::renderGUI(World &world, Player &player, Population &population){
+  //IMGUI Stuff
+  ImGui_ImplOpenGL3_NewFrame();
+  ImGui_ImplSDL2_NewFrame(gWindow);
+  ImGui::NewFrame();
+
+  //Do the Rendering
+  interface->render(*this, world, population, player);
+
+  //Draw the cool window
+  //ImGui::ShowDemoWindow();
+
+  //Render IMGUI
+  ImGui::Render();
+  glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 void View::renderSprites(World world, Player player, Population population){
@@ -204,13 +239,16 @@ void View::renderSprites(World world, Player player, Population population){
   spriteShader.useProgram();
   glActiveTexture(GL_TEXTURE0);
 
-  //Loop over the guys
   for(unsigned int i = 0; i < population.bots.size(); i++){
     //Here we should check if the sprite should even be rendered.
 
     //I need to actually check if the sprite is outside the renderdistance!
     if(glm::any(glm::greaterThan(glm::abs(glm::floor(population.bots[i].pos/glm::vec3(world.chunkSize))-glm::floor(viewPos/glm::vec3(world.chunkSize))), renderDistance))){
       //Skip this sprite
+      continue;
+    }
+
+    if(population.bots[i].dead){
       continue;
     }
 
@@ -284,7 +322,7 @@ void View::renderScene(){
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
   //Clear the Color and Stuff
-  glClearColor(0.6f, 0.9f, 0.8f, 1.0f); //Blue
+  glClearColor(skyCol.x, skyCol.y, skyCol.z, 1.0f); //Blue
 
   //glClearColor(0.25f, 0.6f, 0.4f, 1.0f); //Green
   //glClearColor(0.25f, 0.15f, 0.25f, 1.0f); //Purple
@@ -334,14 +372,19 @@ bool View::switchLOD(World &world, Player &player, int _LOD){
   LOD = _LOD;
   updateLOD = true;
   world.bufferChunks( *this );
-  loadChunkModels(world, player);
+  loadChunkModels(world);
 
   return true;
 }
 
 void View::calcFPS(){
+  //Loop over the FPS
   //We getting 60 FPS
   FPS = (int)(1000.0f/(SDL_GetTicks()-ticks));
   ticks = SDL_GetTicks();
-  std::cout<<FPS<<std::endl;
+  //Set the FPS
+  for(int i = 0; i < plotSize-1; i++){
+    arr[i] = arr[i+1];
+  }
+  arr[plotSize-1] = FPS;
 }

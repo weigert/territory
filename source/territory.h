@@ -18,6 +18,11 @@ enum BlockType{
   BLOCK_WOOD = 9
 };
 
+//Dear IMgui Dependencies
+#include "include/imgui/imgui.h"
+#include "include/imgui/imgui_impl_sdl.h"
+#include "include/imgui/imgui_impl_opengl3.h"
+
 //Drawing Dependencies
 #include <GL/glew.h>
 #include <SDL2/SDL.h>
@@ -52,6 +57,7 @@ enum BlockType{
 #include "include/world/world.cpp"
 
 //View Classes
+#include "include/render/interface.cpp"
 #include "include/render/view.cpp"
 #include "include/render/model.cpp"
 #include "include/render/sprite.cpp"

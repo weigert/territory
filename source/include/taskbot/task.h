@@ -14,7 +14,7 @@ using namespace std::placeholders;
 class Task{
   public:
     //Members
-    std::stack<Task> queue;
+    std::vector<Task> queue;
     bool initFlag = true;
     State args;
 
@@ -29,19 +29,40 @@ class Task{
     Task(std::string taskName, int taskBotID, int animationID, glm::vec3 animationTranslate, bool (Task::*taskHandle)(World&, Population&, State &_args));
 
     //Task Handling Tasks
+    bool null(World &world, Population &population, State &_args);  //Do Nothing
     bool perform(World &world, Population &population);
     bool handleQueue(World &world, Population &population);
+    bool example(World &world, Population &population, State &_args);
 
-    //0-Level Algorithmic
-    bool wait(World &world, Population &population, State &_args);
-    bool null(World &world, Population &population, State &_args);
+    //Memory Tasks
     bool look(World &world, Population &population, State &_args);
-    bool step(World &world, Population &population, State &_args);
-    bool move(World &world, Population &population, State &_args);
+    bool listen(World &world, Population &population, State &_args);
+    bool think(World &world, Population &population, State &_args);
 
-    //Error-Handling Primaries
+    //Movement Tasks
+    bool wait(World &world, Population &population, State &_args);
+    bool move(World &world, Population &population, State &_args);  //Move Position
+    bool step(World &world, Population &population, State &_args);
     bool walk(World &world, Population &population, State &_args);
     bool idle(World &world, Population &population, State &_args);
+    bool follow(World &world, Population &population, State &_args);
+
+    //Mandate Management Tasks
+    bool decide(World &world, Population &population, State &_args);
+    bool request(World &world, Population &population, State &_args);
+
+    //Communication Tasks
+    bool interrupt(World &world, Population &population, State &_args);
+    bool tell(World &world, Population &population, State &_args);
+    bool ask(World &world, Population &population, State &_args);
+    bool respond(World &world, Population &population, State &_args);
+    bool converse(World &world, Population &population, State &_args);
+    bool locate(World &world, Population &population, State &_args);
+
+    //Inventory Management Tasks
+    bool find(World &world, Population &population, State &_args);
+
+    //Error-Handling Primaries
     bool search(World &world, Population &population, State &_args);
     bool forage(World &world, Population &population, State &_args);
 

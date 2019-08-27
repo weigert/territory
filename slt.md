@@ -63,8 +63,6 @@ Here are some new task ideas:
 -> Make sure they are properly parametrized, so that we avoid duplicate stuff.
 
 ##Memory Oriented Tasks
-Task::look      - Scan Environment and write to memory
-Task::think     - Iteratively Query memory and increase recall scores
 Task::dream     - Wait and Think / Listen / Sleep
 Task::read      - retrieve memories from Objects
 Task::write     - add memory objects to books
@@ -91,11 +89,6 @@ Task::promote   - Move up in the hierarchy
 Task::leave     - Leave a group
 
 ##Movement Tasks
-Task::move    - Teleport to State Location
-Task::step    - Take single step towards path-found location
-Task::walk    - Step with error-handling
-Task::wait    - Wait a series of ticks
-Task::idle    - Low-Energy do nothing.
 Task::follow  - Move to a point a certain distance away from an individual (is also equal to avoid)
 
 ##Fighting Tasks

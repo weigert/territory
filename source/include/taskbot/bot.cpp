@@ -4,6 +4,7 @@
 #include "task.h"
 #include "memory.h"
 #include "../render/sprite.h"
+#include "state.h"
 //Link to class
 #include "bot.h"
 
@@ -12,7 +13,7 @@
 Bot::Bot(int _ID){
   viewDistance = 2;
   memorySize = 10;
-  subconSize = 5;
+  shortermSize = 5;
   trail = false;
   fly = false;
   species = "Human";
@@ -25,7 +26,7 @@ Bot::Bot(std::string s, bool t, bool f, int view, int forag, int mem, int id, gl
   viewDistance = view;
   forage = forag;
   memorySize = mem;
-  subconSize = 5;
+  shortermSize = 5;
   trail = t;
   fly = f;
   species = s;
@@ -34,57 +35,27 @@ Bot::Bot(std::string s, bool t, bool f, int view, int forag, int mem, int id, gl
   home = _home;
 }
 
+bool Bot::tryInterrupt(State _state){
+  interrupt = true;
+  return true;
+}
+
 //Per Tick Executor Task
 void Bot::executeTask(World &world, Population &population){
+
   //Check for interrupt!
   if(interrupt){
     //Reevaluate Mandates, so we can respond
-    evaluateMandates(world, population);
+    Task *decide = new Task("Handle Interrupt", ID, &Task::decide);
+    current = decide;
     interrupt = false;
   }
+  else{
 
-  //Execute Current Task, upon success overwrite.
-  if((current->perform)(world, population)){
-    evaluateMandates(world, population);
-  }
-}
-
-void Bot::evaluateMandates(World &world, Population &population){
-  //This should account for fulfilled mandate goals!!
-  //Check for No Mandates (this should be done somewhere else)
-  if(mandates.empty()){
-    //We construct a new mandate and add it to our stack
-    //This should be some general species initializer.
-    Task *masterTask = new Task("Do Dumb Stuff.", ID, &Task::Dummy);
-
-    //Construct a new blank species mandate
-    Mandate *mandate = new Mandate(ID, ID, 0, false, 1);
-    mandate->suggest = masterTask;
-    mandates.push_back(*mandate);
-  }
-
-  short tempViab = 0;
-
-  //Cycle through the Mandates
-  for(unsigned int i = 0; i < mandates.size(); i++){
-    //Check for complete condition
-    if(mandates[i].completed(world, population, ID)){
-      //Check if this mandate should be repeated
-      if(!mandates[i].repeat){
-        //Remove Mandate from Queue
-        mandates.erase(mandates.begin() + i);
-      }
-    }
-
-    //Get the Suggested Task for every mandate.
-    mandates[i].getSuggest();
-    mandates[i].getViability();
-
-    //Calculate the viability
-    if(mandates[i].viability > tempViab){
-      //For a lower viability, change our current executing task
-      current = mandates[i].suggest;
-      tempViab = mandates[i].viability;
+    //Execute Current Task, upon success overwrite.
+    if((current->perform)(world, population)){
+      Task *decide = new Task("Decide on Action", ID, &Task::decide);
+      current = decide;
     }
   }
 }
@@ -161,6 +132,20 @@ void Bot::addMemory(World world, glm::vec3 _pos){
   //Remove the Last Element if it is too much
   if(memories.size() > memorySize){
     memories.pop_back();
+  }
+}
+
+void Bot::addSound(State _state){
+  //Create the Auditory Information
+  Memory sound;
+  sound.state = _state;
+
+  //Add it to the front
+  shorterm.push_front(sound);
+
+  //Clip anything hanging off the back
+  if(shorterm.size() > shortermSize){
+    shorterm.pop_back();
   }
 }
 

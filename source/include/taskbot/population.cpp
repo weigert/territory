@@ -9,12 +9,9 @@ void Population::addBot(World world){
   Bot bot(bots.size());
   bot.setupSprite();
   bot.pos = glm::vec3(90, world.getTop(glm::vec2(90,90)), 90);
-  Task *masterTask = new Task("Do Dumb Stuff.", bot.ID, &Task::Dummy);
+  Task *masterTask = new Task("Human Task", bot.ID, &Task::Dummy);
   bot.current = masterTask;
   bots.push_back(bot);
-
-  //Evaluate its mandates
-  bots.back().evaluateMandates(world, *this);
 }
 
 void Population::removeBot(int id){
@@ -44,7 +41,8 @@ void Population::update(World &world){
   //Do some Updating Here
   //Check if anyone has died here for instance.
   for(unsigned int i = 0; i < bots.size(); i++){
-    //Execute the Task for Each Bot
-    bots[i].executeTask(world, *this);
+    if(!bots[i].dead){
+      bots[i].executeTask(world, *this);
+    }
   }
 }

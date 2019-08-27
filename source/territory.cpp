@@ -32,7 +32,7 @@ int main( int argc, char* args[] ) {
 
 	//Generate the World and Chunks
 	world.bufferChunks( view );
-	view.loadChunkModels( world , player);
+	view.loadChunkModels( world );
 
 	Population population( world );
 
@@ -49,13 +49,17 @@ int main( int argc, char* args[] ) {
 		events.input(&e, quit);
 		events.update(world, player, population, view);
 
+		//Handle with IMGUI
+		//ImGui_ImplSDL2_ProcessEvent(&e);
+
 		//Update the Population
-		if(SDL_GetTicks()%2 == 0){
+		if(SDL_GetTicks()%world.tickLength == 0){
 			population.update(world);
 		}
 
 		//Render the View
 		view.render(world, player, population);
+		view.calcFPS();
 	}
 
 	view.cleanup();

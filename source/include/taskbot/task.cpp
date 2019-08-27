@@ -29,6 +29,11 @@ Task::Task(std::string taskName, int taskBotID, int animationID, glm::vec3 anima
                     TASK HANDLING TASKS
 =========================================================
 */
+//Empty Task
+bool Task::null(World &world, Population &population, State &_args){
+  //Simply Return True
+  return true;
+}
 
 //Execute Task Function
 bool Task::perform(World &world, Population &population){
@@ -58,13 +63,13 @@ bool Task::handleQueue(World &world, Population &population){
   //If the Queue isn't empty, handle top task
   if(!queue.empty()){
     //Get the Top Task
-    Task newtask = queue.top();
-    queue.pop();
+    Task newtask = queue.back();
+    queue.pop_back();
 
     //Perform the Task and Put it back on when successful
     if(!newtask.perform(world, population)){
       //We need to repeat the animation
-      queue.push(newtask);
+      queue.push_back(newtask);
     }
     //Task was performed successfully, we leave it off.
     return false;
@@ -75,10 +80,17 @@ bool Task::handleQueue(World &world, Population &population){
   return true;
 }
 
-//Empty Task
-bool Task::null(World &world, Population &population, State &_args){
-  //Simply Return True
-  return true;
+//Example - How to Construct a High-Level Task
+bool Task::example(World &world, Population &population, State &_args){
+  //Check
+  if(initFlag){
+    Task null("Example", botID, &Task::null);   //Construct the Task "null"
+    null.animation = 0;                         //Set the Task's Animation
+    queue.push_back(null);                           //Add it to the Queue
+  }
+
+  //Handle the Queue appropriately.
+  return handleQueue(world, population);
 }
 
 /*
@@ -86,6 +98,22 @@ bool Task::null(World &world, Population &population, State &_args){
                       MOVING TASKS
 =========================================================
 */
+
+//Wait - Do a series of Null Tasks
+bool Task::wait(World &world, Population &population, State &_args){
+  //Set the Stuff
+  if(initFlag){
+    Task null("Null", botID, &Task::null);
+    null.animation = 2;
+    //Add the Tasks
+    for(int i = 0; i < _args.time; i++){
+      queue.push_back(null);
+    }
+  }
+
+  //Handle the Queue
+  return handleQueue(world, population);
+}
 
 //Move - Teleport to Location
 bool Task::move(World &world, Population &population, State &_args){
@@ -129,7 +157,7 @@ bool Task::step(World &world, Population &population, State &_args){
     move.args.pos = population.bots[botID].path.back();
     move.animation = 1;
     move.translate = glm::vec3(move.args.pos - population.bots[botID].pos)/glm::vec3(4);
-    queue.push(move);
+    queue.push_back(move);
   }
 
   return handleQueue(world, population);
@@ -163,32 +191,43 @@ bool Task::walk(World &world, Population &population, State &_args){
     //Setup some tasks
     Task step("Step", botID, &Task::step);
     step.args.pos = goal;
-    queue.push(step);
+    queue.push_back(step);
   }
 
   //Only perform the queue as specified!
+  return handleQueue(world, population);
+}
+
+//Idle - Move Around Randomly and Wait some time
+bool Task::idle(World &world, Population &population, State &_args){
+  //Check for initial flag
+  if(initFlag){
+    Task walk("Walk", botID, &Task::walk);
+    int _shift[2] = {rand()%10-5, rand()%10-5};
+    glm::vec2 _pos = glm::vec2(population.bots[botID].pos.x,population.bots[botID].pos.z ) + glm::vec2(_shift[0], _shift[1]);
+    walk.args.pos = glm::vec3(_pos.x, world.getTop(_pos), _pos.y);
+
+    Task wait("Wait", botID, &Task::wait);
+    wait.args.time = _args.time;
+
+    //Add the Tasks for Idle
+    queue.push_back(wait);
+    queue.push_back(walk); //Walk will be executed first
+
+    //Update the First Flag
+    initFlag = false;
+  }
+
   return handleQueue(world, population);
 }
 
 /*
 =========================================================
-                      OTHER TASKS
+                    MEMORY TASKS
 =========================================================
 */
 
-//Special Functions
-bool Task::Dummy(World &world, Population &population, State &_args){
-  //Set Intial Tasks
-  if(initFlag){
-    Task idle("Walk Around", botID, &Task::idle);
-    idle.args.time = 5;
-    queue.push(idle);
-  }
-
-  //Only perform the queue as specified!
-  return handleQueue(world, population);
-}
-
+//Look - Scan surroundings and write to memory queue
 bool Task::look(World &world, Population &population, State &_args){
   //Parse Arguments
   int rad = _args.dist; //View Square Size
@@ -205,18 +244,131 @@ bool Task::look(World &world, Population &population, State &_args){
   return true;
 }
 
-bool Task::wait(World &world, Population &population, State &_args){
-  //Set the Stuff
-  if(initFlag){
-    Task null("Wait", botID, &Task::null);
-    null.animation = 2;
-    //Add the Tasks
-    for(int i = 0; i < _args.time; i++){
-      queue.push(null);
-    }
+//Think - Query Memory
+bool Task::think(World &world, Population &population, State &_args){
+  //Generate Memory Query
+  Memory query;
+  query.state = _args;
+
+  //Get the Memories
+  std::deque<Memory> memories = population.bots[botID].recallMemories(query, false);
+
+  //Check if we have no memories about that query
+  if(!memories.empty()){
+    int i = rand()%memories.size();
+    _args = memories[i].state;
   }
 
-  //Handle the Queue
+  //Pick a random memory and set it to the argument
+  return true;
+}
+
+//Think - Write Short-Term to Long-Term Memory
+bool Task::listen(World &world, Population &population, State &_args){
+  //Add listen elements directly to long-term memory stack
+  while(!population.bots[botID].shorterm.empty()){
+    //Check if we already know the information
+    std::deque<Memory> memories = population.bots[botID].recallMemories(population.bots[botID].shorterm.back(), true);
+
+    //When memories are empty, we don't have an exact matching memory
+    if(memories.empty()){
+      population.bots[botID].memories.push_front(population.bots[botID].shorterm.back());
+    }
+
+    population.bots[botID].shorterm.pop_back();
+  }
+
+  //Pick a random memory and set it to the argument
+  return true;
+}
+
+/*
+=========================================================
+                MANDATE HANDLING TASKS
+=========================================================
+*/
+
+bool Task::decide(World &world, Population &population, State &_args){
+  //Check if we have mandates to go
+  if(population.bots[botID].mandates.empty()){
+    //Set the Current Task to Something Abitrary
+    Task *masterTask = new Task("Human Task", botID, &Task::Dummy);
+    population.bots[botID].current = masterTask;
+  }
+  else{
+    //Determine a viable task from the list of tasks to perform
+    population.bots[botID].current = population.bots[botID].mandates.back();
+    population.bots[botID].mandates.pop_back();
+    //For now, we are just taking the back element
+  }
+
+  //Take whatever mandate is available
+  return false;
+}
+
+bool Task::request(World &world, Population &population, State &_args){
+  //Write a mandate request to a different bot
+  //something something...
+
+  return true;
+}
+
+/*
+=========================================================
+                  COMMUNICATION TASKS
+=========================================================
+*/
+
+bool Task::interrupt(World &world, Population &population, State &_args){
+  //Attempt to set an interrupt on a different bot
+  if(population.bots[_args.target].tryInterrupt(_args)){ //!!!!Note this uses botID
+    return true;
+  }
+  return false;
+}
+
+bool Task::tell(World &world, Population &population, State &_args){
+  if(initFlag){
+    //Write to the bots shortterm memory
+    population.bots[_args.target].addSound(_args);
+
+    //Do an interrupt Task Repeatedly until success (i.e. persistent approach)
+    Task interrupt("Interrupt Bot", _args.target, &Task::interrupt);
+    interrupt.args = _args;
+    queue.push_back(interrupt);
+  }
+
+  return handleQueue(world, population);
+}
+
+bool Task::ask(World &world, Population &population, State &_args){
+  return true;
+}
+
+bool Task::respond(World &world, Population &population, State &_args){
+  return true;
+}
+
+bool Task::converse(World &world, Population &population, State &_args){
+  return true;
+}
+
+/*
+=========================================================
+                      BEHAVIORS
+=========================================================
+*/
+
+//Special Functions
+bool Task::Dummy(World &world, Population &population, State &_args){
+  //Set Intial Tasks
+  if(initFlag){
+    Task idle("Walk Around", botID, &Task::idle);
+    idle.args.time = 5;
+    queue.push_back(idle);
+  }
+
+  //Only perform the queue as specified!
   return handleQueue(world, population);
 }
 
@@ -254,8 +406,8 @@ bool Task::search(World &world, Population &population, State &_args){
         walk.args[0] = memories[i-1].location.x;
         walk.args[1] = memories[i-1].location.y;
 
-        queue.push(inspect);
-        queue.push(walk);
+        queue.push_back(inspect);
+        queue.push_back(walk);
       }
       //We have some tasks, so we can skip the repeating this.
     }
@@ -267,9 +419,9 @@ bool Task::search(World &world, Population &population, State &_args){
       Task look("Scan", botID, &Task::look);
       look.args[0] = population.bots[botID].viewDistance;
 
-      queue.push(inspect);
-      queue.push(look);
-      queue.push(walk);
+      queue.push_back(inspect);
+      queue.push_back(look);
+      queue.push_back(walk);
 
       //We didn't find anything. Therefore we must search!
       //Walk to a random location and look
@@ -282,11 +434,11 @@ bool Task::search(World &world, Population &population, State &_args){
   if(!queue.empty()){
     //Get the Top Task
     Task newtask = queue.top();
-    queue.pop();
+    queue.pop_back();
     //If our new Task is not performed successfully
     if(!newtask.perform(world, population)){
       //Put the Task back on
-      queue.push(newtask);
+      queue.push_back(newtask);
       return false;
     }
     //If it was successful, we leave it off
@@ -320,11 +472,11 @@ bool Task::forage(World &world, Population &population, State &_args){
     Task store("Store", botID, &Task::store);
 
     //Add in reverse order!
-    queue.push(store);
-    queue.push(home);
-    queue.push(look);
-    queue.push(take);
-    queue.push(search);
+    queue.push_back(store);
+    queue.push_back(home);
+    queue.push_back(look);
+    queue.push_back(take);
+    queue.push_back(search);
 
     initFlag = false;
   }
@@ -336,11 +488,11 @@ bool Task::forage(World &world, Population &population, State &_args){
   if(!queue.empty()){
     //Get the Top Task
     Task newtask = queue.top();
-    queue.pop();
+    queue.pop_back();
     //If our new Task is not performed successfully
     if(!newtask.perform(world, population)){
       //Put the Task back on
-      queue.push(newtask);
+      queue.push_back(newtask);
     }
     //If it was successful, we leave it off
     return false;
@@ -352,29 +504,13 @@ bool Task::forage(World &world, Population &population, State &_args){
   return true;
 }
 
-bool Task::idle(World &world, Population &population, State &_args){
-  //Check for initial flag
-  if(initFlag){
-    Task walk("Walk", botID, &Task::walk);
-    int _shift[2] = {rand()%10-5, rand()%10-5};
-    glm::vec2 _pos = glm::vec2(population.bots[botID].pos.x,population.bots[botID].pos.z ) + glm::vec2(_shift[0], _shift[1]);
-    walk.args.pos = glm::vec3(_pos.x, world.getTop(_pos), _pos.y);
+/*
+=========================================================
+                      PATHFINDING
+=========================================================
+*/
 
-    Task wait("Wait", botID, &Task::wait);
-    wait.args.time = _args.time;
-
-    //Add the Tasks for Idle
-    queue.push(wait);
-    queue.push(walk); //Walk will be executed first
-
-    //Update the First Flag
-    initFlag = false;
-  }
-
-  return handleQueue(world, population);
-}
-
-// Needs to be expanded to 3D
+//Calculatepath - Return a path that the bots should follow along until a goal in 3D
 std::vector<glm::vec3> calculatePath(int id, glm::vec3 _dest, Population &population, World &world){
     //Vector to Return
     std::vector<glm::vec3> path;
@@ -394,7 +530,6 @@ std::vector<glm::vec3> calculatePath(int id, glm::vec3 _dest, Population &popula
     nodeEnd.z = _dest.z;
 
 		// Set Start and goal states
-
 		astarsearch.SetStartAndGoalStates( nodeStart, nodeEnd );
 
 		unsigned int SearchState;

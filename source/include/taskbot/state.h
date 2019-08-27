@@ -13,13 +13,16 @@ class State{
     glm::vec3 pos;
     std::string task;
     int carry;
+
+    //Target Bot
+    int target;
     //int owner; //Owner of this Memory
     //int starter; //Originator of this Memory
     BlockType block;
     bool reachable;
     //Item item;
     int time;
-    int dist;
+    int dist = 0;
 
     //Get the Current Local State
     void retrieveState(World &world, Population &population, int bot);

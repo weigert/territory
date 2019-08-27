@@ -4,6 +4,7 @@
 #include "../forward/world.fwd.h"
 #include "../forward/task.fwd.h"
 #include "../forward/sprite.fwd.h"
+#include "../forward/state.fwd.h"
 
 class Bot{
   public:
@@ -13,11 +14,12 @@ class Bot{
     int ID;
     int viewDistance;
     unsigned int memorySize;
-    unsigned int subconSize;
+    unsigned int shortermSize;
     int forage;
     bool trail;
     bool fly;
     std::string species;
+    bool dead = false;
 
     //Bot has a sprite
     Sprite sprite;
@@ -33,17 +35,16 @@ class Bot{
     //Bot Activities and Actions
     Task* current;
     bool interrupt = false; //Interrupt flag
+    bool tryInterrupt(State _state); //Attempt an Interruption of the Bot
     std::string task = "Idle"; //Task Name
     std::vector<glm::vec3> path;   //Movement Path
     void executeTask(World &world, Population &population);
 
-    //Subconscious
-    std::deque<Mandate> mandates; //Mandates Memory
-    void evaluateMandates(World &world, Population &population);
-
     //Memories / Brain
-    std::deque<Memory> memories; //Longterm Memory
     std::deque<Memory> shorterm; //Shortterm Sensory Memory
+    std::deque<Memory> memories; //Longterm Memory
+    std::vector<Task*> mandates;  //Mandate Memory
+    void addSound(State _state);
     std::deque<Memory> recallMemories(Memory &query, bool all);
     void updateMemory(Memory &query, bool all, Memory &memory);
     void addMemory(World world, glm::vec3 _pos);

@@ -8,6 +8,7 @@
 #include "../forward/population.fwd.h"
 #include "../forward/bot.fwd.h"
 #include "../forward/player.fwd.h"
+#include "../forward/interface.fwd.h"
 
 class View{
   public:
@@ -16,8 +17,12 @@ class View{
     void cleanup();
     SDL_Window* gWindow;
     SDL_GLContext gContext;
+    ImGuiIO io;
     const unsigned int SCREEN_WIDTH = 1200, SCREEN_HEIGHT = 800;
     const unsigned int SHADOW_WIDTH = 2000, SHADOW_HEIGHT = 2000;
+
+    //GUI Handler
+    Interface* interface;
 
     //Viewposition
     glm::vec3 viewPos = glm::vec3(88, 14, 88);
@@ -31,7 +36,7 @@ class View{
     bool updateLOD = false;
 
     //Loaded Chunk Models
-    void loadChunkModels(World &world, Player player);  //When chunks are displayed
+    void loadChunkModels(World &world);  //When chunks are displayed
     std::vector<Model> models;
 
     // Shadow Textures in Here
@@ -49,10 +54,11 @@ class View{
     Shader spriteShader;
 
     //Render the entire drawing pipeline
-    void render(World world, Player player, Population population);
+    void render(World &world, Player &player, Population &population);
     void renderScene();
     void renderShadow();
     void renderDepth();
+    void renderGUI(World &world, Player &player, Population &population);
     void renderSprites(World world, Player player, Population population);
 
     //View Projector
@@ -62,6 +68,7 @@ class View{
     //Light Variables
     glm::vec3 lightPos = glm::vec3(3.0f, 6.0f, 2.0f);
     glm::vec3 lightCol = glm::vec3(1.0f, 1.0f, 0.9f);
+    glm::vec3 skyCol = glm::vec3(0.6, 0.9f, 0.8f);
     //glm::vec3 lightCol = glm::vec3(0.15f, 0.05f, 0.15f); //Purple
     float rotation = 0.0;
 
@@ -72,5 +79,7 @@ class View{
     //FPS Calculator
     void calcFPS();
     int ticks = 0;
-    float FPS = 0;
+    const int plotSize = 100;
+    float FPS = 0.0f;
+    float arr[100] = {0};
 };

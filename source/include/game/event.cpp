@@ -52,7 +52,6 @@ void eventHandler::update(World &world, Player &player, Population &population, 
       handlePlayerMove(world, player, view, 5);
     }
     else if(inputs.front()->key.keysym.sym == SDLK_m){
-      population._update = true;
     }
     //Remove the command
     inputs.pop_back();
@@ -162,7 +161,7 @@ void eventHandler::handlePlayerMove(World &world, Player &player, View &view, in
     //Do the thing
     view.viewPos += m;
     world.bufferChunks( view );
-    view.loadChunkModels(world, player); //This can be made more efficient to only reload new chunks
+    view.loadChunkModels(world); //This can be made more efficient to only reload new chunks
   }
 
   //Regularly shift player's position

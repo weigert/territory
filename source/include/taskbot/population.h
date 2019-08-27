@@ -17,5 +17,4 @@ class Population{
 
     //Bot Container
     std::deque<Bot> bots;
-    bool _update = false;
 };

@@ -30,6 +30,7 @@ public:
   std::stack<int> updateModels;
   int SEED = 10;
   int chunkSize = 16;
+  int tickLength = 1;
   glm::vec3 dim = glm::vec3(20, 5, 20);
 
   //Movement Weights
