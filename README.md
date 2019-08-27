@@ -32,7 +32,21 @@ In-simulation control panel allows for manipulating the simulation:
 
 ![Example Rendering](https://github.com/weigert/territory/blob/master/territory.png)
 
-## Functionality
+## Source
+### Reading
+
+	- Dependencies: Read *source/territory.h* and the makefile
+	- Structure: Read *source/territory.cpp*
+	
+You may not be interested in all aspects of this project. In that case, reading certain portions of the source code can give you insight into the system.
+
+	- Rendering Engine: Read *source/include/render/view.h*
+	- Taskbot System: Read *source/include/taskbot/population.h*
+	- World Generation / Storage: Read *source/include/world/world.h*
+	- 3D Pathfinding: Read *source/include/taskbot/task.cpp* (bottom) and *source/include/astar/**
+For 
+
+## Features (including planned)
 ### General
 **To-Do:**
 - Better Input Handling for simultaneous and multi-tick inputs
