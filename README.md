@@ -38,13 +38,16 @@ In-simulation control panel allows for manipulating the simulation:
 	- Dependencies: Read *source/territory.h* and the makefile
 	- Structure: Read *source/territory.cpp*
 	
+I also make heavy usage of forward declarations to avoid cyclical dependencies in this project. To understand how the forward declaration structure works, read:
+
+	- Forward Declarations: *source/include/forward/structure.md*
+	
 You may not be interested in all aspects of this project. In that case, reading certain portions of the source code can give you insight into the system.
 
 	- Rendering Engine: Read *source/include/render/view.h*
 	- Taskbot System: Read *source/include/taskbot/population.h*
 	- World Generation / Storage: Read *source/include/world/world.h*
 	- 3D Pathfinding: Read *source/include/taskbot/task.cpp* (bottom) and *source/include/astar/**
-For 
 
 ## Features (including planned)
 ### General
