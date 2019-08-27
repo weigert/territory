@@ -1,34 +1,40 @@
 //Hexelrender Mainfile
 #include "territory.h"
 
-/*
-Need a logger class that logs errors and stuff.
-*/
-
 //Main Function
 int main( int argc, char* args[] ) {
+	//Logger
+	Logger _log;
 
 	//Handle the Console Arguments
 	if(argc<2){
-		std::cout<<"[Territory] Error >>Missing World Name"<<std::endl;
-		std::cout<<"Usage: ./territory [worldname]"<<std::endl;
+		_log.error("Missing Filename.");
 		return 0;
 	}
 
-	//Setup the World, View, events
+	//Load / Generate a World
 	World world((std::string)args[1]);
+
+	//Add a Renderer
 	View view;
+
+	//Add an Eventhandler
 	eventHandler events;
 
 	//Initialize the View
 	if(!view.Init()){
-		std::cout<<"View could not be initialized."<<std::endl;
+		_log.error("View could not be initialized.");
 		return 0;
 	}
 
+	//Add a Population
+	Player player;
+
 	//Generate the World and Chunks
-	world.bufferChunks();
-	view.loadChunkModels(world);
+	world.bufferChunks( view );
+	view.loadChunkModels( world );
+
+	Population population( world );
 
 	//Game Loop
 	bool quit = false;
@@ -38,14 +44,22 @@ int main( int argc, char* args[] ) {
 
 	//Main Game Loop
 	while(!quit){
+		//Create this guy
 		//Handle User Input
 		events.input(&e, quit);
-		events.update(world, view);
+		events.update(world, player, population, view);
+
+		//Handle with IMGUI
+		//ImGui_ImplSDL2_ProcessEvent(&e);
+
+		//Update the Population
+		if(SDL_GetTicks()%world.tickLength == 0){
+			population.update(world);
+		}
 
 		//Render the View
-		view.render(world);
-
-		//view.calcFPS();
+		view.render(world, player, population);
+		view.calcFPS();
 	}
 
 	view.cleanup();
