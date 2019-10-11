@@ -35,7 +35,7 @@ void Interface::drawBot(Bot &bot){
 
   ImGui::Text("Species: ");
   ImGui::SameLine();
-  ImGui::Text(bot.species.c_str());
+  ImGui::Text(bot.species.c_str(), "%s");
 
   //Alive Status
   ImGui::Text("Status: ");
@@ -87,7 +87,7 @@ void Interface::drawBot(Bot &bot){
 
 void Interface::drawState(State state){
   //Draw the State Stuff
-  ImGui::Text(state.task.c_str()); ImGui::SameLine();
+  ImGui::Text(state.task.c_str(), "%s"); ImGui::SameLine();
   ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "%d", (int)state.pos.x); ImGui::SameLine();
   ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "%d", (int)state.pos.y); ImGui::SameLine();
   ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "%d", (int)state.pos.z); ImGui::SameLine();
@@ -200,18 +200,6 @@ void Interface::render(View &view, World &world, Population &population, Player 
     }
     ImGui::EndTabBar();
   }
-
-  //ImGui::Text("Ayy");
-
-  /*
-  //This works..
-  if (ImGui::CollapsingHeader("Help"))
-    {
-        ImGui::Text("PROGRAMMER GUIDE:");
-    }
-*/
-
-
 
   ImGui::End();
 }

@@ -1,5 +1,33 @@
+#include "chunk.h"
 #include "octree.h"
 #include <bits/stdc++.h>
+
+
+//Generate Octree from Chunks
+void Octree::fromChunk(Chunk &chunk){
+  //Write the Chunk
+  for(int i = 0; i < chunk.size; i++){
+    for(int j = 0; j < chunk.size; j++){
+      for(int k = 0; k < chunk.size; k++){
+        setPosition(glm::vec3(i, j, k), (BlockType)chunk.data[chunk.getIndex(glm::vec3(i,j,k))]);
+      }
+    }
+  }
+  //Simplify the Octree
+  trySimplify();
+}
+
+void Octree::toChunk(Chunk &chunk){
+  //Do the thing
+  for(int i = 0; i < chunk.size; i++){
+    for(int j = 0; j < chunk.size; j++){
+      for(int k = 0; k < chunk.size; k++){
+        chunk.data[chunk.getIndex(glm::vec3(i,j,k))] = (int)getPosition(glm::vec3(i, j, k), depth);
+      }
+    }
+  }
+}
+
 
 bool Octree::trySimplify(){
   //Output the Current dive Depth

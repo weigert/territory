@@ -1,4 +1,5 @@
 #pragma once
+#include "../forward/chunk.fwd.h"
 #include "../forward/octree.fwd.h"
 
 class Octree{
@@ -8,13 +9,14 @@ public:
     index = 0;
   }
 
-  //Some Information contained by the octree element
-  std::vector<Octree> subTree;
-  int depth;    //Gives us the remaining depth levels of the octree
-  int index;
+  BlockType type;               //Type
+  std::vector<Octree> subTree;  //Sparse SubTree
+  int depth;                    //Current Depth
+  int index;                    //Current Index
 
-  //By default type is 0, and subTree is empty.
-  BlockType type;
+  //Back and forth to chunks
+  void fromChunk(Chunk &chunk);
+  void toChunk(Chunk &chunk);
 
   //Filling and Combining Operations for Subtrees
   bool trySimplify();

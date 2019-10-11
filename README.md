@@ -1,7 +1,6 @@
 # territory
 3D rendered proc-gen world test
 
-
 /*
 Todo:
 - Add run-length-encoding for flat-array

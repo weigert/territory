@@ -3,7 +3,9 @@
 #include "../forward/world.fwd.h"
 //Dependency Forward Declaration
 #include "../forward/view.fwd.h"
+#include "../forward/geology.fwd.h"
 #include "../forward/shader.fwd.h"
+#include "../forward/billboard.fwd.h"
 #include "../forward/chunk.fwd.h"
 #include "../forward/octree.fwd.h"
 #include "../forward/player.fwd.h"
@@ -31,7 +33,7 @@ public:
   int SEED = 10;
   int chunkSize = 16;
   int tickLength = 1;
-  glm::vec3 dim = glm::vec3(20, 5, 20);
+  glm::vec3 dim = glm::vec3(50, 5, 50);
 
   //Movement Weights
   int moveWeight(BlockType _type);
@@ -41,6 +43,7 @@ public:
   //Generate Function / Chunk Handlers
   void generate();
   void generateBlank();
+  void generateTectonic();
   void generateFlat();
   void generatePerlin();
 

@@ -95,6 +95,13 @@ bool Sprite::doAnimationFrame(){
   return false;
 }
 
+void Sprite::render(){
+  //Bind our VAO, render it.
+  glBindTexture(GL_TEXTURE_2D, texture);
+  glBindVertexArray(vao[0]);
+  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+}
+
 void Sprite::cleanup(){
   //Cleanup Depthmap Stuff
   glDeleteTextures(1, &texture);

@@ -4,7 +4,9 @@
 #include "octree.h"
 #include "../game/player.h"
 #include "../render/shader.h"
+#include "../render/billboard.h"
 #include "../render/view.h"
+#include "geology.h"
 #include "world.h"
 
 /*
@@ -15,8 +17,7 @@ Proposed Pipeline:
   -> Generate Blank Chunks
 
   -> Generate Base Height-Map
-    -> Low lying areas, flat and! hilly
-    -> High lying areas, flat and! hilly
+    -> Using Tectonics
 
   -> Add Geological Deposits based on elemental distribution maps in 3D!
     -> Generate Perlin Maps for all Elements, then cluster to common minerals and rare stuff too!
@@ -134,7 +135,8 @@ void World::generate(){
 
   //Generate Height
   std::cout<<"Filling World"<<std::endl;
-  generatePerlin();
+  generateTectonic();
+  //generatePerlin();
   //generateFlat();
 
   //Place the Player
@@ -301,6 +303,40 @@ void World::generatePerlin(){
   }
 
   //Evaluate the Guy
+  evaluateEditBuffer();
+}
+
+void World::generateTectonic(){
+  //Generate a geology
+  std::cout<<"Generating Geology"<<std::endl;
+  Geology geology;
+  geology.initialize();
+	geology.generate();
+
+  //Get the Tectonic Surface
+  std::cout<<"Adding to EditBuffer"<<std::endl;
+  for(int i = 0; i < dim.x; i++){
+    for(int k = 0; k < dim.z; k++){
+      //Loop over the height and set the blocks
+      float height = geology.height[helper::getIndex(glm::vec2(i, k), glm::vec2(dim.x, dim.z))];
+      height *= chunkSize*dim.y*0.9;
+
+      //Add the individual Chunks
+      for(int l = 0; l < chunkSize; l++){
+        for(int m = 0; m < chunkSize; m++){
+          //Set the Grass and Dirt
+          for(int j = 0; j < (int)height-1; j++){
+            //Add the block to the editBuffer
+            addEditBuffer(glm::vec3(i*chunkSize+l, j, k*chunkSize+m), BLOCK_DIRT);
+          }
+          addEditBuffer(glm::vec3(i*chunkSize+l, (int)height-1, k*chunkSize+m), BLOCK_GRASS);
+        }
+      }
+    }
+  }
+
+  //Evaluate the Guy
+  std::cout<<"Evaluating EditBuffer"<<std::endl;
   evaluateEditBuffer();
 }
 

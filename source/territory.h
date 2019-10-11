@@ -48,6 +48,10 @@ enum BlockType{
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 
+//Helper Functions
+#include "include/helpers/arraymath.h"
+#include "include/helpers/CImg.h"
+
 //Pathfinding Classes
 #include "include/astar/sltastar.h"
 #include "include/astar/astar.h"
@@ -57,8 +61,12 @@ enum BlockType{
 #include "include/world/chunk.cpp"
 #include "include/world/world.cpp"
 
+using namespace cimg_library;
+#include "include/world/geology.cpp"
+
 //View Classes
 #include "include/render/interface.cpp"
+#include "include/render/billboard.cpp"
 #include "include/render/view.cpp"
 #include "include/render/model.cpp"
 #include "include/render/sprite.cpp"

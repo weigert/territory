@@ -11,9 +11,11 @@ class Shader{
     GLuint fragmentShader;
 
     //Set Uniforms
+    void setBool(std::string name, bool value);
     void setInt(std::string name, int value);
     void setFloat(std::string name, float value);
     void setMat4(std::string name, const glm::mat4 mat);
+    void setVec2(std::string name, const glm::vec2 vec);
     void setVec3(std::string name, const glm::vec3 vec);
 
     //Setup and Cleanup Function

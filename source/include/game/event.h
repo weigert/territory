@@ -15,6 +15,8 @@ public:
   std::deque<SDL_Event*> inputs; //General Key Inputs
   std::deque<SDL_Event*> scroll; //General Key Inputs
   std::deque<SDL_Event*> rotate; //Rotate Key Inputs
+  SDL_Event* mouse; //Whatever the mouse is doing at a moment
+  bool move = false;
 
   //Take inputs and add them to stack
   void input(SDL_Event *e, bool &quit);

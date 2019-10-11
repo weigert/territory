@@ -35,5 +35,7 @@ public:
   bool doAnimationFrame();
   void setAnimation(int id, glm::vec3 _translate);
 
+  //Render and Cleanup
+  void render();
   void cleanup();
 };

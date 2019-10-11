@@ -26,10 +26,20 @@ void eventHandler::input(SDL_Event *e, bool &quit){
     else if( e->type == SDL_MOUSEWHEEL){
       scroll.push_front(e);
     }
+    else if( e->type == SDL_MOUSEBUTTONDOWN){
+      mouse = e;
+      move = true;
+    }
   }
 }
 
 void eventHandler::update(World &world, Player &player, Population &population, View &view){
+  //Do this thingy to get the current mouse position that is being thing'd
+  if(move){
+    view.focus = glm::vec2(1.0)-glm::vec2(mouse->button.x, mouse->button.y)/glm::vec2(view.SCREEN_WIDTH, view.SCREEN_HEIGHT); //Set current focus
+    move = false;
+  }
+
   //Check for rotation
   if(!inputs.empty()){
     //Handle the Player Move
