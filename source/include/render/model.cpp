@@ -30,6 +30,27 @@ void Model::setup(){
   glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
 }
 
+void Model::update(){
+  glBindVertexArray(vao[0]);
+  //Positions Buffer
+  glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+  glBufferData(GL_ARRAY_BUFFER, positions.size()*sizeof(GLfloat), &positions[0], GL_STATIC_DRAW);
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+  //Color Buffer
+  glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+  glBufferData(GL_ARRAY_BUFFER, colors.size()*sizeof(GLfloat), &colors[0], GL_STATIC_DRAW);
+  glEnableVertexAttribArray(1);
+  glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, 0);
+
+  //Normal Buffer
+  glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
+  glBufferData(GL_ARRAY_BUFFER, normals.size()*sizeof(GLfloat), &normals[0], GL_STATIC_DRAW);
+  glEnableVertexAttribArray(2);
+  glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
+}
+
 void Model::cleanup(){
   glDisableVertexAttribArray(0);
   glDeleteBuffers(3, vbo);
@@ -60,6 +81,11 @@ void Model::render(){
 }
 
 void Model::fromChunk(Chunk chunk, int LOD){
+  //Clear the Containers
+  positions.clear();
+  colors.clear();
+  normals.clear();
+
   //Loop over all elements inside the chunk
   for(int i = 0; i < chunk.size; i++){
     for(int j = 0; j < chunk.size; j++){

@@ -28,49 +28,49 @@ Various items exist, which will be simply enumerated. Their class of object will
 The conversion of an object will also be a task, that takes as its input the item that it gives, and as its output the items that it returns.
 Workshops will then simple be objects that are displayed in the world and can be interacted with directly through the task.
 
-Item Flags:
-(Type): ... (all items!!)
-(Status): "Worn", "Placed", "Contained", "Dropped", "Broken"
-(Quality): "Perfect", "Great", "Normal", "Poor", "Terrible"
-(Class): Natural, Farming, Animal, Animal, Processed, Furniture, Weapon, Clothing, Workshop
-(Ability): Container, Interactive, Placeable, Readable
+## Implementation
 
+### Tasks
 
-Base Resources:
-  Wood, Stones, Clay, Ores, Water, Sand, Dirt, Gravel, Salt,
-  Various plant types, vines, reeds, grasses, herbs, flowers,
+There are a number of tasks that are required to allow the bots to interact with the item system.
 
-Farming Goods:
-  Food, Fruit, Vegetables, Spices, Cotton, Grapes, Berries,
+Task::collect **FINISHED**
+Destroy a block and place drop it at the location. Check for appropriate tools.
 
-Animal Goods:
-  Pelts, Meat, Milk, Feathers, Bones
+Task::take
+At a specified location, attempt to take a specified item out of world and place in inventory.
+This includes sub-queries if items contain inventories, so you can look inside containers in this manner.
+This means looking inside placed items if they are the specified location.
 
-Processed Goods (through workshops or complex objects):
-  Paper, Quills, Plans, Rope, Planks, Fabric, Pottery, Complex Objects
-  Food, Drink, Barrels, Glass, Bricks, Metal, Carpet, Maps, Books, Compass,
-  Sundial, Watch, Octant, Thermometer, Lockpick, Wallet, Waterskin, Lens, etc.
-  Lockbox, Clock, Candle, Lantern, Microscope, Instruments, Grammophone, etc.
-  Wheelbarrow, Plow, Sled, Wagon, Navigation Wheel,
+Task::find
+In range, attempt to find a specified item or block at a location, and put the location inside the state.
 
-Furniture:
-  Complex Objects, Containers, Beds, Carpets, Chairs, Tables, Decorative
-  Lights, Stove,
+Task::search
+Recursively walk around and attempt to find.
 
-Weapons:
-  Saber, Axe, Pistols, Rifles, Knife,
+Task::retrieve
+Search memory for a location where an item is known to be, then go to that location (or near) and take.
 
-Armor and Clothing:
-  Pants, Shirts, Coats, Hats / Hoods, Capes, Gloves, Boots, Specials
+Task::convert
+Take a requested conversion and perform it in a bots inventory if possible.
+Uses a state to give the inputs and outputs for items.
 
-Complex Objects:
+### Functions and Updates
 
+I need a function that generates a drop-table from breaking specific blocks in the world.
 
+I need to update my pathfinder to also just allow for short distance walking at a time. So that bots estimate where they have to go.
+Make this sufficiently large.
 
+I need to have an item generator, that generates prototype items with metadata.
 
+I need a function in item that generates the task with recipes for workshops and complex items, loading it from metadata.
 
+I need a function for an item to load its sprite.
 
+I need a harvest function that destroys a block in the world and then places it in the dropped pile.
 
+I need a rendering option for dropped and placed items.
 
 
 ## Buildings and the Resource Chain
@@ -81,38 +81,6 @@ Complex Objects:
   Then it can be constructed. Buildings are multiblock structures.
 
   Houses, Commercial, Ships, Special Structures, etc.
-
-
-Workshops:
-  Shipmaking, Tannery, Planning Table (Maps, Navigation, Architecture),
-  Cooking Table (Butchery, Fishing, Cooking), Smithing Table (Metalworking, Machinery, ),
-  Carpentry Table (Woodworking, Carving, )
-  Potters Wheel, Glass Forge, Forge,
-  Crafter's Table (Pottery, Sculpting, etc).
-  Brewing Table (Herbalism, Brewing, Plant Processing)
-  Loom and Spindle (Clothes Making and Sewing and Stuff)
-  Regular tables, on which other small useful complex objects can be placed.
-
-
-### Item Object Requirements
-
-We will have an item property enum, which items can contain, giving them certain properties.
-
-Items and their types will have to be enumerated. So we have object base types, and a bunch of flags.
-
-They contain a task object, along with the associated state.
-
-If they for example are a complex interactable, or if they are a weapon, or wearable (and where).
-
-Items need to contain a stack of memories, if they have multiple interactable objects.
-The task will have to search the memory of the item to see if it possible to do a certain conversion.
-The memory will contain the list of possible conversions.
-
-The item still contains a task that is the appropriate task that should be called upon interaction.
-
-
-
-
 
 ## Final
 I could tell them to simply collect resources, and we would have a complex civ-controller sim.

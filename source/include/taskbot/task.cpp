@@ -2,6 +2,7 @@
 #include "population.h"
 #include "../world/world.h"
 #include "state.h"
+#include "../game/item.h"
 
 #include "task.h"
 
@@ -10,13 +11,22 @@
                       CONSTRUCTORS
 =========================================================
 */
-Task::Task(std::string taskName, int taskBotID, bool (Task::*taskHandle)(World&, Population&, State &_args)){
+
+Task::Task(){}
+
+Task::Task(std::string taskName, int taskBotID, TaskHandle _handle){
+  name = taskName;
+  botID = taskBotID;
+  handle = TaskHandles[_handle];
+}
+
+Task::Task(std::string taskName, int taskBotID, Handle taskHandle){
   name = taskName;
   botID = taskBotID;
   handle = taskHandle;
 }
 
-Task::Task(std::string taskName, int taskBotID, int animationID, glm::vec3 animationTranslate, bool (Task::*taskHandle)(World&, Population&, State &_args)){
+Task::Task(std::string taskName, int taskBotID, int animationID, glm::vec3 animationTranslate, Handle taskHandle){
   name = taskName;
   botID = taskBotID;
   handle = taskHandle;
@@ -222,6 +232,76 @@ bool Task::idle(World &world, Population &population, State &_args){
 }
 
 /*
+================================================================================
+                            ITEM MANAGEMENT TASKS
+================================================================================
+*/
+
+bool Task::collect(World &world, Population &population, State &_args){
+  //If the bot is within range
+  if(glm::all(glm::lessThanEqual(population.bots[botID].pos - _args.pos, population.bots[botID].range))){
+    //Item is within range, check for appropriate tools for collection
+    bool find = true;
+    for(unsigned int i = 0; i < _args.inventory.size(); i++){
+      find = false;
+      //Check if this item is inside the bot's inventory
+      for(unsigned int j = 0; j < _args.inventory.size(); j++){
+        if(_args.inventory[i]._type == population.bots[botID].inventory[j]._type){
+          find = true;
+          break;
+        }
+      }
+      //Didn't find the item!
+      if(!find){
+        break;
+      }
+    }
+
+    //Check if we found the item.
+    if(!find){
+      return true;
+    }
+
+    //Found the item, drop it
+    BlockType _type = world.getBlock(_args.pos);
+
+    if(_type != BLOCK_AIR){
+      //Destroy the Block
+      world.setBlock(_args.pos, BLOCK_AIR);
+      world.addEditBuffer(_args.pos, BLOCK_AIR);
+
+      //Drop the Item
+      Item _item;
+      _item.fromTable(_type);
+      _item.pos = _args.pos;
+      _item.setupSprite();  //Needs to be because it is placed in the world.
+      world.drops.push_back(_item);  //Add the Item to the Drop-Table
+    }
+  }
+  return true;
+}
+
+bool Task::take(World &world, Population &population, State &_args){
+  return true;
+}
+
+bool Task::find(World &world, Population &population, State &_args){
+  return true;
+}
+
+bool Task::search(World &world, Population &population, State &_args){
+  return true;
+}
+
+bool Task::retrieve(World &world, Population &population, State &_args){
+  return true;
+}
+
+bool Task::convert(World &world, Population &population, State &_args){
+  return true;
+}
+
+/*
 =========================================================
                     MEMORY TASKS
 =========================================================
@@ -373,8 +453,8 @@ bool Task::Dummy(World &world, Population &population, State &_args){
 }
 
 //Secondaries (Multi-Step, Multi-Task)
+/*
 bool Task::search(World &world, Population &population, State &_args){
-  /*
 
   Task inspect("Inspect", botID, &Task::look);
   inspect.args[0] = 0;
@@ -448,12 +528,20 @@ bool Task::search(World &world, Population &population, State &_args){
   if(debug){std::cout<<"Bot with ID: "<<botID<<" found nothing. Restarting search."<<std::endl;}
 
   //Reset For Next Time
-  initFlag = true;*/
+  initFlag = true;
   return false;
+}*/
+
+bool Task::follow(World &world, Population &population, State &_args){
+  return true;
 }
 
-bool Task::forage(World &world, Population &population, State &_args){
+bool Task::locate(World &world, Population &population, State &_args){
+  return true;
+}
+
 /*
+bool Task::forage(World &world, Population &population, State &_args){
   //Task Starting from the Beginning
   if(initFlag){
     //Define our Tasks
@@ -500,10 +588,10 @@ bool Task::forage(World &world, Population &population, State &_args){
 
   //Return Success Case
   if(debug){std::cout<<"Bot with ID: "<<botID<<" finished foraging."<<std::endl;}
-  initFlag = true;*/
+  initFlag = true;
   return true;
 }
-
+*/
 /*
 =========================================================
                       PATHFINDING
@@ -556,5 +644,8 @@ std::vector<glm::vec3> calculatePath(int id, glm::vec3 _dest, Population &popula
       path.clear();
 		}
 		astarsearch.EnsureMemoryFreed();
+    
+    //Remove the First Guy!
+    path.pop_back();
     return path;
 }

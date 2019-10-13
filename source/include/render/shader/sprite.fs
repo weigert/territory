@@ -5,11 +5,11 @@ out vec4 fragColor;
 uniform sampler2D spriteTexture;
 
 void main(){
-    vec4 test = texture(spriteTexture, ex_Tex);
-    if(test.a == 0){
-      fragColor = vec4(0.0);
-    }
-    else{
-      fragColor = texture(spriteTexture, ex_Tex);    
-    }
+  vec4 color = texture(spriteTexture, ex_Tex);
+  if(color.a == 0.0){
+    discard;
+  }
+  else{
+    fragColor = color;
+  }
 }

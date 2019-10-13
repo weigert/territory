@@ -8,6 +8,7 @@
 #include "../taskbot/population.h"
 #include "../taskbot/bot.h"
 #include "../game/player.h"
+#include "../game/item.h"
 //Load our Own Type!
 #include "view.h"
 
@@ -67,6 +68,8 @@ bool View::Init(){
   temp1.setup();
   temp2.setup();
 
+  picker.setup();
+
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
   return true;
@@ -80,37 +83,26 @@ void View::setupShaders(){
   cubeShader.addAttribute(2, "in_Normal");
 
   //Setup Depthshader
-  depthShader.setup("rendershadow.vs", "rendershadow.fs");
+  depthShader.setup("depth.vs", "depth.fs");
   depthShader.addAttribute(0, "in_Position");
-
-  //Setup Debugshader
-  debugShader.setup("debug.vs", "debug.fs");
-  debugShader.addAttribute(0, "in_Quad");
-  debugShader.addAttribute(1, "in_Tex");
 
   //Setup Spriteshader
   spriteShader.setup("sprite.vs", "sprite.fs");
   spriteShader.addAttribute(0, "in_Quad");
   spriteShader.addAttribute(1, "in_Tex");
 
+  itemShader.setup("item.vs", "item.fs");
+  itemShader.addAttribute(0, "in_Quad");
+  itemShader.addAttribute(1, "in_Tex");
+
   //Setup Billboardshader
   blurShader.setup("dof.vs", "dof.fs");
   blurShader.addAttribute(0, "in_Quad");
   blurShader.addAttribute(1, "in_Tex");
 
-  //Setup Billboardshader
-  edgeShader.setup("edge.vs", "edge.fs");
-  edgeShader.addAttribute(0, "in_Quad");
-  edgeShader.addAttribute(1, "in_Tex");
-
   billboardShader.setup("billboard.vs", "billboard.fs");
   billboardShader.addAttribute(0, "in_Quad");
   billboardShader.addAttribute(1, "in_Tex");
-
-  normalShader.setup("normal.vs", "normal.fs");
-  normalShader.addAttribute(0, "in_Position");
-  normalShader.addAttribute(1, "in_Color");
-  normalShader.addAttribute(2, "in_Normal");
 }
 
 void View::cleanup(){
@@ -123,9 +115,10 @@ void View::cleanup(){
   //Cleanup Shaders
   cubeShader.cleanup();
   depthShader.cleanup();
-  debugShader.cleanup();
   spriteShader.cleanup();
   billboardShader.cleanup();
+  itemShader.cleanup();
+  blurShader.cleanup();
 
   image.cleanup();
   shadow.cleanup();
@@ -172,7 +165,6 @@ void View::loadChunkModels(World &world){
     //If we are at capacity, add a new item
     if(i == models.size()){
       Model model;
-      //model.fromOctree(world.chunks[i].data, LOD, glm::vec3(0.0));
       model.fromChunk(world.chunks[i], LOD);
       model.setup();
       models.push_back(model);
@@ -189,166 +181,41 @@ void View::loadChunkModels(World &world){
   updateLOD = false;
 }
 
+void View::updateChunkModels(World &world){
+  //Loop over all chunks, see if they are updated.
+  for(unsigned int i = 0; i < world.chunks.size(); i++){
+    if(world.chunks[i].refreshModel){
+      models[i].fromChunk(world.chunks[i], LOD);
+      models[i].update();
+      world.chunks[i].refreshModel = false;
+    }
+  }
+}
+
 /*
 ================================================================================
                                 Rendering
 ================================================================================
 */
 
-void View::render(World &world, Player &player, Population &population){
+void View::update(){
   /*
   lightPos += glm::vec3(-0.01f, 0.0f, -0.01f);
   depthCamera = glm::lookAt(lightPos, glm::vec3(0,0,0), glm::vec3(0,1,0));
   */
+}
 
-  //Set the Cull-Face
-  glCullFace(GL_BACK);
-
+void View::render(World &world, Player &player, Population &population){
+/*
+SHADOW MAPPING
+*/
   //-- Screen: Shadow FBO, No Filter
   glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
   glBindFramebuffer(GL_FRAMEBUFFER, shadow.fbo);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  renderShadow();
-  glBindVertexArray(0);
-
-
-  glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-  //Render entire scene to the actual image!
-  glBindFramebuffer(GL_FRAMEBUFFER, image.fbo);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  renderScene();
-
-  //At this point, we should really take the texture from image and feed it to spriteshader.
-  renderSprites(world, player, population);
-
-  //Render Temp to Screen with a horizontal blur shader
-  glBindFramebuffer(GL_FRAMEBUFFER, temp1.fbo);
-  blurShader.useProgram();
-  blurShader.setFloat("mousex", focus.x);
-  blurShader.setFloat("mousey", focus.y);
-  blurShader.setFloat("width", SCREEN_WIDTH);
-  blurShader.setFloat("height", SCREEN_HEIGHT);
-  blurShader.setBool("vert", false);
-  glActiveTexture(GL_TEXTURE0+0);
-  glBindTexture(GL_TEXTURE_2D, image.texture);
-  blurShader.setInt("imageTexture", 0);
-  glActiveTexture(GL_TEXTURE0+1);
-  glBindTexture(GL_TEXTURE_2D, image.depthTexture);
-  blurShader.setInt("depthTexture", 1);
-  glBindVertexArray(image.vao);
-  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-  //Render screen to monitor with vertical blur shader
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  glActiveTexture(GL_TEXTURE0+0);
-  glBindTexture(GL_TEXTURE_2D, temp1.texture);
-  blurShader.setInt("imageTexture", 0);
-  glActiveTexture(GL_TEXTURE0+1);
-  glBindTexture(GL_TEXTURE_2D, image.depthTexture);
-  blurShader.setInt("depthTexture", 1);
-  blurShader.setBool("vert", true);
-  glBindVertexArray(temp1.vao);
-  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-
-
-
-
-/*
-  //Render the Normal Texture
-  glBindFramebuffer(GL_FRAMEBUFFER, normal.fbo);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  ///Setup some normal shader
-  normalShader.useProgram();
-  normalShader.setMat4("mvp", projection*camera);
-  //Loop over the Models to Render to Shadowmap
-  for(unsigned int i = 0; i < models.size(); i++){
-    //Set the Projection Stuff
-    normalShader.setMat4("model", models[i].model);
-    //Render the Model
-    models[i].render();
-  }
-*/
-
-
-
-
-
-/*
-  //Draw a edge detected image! (cel-shaded)
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-  //Do this
-  edgeShader.useProgram();
-  edgeShader.setFloat("width", SCREEN_WIDTH);
-  edgeShader.setFloat("height", SCREEN_HEIGHT);
-
-  glActiveTexture(GL_TEXTURE0+0);
-  glBindTexture(GL_TEXTURE_2D, image.depthTexture);
-  edgeShader.setInt("depthTexture", 0);
-  glActiveTexture(GL_TEXTURE0+1);
-  glBindTexture(GL_TEXTURE_2D, image.texture);
-  edgeShader.setInt("imageTexture", 1);
-  glBindVertexArray(image.vao);
-  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-*/
-/*
-  //Render Temp Depth Texture to billboard
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  billboardShader.useProgram();
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, temp2.texture);
-  billboardShader.setInt("imageTexture", 0);
-  glBindVertexArray(temp2.vao);
-  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-*/
-
-  //Add the GUI
-  renderGUI(world, player, population);
-
-  //Swap the Window
-  SDL_GL_SwapWindow(gWindow);
-}
-
-void View::renderSprites(World world, Player player, Population population){
-  //Render the Sprite
-  spriteShader.useProgram();
-  glActiveTexture(GL_TEXTURE0);
-
-  //Loop over all Sprites
-  for(unsigned int i = 0; i < population.bots.size(); i++){
-    //Here we should check if the sprite should even be rendered.
-    if(population.bots[i].dead) continue;
-    if(glm::any(glm::greaterThan(glm::abs(glm::floor(population.bots[i].pos/glm::vec3(world.chunkSize))-glm::floor(viewPos/glm::vec3(world.chunkSize))), renderDistance)))
-      continue;
-
-    //Set the Position of the Sprite relative to the player
-    glm::vec3 a = population.bots[i].pos-viewPos;
-    population.bots[i].sprite.model = glm::translate(population.bots[i].sprite.model, glm::vec3(a));
-    glm::vec3 axis = glm::vec3(0.0f, 1.0f, 0.0f);
-    population.bots[i].sprite.model = glm::rotate(population.bots[i].sprite.model, glm::radians(45.0f), axis);
-    population.bots[i].sprite.model = glm::rotate(population.bots[i].sprite.model, glm::radians(-rotation), glm::vec3(0, 1, 0));
-
-    //Setup the Shader
-    spriteShader.setInt("spriteTexture", 0);
-    spriteShader.setMat4("mvp", projection*camera*population.bots[i].sprite.model);
-    spriteShader.setFloat("nframe", (float)population.bots[i].sprite.animation.nframe);
-    spriteShader.setFloat("animation", (float)population.bots[i].sprite.animation.ID);
-    spriteShader.setFloat("width", (float)population.bots[i].sprite.animation.w);
-    spriteShader.setFloat("height", (float)population.bots[i].sprite.animation.h);
-
-    //Draw
-    population.bots[i].sprite.render();
-  }
-}
-
-void View::renderShadow(){
   //Use the Shader
   depthShader.useProgram();
   depthShader.setMat4("dvp", depthProjection * depthCamera * glm::mat4(1.0f));
-  debugShader.setInt("shadowMap", 0);
 
   //Activate the Texture
   glClear(GL_DEPTH_BUFFER_BIT);
@@ -362,9 +229,18 @@ void View::renderShadow(){
     //Render the Model
     models[i].render();
   }
-}
+  glBindVertexArray(0);
 
-void View::renderScene(){
+/*
+REGULAR IMAGE
+*/
+
+  glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+  //Render entire scene to the actual image!
+  glBindFramebuffer(GL_FRAMEBUFFER, image.fbo);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+
   //Clear the Color and Stuff
   glClearColor(skyCol.x, skyCol.y, skyCol.z, 1.0f); //Blue
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -400,15 +276,191 @@ void View::renderScene(){
     //Render the Model
     models[i].render();               //Render
   }
-}
 
-void View::renderDepth(){
-  //I guess just make a quad
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, shadow.depthTexture);
+  //At this point, we should really take the texture from image and feed it to spriteshader.
+  //Render the Sprite
+  spriteShader.useProgram();
+  //Loop over all Sprites
+  for(unsigned int i = 0; i < population.bots.size(); i++){
+    //Here we should check if the sprite should even be rendered.
+    if(population.bots[i].dead) continue;
+    if(glm::any(glm::greaterThan(glm::abs(glm::floor(population.bots[i].pos/glm::vec3(world.chunkSize))-glm::floor(viewPos/glm::vec3(world.chunkSize))), renderDistance)))
+      continue;
 
-  glBindVertexArray(shadow.vao);
+    population.bots[i].sprite.resetModel();
+    //Set the Position of the Sprite relative to the player
+    glm::vec3 a = population.bots[i].pos-viewPos;
+    population.bots[i].sprite.model = glm::translate(population.bots[i].sprite.model, glm::vec3(a));
+    glm::vec3 axis = glm::vec3(0.0f, 1.0f, 0.0f);
+    population.bots[i].sprite.model = glm::rotate(population.bots[i].sprite.model, glm::radians(45.0f), axis);
+    population.bots[i].sprite.model = glm::rotate(population.bots[i].sprite.model, glm::radians(-rotation), glm::vec3(0, 1, 0));
+
+    //Setup the Shader
+    spriteShader.setInt("spriteTexture", 0);
+    spriteShader.setMat4("mvp", projection*camera*population.bots[i].sprite.model);
+    spriteShader.setFloat("nframe", (float)population.bots[i].sprite.animation.nframe);
+    spriteShader.setFloat("animation", (float)population.bots[i].sprite.animation.ID);
+    spriteShader.setFloat("width", (float)population.bots[i].sprite.animation.w);
+    spriteShader.setFloat("height", (float)population.bots[i].sprite.animation.h);
+
+    //Draw
+    population.bots[i].sprite.render();
+  }
+
+  //Render the Sprite
+  itemShader.useProgram();
+  //Loop over all Sprites
+  for(unsigned int i = 0; i < world.drops.size(); i++){
+    //Here we should check if the sprite should even be rendered.
+    if(glm::any(glm::greaterThan(glm::abs(glm::floor(world.drops[i].pos/glm::vec3(world.chunkSize))-glm::floor(viewPos/glm::vec3(world.chunkSize))), renderDistance)))
+      continue;
+
+    //Set the Position of the Sprite relative to the player
+    world.drops[i].sprite.resetModel();
+    glm::vec3 a = world.drops[i].pos-viewPos;
+    world.drops[i].sprite.model = glm::translate(world.drops[i].sprite.model, glm::vec3(a));
+    glm::vec3 axis = glm::vec3(0.0f, 1.0f, 0.0f);
+    world.drops[i].sprite.model = glm::rotate(world.drops[i].sprite.model, glm::radians(45.0f), axis);
+    world.drops[i].sprite.model = glm::rotate(world.drops[i].sprite.model, glm::radians(-rotation), glm::vec3(0, 1, 0));
+
+    //Setup the Shader
+    itemShader.setInt("spriteTexture", 0);
+    itemShader.setFloat("index", (float)world.drops[i]._type);
+    itemShader.setMat4("mvp", projection*camera*world.drops[i].sprite.model);
+
+    //Draw the drops!
+    world.drops[i].sprite.render();
+  }
+
+/*
+PICKER
+*/
+
+/*
+  //Set the Clear Color to Black
+  glClearColor(0.0f, 0.0f, 0.0f, 1.0f); //Black
+
+  //Render the Block Image
+  glBindFramebuffer(GL_FRAMEBUFFER, picker.imageBlock.fbo);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  picker.shaderPickBlock.useProgram();
+
+  //Set the other matrices
+
+  //Loop over the Stuff
+  for(unsigned int i = 0; i < models.size(); i++){
+    //View Projection Matrix
+    picker.shaderPickBlock.setMat4("mvp", projection * camera * models[i].model);
+    //Old chunks need to be translated too. Translate according to player position.
+
+    picker.shaderPickBlock.setMat4("model", models[i].model);
+    picker.shaderPickBlock.setMat4("camera", camera);
+    picker.shaderPickBlock.setVec3("worldsize", renderDistance*glm::vec3(world.chunkSize));
+    picker.shaderPickBlock.setVec3("viewpos", viewPos);
+    //Render the Model
+    models[i].render();
+  }*/
+
+/*
+  //Render the Sprite Image
+  glBindFramebuffer(GL_FRAMEBUFFER, picker.imageSprite.fbo);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  picker.shaderPickSprite.useProgram();
+
+  //Loop over all Sprites
+  for(unsigned int i = 0; i < population.bots.size(); i++){
+    //Here we should check if the sprite should even be rendered.
+    if(population.bots[i].dead) continue;
+    if(glm::any(glm::greaterThan(glm::abs(glm::floor(population.bots[i].pos/glm::vec3(world.chunkSize))-glm::floor(viewPos/glm::vec3(world.chunkSize))), renderDistance)))
+      continue;
+
+    //Set the Position of the Sprite relative to the player
+    glm::vec3 a = population.bots[i].pos-viewPos;
+    population.bots[i].sprite.resetModel();
+    population.bots[i].sprite.model = glm::translate(population.bots[i].sprite.model, glm::vec3(a));
+    glm::vec3 axis = glm::vec3(0.0f, 1.0f, 0.0f);
+    population.bots[i].sprite.model = glm::rotate(population.bots[i].sprite.model, glm::radians(45.0f), axis);
+    population.bots[i].sprite.model = glm::rotate(population.bots[i].sprite.model, glm::radians(-rotation), glm::vec3(0, 1, 0));
+
+    //Setup the Shader
+    picker.shaderPickSprite.setMat4("mvp", projection * camera * population.bots[i].sprite.model);
+    //Old chunks need to be translated too. Translate according to player position.
+
+    picker.shaderPickSprite.setMat4("model", population.bots[i].sprite.model);
+    picker.shaderPickSprite.setMat4("camera", camera);
+    picker.shaderPickSprite.setVec3("worldsize", renderDistance*glm::vec3(world.chunkSize));
+    picker.shaderPickSprite.setVec3("viewpos", viewPos);
+
+    //Draw
+    population.bots[i].sprite.render();
+  }
+
+  //Loop over all Sprites
+  for(unsigned int i = 0; i < world.drops.size(); i++){
+    //Here we should check if the sprite should even be rendered.
+    if(glm::any(glm::greaterThan(glm::abs(glm::floor(world.drops[i].pos/glm::vec3(world.chunkSize))-glm::floor(viewPos/glm::vec3(world.chunkSize))), renderDistance)))
+      continue;
+
+    //Set the Position of the Sprite relative to the player
+    glm::vec3 a = world.drops[i].pos-viewPos;
+    world.drops[i].sprite.resetModel();
+    world.drops[i].sprite.model = glm::translate(world.drops[i].sprite.model, glm::vec3(a));
+    glm::vec3 axis = glm::vec3(0.0f, 1.0f, 0.0f);
+    world.drops[i].sprite.model = glm::rotate(world.drops[i].sprite.model, glm::radians(45.0f), axis);
+    world.drops[i].sprite.model = glm::rotate(world.drops[i].sprite.model, glm::radians(-rotation), glm::vec3(0, 1, 0));
+
+    //Setup the Shader
+    picker.shaderPickSprite.setMat4("mvp", projection * camera * world.drops[i].sprite.model);
+    //Old chunks need to be translated too. Translate according to player position.
+
+    picker.shaderPickSprite.setMat4("model", world.drops[i].sprite.model);
+    picker.shaderPickSprite.setMat4("camera", camera);
+    picker.shaderPickSprite.setVec3("worldsize", renderDistance*glm::vec3(world.chunkSize));
+    picker.shaderPickSprite.setVec3("viewpos", viewPos);
+    //Draw the drops!
+    world.drops[i].sprite.render();
+  }
+*/
+
+
+/*
+AFTER-EFFECTS
+*/
+
+  //Render Temp to Screen with a horizontal blur shader
+  glBindFramebuffer(GL_FRAMEBUFFER, temp1.fbo);
+  blurShader.useProgram();
+  blurShader.setFloat("mousex", focus.x);
+  blurShader.setFloat("mousey", focus.y);
+  blurShader.setFloat("width", SCREEN_WIDTH);
+  blurShader.setFloat("height", SCREEN_HEIGHT);
+  blurShader.setBool("vert", false);
+  glActiveTexture(GL_TEXTURE0+0);
+  glBindTexture(GL_TEXTURE_2D, image.texture);
+  blurShader.setInt("imageTexture", 0);
+  glActiveTexture(GL_TEXTURE0+1);
+  glBindTexture(GL_TEXTURE_2D, image.depthTexture);
+  blurShader.setInt("depthTexture", 1);
+  glBindVertexArray(image.vao);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+  //Render screen to monitor with vertical blur shader
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glActiveTexture(GL_TEXTURE0+0);
+  glBindTexture(GL_TEXTURE_2D, temp1.texture);
+  blurShader.setInt("imageTexture", 0);
+  glActiveTexture(GL_TEXTURE0+1);
+  glBindTexture(GL_TEXTURE_2D, image.depthTexture);
+  blurShader.setInt("depthTexture", 1);
+  blurShader.setBool("vert", true);
+  glBindVertexArray(temp1.vao);
+  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+  //Add the GUI
+  renderGUI(world, player, population);
+
+  //Swap the Window
+  SDL_GL_SwapWindow(gWindow);
 }
 
 //User Interface
@@ -421,7 +473,7 @@ void View::renderGUI(World &world, Player &player, Population &population){
   interface->render(*this, world, population, player);
 
   //Draw the cool window
-  //ImGui::ShowDemoWindow();
+  ImGui::ShowDemoWindow();
 
   //Render IMGUI
   ImGui::Render();

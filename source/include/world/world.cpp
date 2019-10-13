@@ -135,7 +135,7 @@ void World::generate(){
 
   //Generate Height
   std::cout<<"Filling World"<<std::endl;
-  generateTectonic();
+  generateFlat();
   //generatePerlin();
   //generateFlat();
 
@@ -179,7 +179,7 @@ void World::generateFlat(){
 
   //Rocks
   std::cout<<"Adding Rocks"<<std::endl;
-  for(int i = 0; i < 1000; i++){
+  for(int i = 0; i < 100; i++){
     int rock[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
     addEditBuffer(glm::vec3(rock[0], 1, rock[1]), BLOCK_STONE);
   }
@@ -189,7 +189,7 @@ void World::generateFlat(){
 
   //Trees
   std::cout<<"Adding Trees"<<std::endl;
-  for(int i = 0; i < 1000; i++){
+  for(int i = 0; i < 100; i++){
     int tree[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
 
     //Add the shit to the editbuffer
@@ -483,7 +483,6 @@ bool World::evaluateEditBuffer(){
   return true;
 }
 
-
 /*
 ===================================================
           MOVEMENT RELATED FUNCTIONS
@@ -502,17 +501,30 @@ int World::moveWeight(BlockType _type){
 }
 
 BlockType World::getBlock(glm::vec3 _pos){
+  //Chunk Position and World Position
+  glm::vec3 c = glm::floor(_pos/glm::vec3(chunkSize));
+  glm::vec3 p = glm::mod(_pos, glm::vec3(chunkSize));
+
+  for(unsigned int i = 0; i < chunks.size(); i++){
+    //Compare to Chunk Position
+    if(c == chunks[i].pos){
+      return (BlockType)chunks[i].data[chunks[i].getIndex(p)];
+    }
+  }
+  return BLOCK_STONE;
+}
+
+void World::setBlock(glm::vec3 _pos, BlockType _type){
   //Check if the position is inside, if not return 0, otherwise return the block
   for(unsigned int i = 0; i < chunks.size(); i++){
     glm::vec3 c = glm::floor(_pos/glm::vec3(chunkSize));
     //Check the Chunkpos
     if(c == chunks[i].pos){
-      //Read the Goy
-      glm::vec3 p = glm::mod(_pos, glm::vec3(chunkSize));
-      return chunks[i].getPosition(p, 0);
+      chunks[i].setPosition(glm::mod(_pos, glm::vec3(chunkSize)), _type);
+      chunks[i].refreshModel = true;
+      break;
     }
   }
-  return BLOCK_STONE;
 }
 
 //Get the Top-Free space position in the x-z position
@@ -541,7 +553,6 @@ int World::getTop(glm::vec2 _pos){
 void World::bufferChunks(View view){
   //Load / Reload all Visible Chunks
 
-  //Non-Brute Force Method
   //Chunks that should be loaded
   glm::vec3 a = glm::floor(view.viewPos/glm::vec3(chunkSize))-view.renderDistance;
   glm::vec3 b = glm::floor(view.viewPos/glm::vec3(chunkSize))+view.renderDistance;
@@ -549,8 +560,6 @@ void World::bufferChunks(View view){
   //Can't exceed a certain size
   a = glm::clamp(a, glm::vec3(0), dim-glm::vec3(1));
   b = glm::clamp(b, glm::vec3(0), dim-glm::vec3(1));
-
-  //Construct a vector so we can check which guys need loading
 
   //Chunks that need to be removed
   std::stack<int> remove;
@@ -570,11 +579,6 @@ void World::bufferChunks(View view){
   for(unsigned int i = 0; i < chunks.size(); i++){
     //Check if any of these chunks are outside of the limits of a / b
     if(glm::any(glm::lessThan(chunks[i].pos, a)) || glm::any(glm::greaterThan(chunks[i].pos, b))){
-      //Check if the chunk was updated
-      if(chunks[i].updated){
-        //Save chunk to file
-        //Add the updated stuff the the buffer and evaluate it
-      }
       //Add the chunk to the erase pile
       remove.push(i);
     }
@@ -588,6 +592,11 @@ void World::bufferChunks(View view){
   }
 
   updateModels = remove;
+
+  //If we are erasing chunks, then we need to evaluate our editBuffer.
+  if(!remove.empty()){
+    evaluateEditBuffer();
+  }
 
   //Loop over the erase pile, delete the relevant chunks.
   while(!remove.empty()){

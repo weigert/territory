@@ -3,26 +3,25 @@
 #include "../forward/world.fwd.h"
 #include "../forward/population.fwd.h"
 #include "../forward/bot.fwd.h"
+#include "../forward/item.fwd.h"
 
 class State{
   public:
-    //Constructor
-    State();
-
     //Basic set of mandate requirements
-    glm::vec3 pos;
-    std::string task;
-    int carry;
+    glm::vec3 pos = glm::vec3(0);
+    std::string task = "Null";
 
     //Target Bot
-    int target;
+    int target = 0;
     //int owner; //Owner of this Memory
     //int starter; //Originator of this Memory
-    BlockType block;
-    bool reachable;
-    //Item item;
-    int time;
+    BlockType block = BLOCK_AIR;
+    bool reachable = true;
+    int time = 0;
     int dist = 0;
+
+    //States need to contain an inventory!
+    std::vector<Item> inventory;
 
     //Get the Current Local State
     void retrieveState(World &world, Population &population, int bot);
@@ -32,7 +31,6 @@ class State{
       //Set all properties
       pos = rhs.pos;
       task = rhs.task;
-      carry = rhs.carry;
       block = rhs.block;
       reachable = rhs.reachable;
       time = rhs.time;
@@ -48,9 +46,6 @@ bool operator==(State lhs, const State& rhs) {
     return false;
   }
   if(lhs.task != rhs.task){
-    return false;
-  }
-  if(lhs.carry != rhs.carry){
     return false;
   }
   if(lhs.block != rhs.block){
@@ -75,9 +70,6 @@ bool operator||(State lhs, const State& rhs) {
     return true;
   }
   if(lhs.task == rhs.task){
-    return true;
-  }
-  if(lhs.carry == rhs.carry){
     return true;
   }
   if(lhs.block == rhs.block){
@@ -105,7 +97,6 @@ State operator-(State lhs, const State& rhs) {
   newState.dist = lhs.dist - rhs.dist;
 
   //Discrete Values
-  newState.carry = (lhs.carry == rhs.carry)?rhs.carry:0;
   newState.task = (lhs.task == rhs.task)?rhs.task:"";
   newState.block = (lhs.block == rhs.block)?rhs.block:BLOCK_AIR;
   newState.reachable = (lhs.reachable == rhs.reachable)?rhs.reachable:1-rhs.reachable;

@@ -20,7 +20,7 @@ public:
 class Sprite{
 public:
   //Draw Stuff
-  GLuint vao[1];
+  GLuint vao;
   GLuint vbo[2];
   GLuint texture;
   glm::mat4 model = glm::mat4(1.0f);
@@ -28,7 +28,7 @@ public:
   //Load the Texture File
   bool loadImage(std::string fileName);
   void resetModel();
-  void setupBuffer();
+  void setupBuffer(bool small);
 
   //Animation Stuff
   Animation animation;

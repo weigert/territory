@@ -9,6 +9,7 @@
 #include "../forward/memory.fwd.h"
 #include "../forward/task.fwd.h"
 #include "../forward/view.fwd.h"
+#include "../forward/item.fwd.h"
 
 class Interface{
 public:
@@ -20,7 +21,18 @@ public:
   void drawBot(Bot &bot);
   void drawTask(Task *task);
   void drawState(State state);
+  void drawItem(Item item);
+
+  //I also need creator interfaces for all these guys!!
+  void createItem(Item &item);
+  void createState(State &state);
+  void createTask(Task &task);
 };
+
+void Interface::createItem(Item &item){
+  //Edit and Return the Item
+
+}
 
 void Interface::drawBot(Bot &bot){
   //Jump to Bots Location
@@ -47,6 +59,27 @@ void Interface::drawBot(Bot &bot){
     ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Alive");
   }
 
+  //Position
+  ImGui::Text("Position: ");
+  ImGui::SameLine();
+  ImGui::Text("%d", (int)bot.pos.x);
+  ImGui::SameLine();
+  ImGui::Text("%d", (int)bot.pos.y);
+  ImGui::SameLine();
+  ImGui::Text("%d", (int)bot.pos.z);
+
+  //Options for Manipulating Data
+  if (ImGui::Button("Add Task")){
+    ImGui::OpenPopup("TaskAdder");
+  }
+  ImGui::SameLine();
+  if (ImGui::Button("Add Item")){
+    ImGui::OpenPopup("ItemAdder");
+  }
+  ImGui::SameLine();
+  if (ImGui::Button("Add Memory")){
+    ImGui::OpenPopup("MemoryAdder");
+  }
 
   //Sprite / Animation Tab
   if (ImGui::TreeNode("Sprite")){
@@ -83,6 +116,22 @@ void Interface::drawBot(Bot &bot){
     }
     ImGui::TreePop();
   }
+
+  if (ImGui::TreeNode("Inventory")){
+    //Loop over all Items in the Inventory
+    for(unsigned int i = 0; i < bot.inventory.size(); i++){
+      ImGui::Text("%s", bot.inventory[i].name.c_str());
+      ImGui::SameLine();
+      if(ImGui::Button("-")){
+        //Delete the specified item from the guy
+        bot.inventory.erase(bot.inventory.begin()+i);
+      }
+    }
+
+    //Render the Actual Mandates
+    ImGui::TreePop();
+  }
+
 }
 
 void Interface::drawState(State state){
@@ -142,6 +191,15 @@ void Interface::render(View &view, World &world, Population &population, Player 
       ImGui::SliderInt("Speed", &b, 0, 10);
       world.tickLength = 2*(10-b)+1;
 
+      if(ImGui::Button("Spawn Item")){
+        ///
+        Item _item;
+        _item.fromTable(BLOCK_STONE);
+        _item.pos = glm::vec3(0, 1, 5);
+        _item.setupSprite();  //Needs to be because it is placed in the world.
+        //_item.pos = world.getTop(glm::vec2(_args.pos.x, _args.pos.y));
+        world.drops.push_back(_item);  //Add the Item to the Drop-Table
+      }
       ImGui::EndTabItem();
     }
 
@@ -162,12 +220,83 @@ void Interface::render(View &view, World &world, Population &population, Player 
 
       //Draw the Bot
       drawBot(population.bots[a]);
+
       //Set the view position to the bots positin
       if(follow){
         view.viewPos = population.bots[a].pos;
         view.loadChunkModels( world );
       }
 
+      /*
+      Need to be able to add tasks.
+      Need to be able to add states quickly.
+      Need to be able to construct items somehow.
+
+      The best way to do this:
+      Select a specific bot, and create a task using a task creation interface.
+      Then push the task onto their current queue.
+
+      There should also be some kind of inventory tab, where items can be deleted and added.
+
+      */
+
+      if (ImGui::BeginPopupModal("ItemAdder", NULL)){
+          //Construct an Item
+          static Item item;
+          item.name = "Test";
+          ImGui::InputText("Name:", &item.name[0], IM_ARRAYSIZE(&item.name));
+          ImGui::SliderInt("Quantity:", &item.quantity, 0, 99);
+
+          //Start the Menu
+          if (ImGui::Button("Submit")){
+            //Add the item to the inventory.
+            population.bots[a].inventory.push_back(item);
+            ImGui::CloseCurrentPopup();
+          }
+          ImGui::EndPopup();
+      }
+
+      if (ImGui::BeginPopupModal("TaskAdder", NULL)){
+          //Construct a Task
+          static int _taskHandle = TASK_NULL;
+          const char* handles[] = { "Null", "Look", "Listen", "Think", "Wait", "Move", "Step", "Walk", "Idle", "Follow", "Collect", "Take", "Find", "Search", "Retrieve", "Convert", "Decide", "Request" };
+          ImGui::Combo("Task", &_taskHandle, handles, IM_ARRAYSIZE(handles), 4);
+
+          //State Stuff Here
+          static int _statePos[3] = {(int)population.bots[a].pos.x, (int)population.bots[a].pos.y, (int)population.bots[a].pos.z};
+          ImGui::DragInt3("Position", _statePos, 1, 0, 255);
+
+          //Do this guy here
+          static int _time = 0.0f;
+          ImGui::DragInt("Time", &_time, 1, 0, 100);
+
+          static int _block = 0.0f;
+          ImGui::DragInt("Block", &_block, 1, 0, 9);
+
+
+          //Start the Menu
+          if (ImGui::Button("Submit")){
+            //Add the item to the inventory.
+            Task *_task = new Task(TaskName[_taskHandle].c_str(), a, (TaskHandle)_taskHandle);
+
+            //Construct a State
+            State state;
+            state.task = _task->name;
+            state.time = _time;
+            state.pos = glm::vec3(_statePos[0], _statePos[1], _statePos[2]);
+            state.block = (BlockType)_block;
+
+            //Add the Task
+            _task->args = state;
+            population.bots[a].current = _task;
+            ImGui::CloseCurrentPopup();
+          }
+          ImGui::SameLine();
+          if (ImGui::Button("Cancel")){
+            ImGui::CloseCurrentPopup();
+          }
+          ImGui::EndPopup();
+      }
       ImGui::EndTabItem();
     }
 

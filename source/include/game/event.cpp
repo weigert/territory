@@ -6,7 +6,7 @@
 
 #include "event.h"
 
-void eventHandler::input(SDL_Event *e, bool &quit){
+void eventHandler::input(SDL_Event *e, bool &quit, bool &paused){
   //User input detected
   if( SDL_PollEvent( e ) != 0 ) {
     //Quit Event
@@ -18,6 +18,10 @@ void eventHandler::input(SDL_Event *e, bool &quit){
       }
       else if(e->key.keysym.sym == SDLK_DOWN  && rotate.empty()){
         rotate.push_front(e);
+      }
+      else if(e->key.keysym.sym == SDLK_p){
+        //Invert the Pause State
+        paused = !paused;
       }
       else{
         inputs.push_front(e);
@@ -36,8 +40,12 @@ void eventHandler::input(SDL_Event *e, bool &quit){
 void eventHandler::update(World &world, Player &player, Population &population, View &view){
   //Do this thingy to get the current mouse position that is being thing'd
   if(move){
-    view.focus = glm::vec2(1.0)-glm::vec2(mouse->button.x, mouse->button.y)/glm::vec2(view.SCREEN_WIDTH, view.SCREEN_HEIGHT); //Set current focus
+    glm::vec2 pos = glm::vec2(mouse->button.x, mouse->button.y);
+    view.focus = glm::vec2(1.0)-pos/glm::vec2(view.SCREEN_WIDTH, view.SCREEN_HEIGHT); //Set current focus
     move = false;
+
+    //Also do the pick
+    view.picker.pick(pos);
   }
 
   //Check for rotation

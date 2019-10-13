@@ -51,7 +51,6 @@ void Bot::executeTask(World &world, Population &population){
     interrupt = false;
   }
   else{
-
     //Execute Current Task, upon success overwrite.
     if((current->perform)(world, population)){
       Task *decide = new Task("Decide on Action", ID, &Task::decide);
@@ -152,6 +151,6 @@ void Bot::addSound(State _state){
 void Bot::setupSprite(){
   //Load the Sprite Thing
   sprite.loadImage("hunterfull.png");
-  sprite.setupBuffer();
+  sprite.setupBuffer(false);
   sprite.resetModel();
 }

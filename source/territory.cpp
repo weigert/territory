@@ -38,7 +38,9 @@ int main( int argc, char* args[] ) {
 
 	//Game Loop
 	bool quit = false;
+	bool paused = true;
 	SDL_Event e;
+
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -46,19 +48,21 @@ int main( int argc, char* args[] ) {
 	while(!quit){
 		//Create this guy
 		//Handle User Input
-		events.input(&e, quit);
+		events.input(&e, quit, paused);
 		events.update(world, player, population, view);
 
 		//Handle with IMGUI
 		//ImGui_ImplSDL2_ProcessEvent(&e);
 
 		//Update the Population
-		if(SDL_GetTicks()%world.tickLength == 0){
+		if(SDL_GetTicks()%world.tickLength == 0 && !paused){
 			population.update(world);
 		}
 
 		//Render the View
+		view.updateChunkModels( world );
 		view.render(world, player, population);
+
 		view.calcFPS();
 	}
 

@@ -8,9 +8,8 @@ class Logger{
     //Output Messages to Console
     void write(std::string _msg); //Simply write something to console
     void error(std::string _err); //This is specifically an error, and will print as such
-    void debug(std::string _deb); //This is a debug message and will appear if debug is true
-
     //Special Types of Outputs
+    void debug(std::string _deb);
     void progress(std::string _msg, int cur, int max);  //Progress Bar
 
   private:

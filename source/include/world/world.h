@@ -9,6 +9,7 @@
 #include "../forward/chunk.fwd.h"
 #include "../forward/octree.fwd.h"
 #include "../forward/player.fwd.h"
+#include "../forward/item.fwd.h"
 
 //EditBuffer Struct
 struct bufferObject {
@@ -33,11 +34,16 @@ public:
   int SEED = 10;
   int chunkSize = 16;
   int tickLength = 1;
-  glm::vec3 dim = glm::vec3(50, 5, 50);
+  glm::vec3 dim = glm::vec3(3, 3, 3);
+
+  //Items placed / on the ground
+  std::vector<Item>placed;
+  std::vector<Item>drops;
 
   //Movement Weights
   int moveWeight(BlockType _type);
   BlockType getBlock(glm::vec3 _pos);
+  void setBlock(glm::vec3 _pos, BlockType _type);
   int getTop(glm::vec2 _pos);
 
   //Generate Function / Chunk Handlers

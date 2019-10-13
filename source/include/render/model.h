@@ -19,6 +19,7 @@ public:
 
   //Read File Functions
   void setup();
+  void update();
   void cleanup();
 
   //Model Generation Functions
