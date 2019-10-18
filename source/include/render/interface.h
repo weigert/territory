@@ -319,6 +319,11 @@ void Interface::render(View &view, World &world, Population &population, Player 
       ImGui::ColorEdit3("Light Color", light);
       view.lightCol = glm::vec3(light[0], light[1], light[2]);
 
+      static int _rd[3] = {(int)view.renderDistance.x, (int)view.renderDistance.y, (int)view.renderDistance.z};
+      ImGui::DragInt3("Render Distance", _rd);
+      view.renderDistance = glm::vec3(_rd[0], _rd[1], _rd[2]);
+
+
       ImGui::EndTabItem();
     }
     ImGui::EndTabBar();

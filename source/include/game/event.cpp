@@ -110,31 +110,12 @@ void eventHandler::update(World &world, Player &player, Population &population, 
       //Change the Zoom Value and Projection Matrix
       view.zoom+=view.zoomInc;
       view.projection = glm::ortho(-(float)view.SCREEN_WIDTH*view.zoom, (float)view.SCREEN_WIDTH*view.zoom, -(float)view.SCREEN_HEIGHT*view.zoom, (float)view.SCREEN_HEIGHT*view.zoom, -100.0f, 100.0f);
-
-      //LOD Change Here
-      if((int)(view.zoom*1000) == 50){
-        view.switchLOD(world, player, 3);
-      }
-      //LOD Change Here
-      else if((int)(view.zoom*1000) == 100){
-        view.switchLOD(world, player, 2);
-      }
       scroll.pop_back();
     }
     //Scroll Closer
     else if(scroll.back()->wheel.y < -0.99 && view.zoom > 0.005){
       view.zoom-=view.zoomInc;
       view.projection = glm::ortho(-(float)view.SCREEN_WIDTH*view.zoom, (float)view.SCREEN_WIDTH*view.zoom, -(float)view.SCREEN_HEIGHT*view.zoom, (float)view.SCREEN_HEIGHT*view.zoom, -100.0f, 100.0f);
-
-      //LOD Change Here
-      if((int)(view.zoom*1000) == 50){
-        view.switchLOD(world, player, 4);
-
-      }
-      //LOD Change Here
-      else if((int)(view.zoom*1000) == 99){
-        view.switchLOD(world, player, 3);
-      }
       scroll.pop_back();
     }
     else if(scroll.back()->wheel.x < -0.8){
@@ -193,13 +174,11 @@ void eventHandler::handlePlayerMove(World &world, Player &player, View &view, in
   }
 
   //Regularly shift player's position
-  else if(glm::all(glm::greaterThanEqual(view.viewPos+m, glm::vec3(0))) && glm::all(glm::lessThanEqual(view.viewPos+m, glm::vec3(world.chunkSize)*world.dim-glm::vec3(1)))){
+  else if(glm::all(glm::greaterThan(view.viewPos+m, glm::vec3(0))) && glm::all(glm::lessThan(view.viewPos+m, glm::vec3(world.chunkSize)*world.dim-glm::vec3(1)))){
     //Shift the Player's Position
     view.viewPos += m;
     for(unsigned int i = 0; i < view.models.size(); i++){
       view.models[i].translate(-m);
     }
   }
-
-
 }

@@ -149,16 +149,9 @@ void View::cleanup(){
 void View::loadChunkModels(World &world){
   //Update the Models for the Chunks
 
-  if(updateLOD){
-    //If we have changed LOD, we have to udpate all models.
-    models.clear();
-  }
-  else{
-    //Otherwise, only remove the ones where the chunks were also removed.
-    while(!world.updateModels.empty()){
-      models.erase(models.begin()+world.updateModels.top());
-      world.updateModels.pop();
-    }
+  while(!world.updateModels.empty()){
+    models.erase(models.begin()+world.updateModels.top());
+    world.updateModels.pop();
   }
 
   //Loop over all chunks
@@ -407,22 +400,6 @@ void View::renderGUI(World &world, Player &player, Population &population){
                                     Helpers
 ================================================================================
 */
-
-bool View::switchLOD(World &world, Player &player, int _LOD){
-  //Make sure we don't switch the LOD to often
-  if(_LOD == LOD || LOD > log2(world.chunkSize)){
-    return false;
-  }
-
-  //Change the LOD, update the stuff
-  player.renderDistance += glm::vec3(2)*glm::vec3(LOD-_LOD);
-  LOD = _LOD;
-  updateLOD = true;
-  world.bufferChunks( *this );
-  loadChunkModels(world);
-
-  return true;
-}
 
 void View::calcFPS(){
   //Loop over the FPS

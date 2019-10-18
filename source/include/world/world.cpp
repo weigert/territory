@@ -135,8 +135,8 @@ void World::generate(){
 
   //Generate Height
   std::cout<<"Filling World"<<std::endl;
-  generateFlat();
-  //generatePerlin();
+  //generateFlat();
+  generatePerlin();
   //generateFlat();
 
   //Place the Player
@@ -145,7 +145,13 @@ void World::generate(){
 }
 
 void World::generateBlank(){
-  //Add Blank Chunks to Region Files
+  //Get the savefile Path
+  boost::filesystem::path data_dir(boost::filesystem::current_path());
+  data_dir /= "save";
+  data_dir /= saveFile;
+  data_dir /= "world.region";
+  std::ofstream out(data_dir.string(), std::ofstream::app);
+
   //Loop over all Chunks in the World
   for(int i = 0; i < dim.x; i++){
     for(int j = 0; j < dim.y; j++){
@@ -157,8 +163,11 @@ void World::generateBlank(){
         chunk.size = chunkSize;
         chunk.pos = glm::vec3(i, j, k);
 
-        //Write the Chunk to File
-        writeChunk(chunk);
+        //Save the current loaded chunks to file and the world data
+        {
+          boost::archive::text_oarchive oa(out);
+          oa << chunk;    //Append the Chunk to the Region File
+        }
       }
     }
   }
@@ -248,7 +257,7 @@ void World::generatePerlin(){
 
   //Rocks
   std::cout<<"Adding Rocks"<<std::endl;
-  for(int i = 0; i < 1000; i++){
+  for(int i = 0; i < 100; i++){
     int rock[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
     //Normalize the Block's x,z coordinates
     float x = (float)(rock[0]) / (float)(chunkSize*dim.x);
@@ -265,7 +274,7 @@ void World::generatePerlin(){
 
   //Pumpkings
   std::cout<<"Adding Pumpkins"<<std::endl;
-  for(int i = 0; i < 1000; i++){
+  for(int i = 0; i < 100; i++){
     int rock[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
     //Normalize the Block's x,z coordinates
     float x = (float)(rock[0]) / (float)(chunkSize*dim.x);
@@ -280,7 +289,7 @@ void World::generatePerlin(){
 
   //Add Trees
   std::cout<<"Adding Trees"<<std::endl;
-  for(int i = 0; i < 5000; i++){
+  for(int i = 0; i < 500; i++){
     int tree[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
     int treeheight = rand()%6+6;
 
@@ -301,7 +310,6 @@ void World::generatePerlin(){
     addEditBuffer(glm::vec3(tree[0], (int)height+treeheight, tree[1]+1), BLOCK_LEAVES);
     addEditBuffer(glm::vec3(tree[0], (int)height+treeheight, tree[1]-1), BLOCK_LEAVES);
   }
-
   //Evaluate the Guy
   evaluateEditBuffer();
 }
@@ -364,20 +372,6 @@ bool World::addEditBuffer(glm::vec3 _pos, BlockType _type){
 }
 
 //Sorting Operator for bufferObjects
-bool operator<(const bufferObject& a, const bufferObject& b) {
-  if(a.cpos.x < b.cpos.x) return true;
-  if(a.cpos.x > b.cpos.x) return false;
-
-  if(a.cpos.y < b.cpos.y) return true;
-  if(a.cpos.y > b.cpos.y) return false;
-
-  if(a.cpos.z < b.cpos.z) return true;
-  if(a.cpos.z > b.cpos.z) return false;
-
-  return false;
-}
-
-//Sorting Operator for bufferObjects
 bool operator>(const bufferObject& a, const bufferObject& b) {
   if(a.cpos.x > b.cpos.x) return true;
   if(a.cpos.x < b.cpos.x) return false;
@@ -407,68 +401,36 @@ bool World::evaluateEditBuffer(){
 
   //Load File and Write File
   std::ifstream in((data_dir/"world.region").string());
-  std::ofstream out((data_dir/"world.region.temp").string());
+  std::ofstream out((data_dir/"world.region.temp").string(), std::ofstream::app);
 
   //Chunk for Saving Data
   Chunk _chunk;
-
   int n_chunks = 0;
 
-  //While there is still stuff inside the editBuffer...
-  while(!editBuffer.empty()){
-    //Read the File into the Chunk
-
-    {
-      boost::archive::text_iarchive ia(in);
-      ia >> _chunk;
+  //Loop over the Guy
+  while(n_chunks < dim.x*dim.y*dim.z){
+    if(in.eof()){
+      return false;
     }
 
-    //If the chunk is not equal to the editbuffer's element
-    while(_chunk.pos != editBuffer.back().cpos){
-      //Make sure there is an endoffile criterion.
-      if(in.eof()){
-        std::cout<<"Error: Reached end of file."<<std::endl;
-        return false;
-      }
+    //Archive Serializers
+    boost::archive::text_oarchive oa(out);
+    boost::archive::text_iarchive ia(in);
 
-      //Create the Thing
-      {
-        boost::archive::text_oarchive oa(out);
-        oa << _chunk;
-        n_chunks++;
-        boost::archive::text_iarchive ia(in);
-        ia >> _chunk;
-      }
-    }
+    //Load the Chunk
+    ia >> _chunk;
 
-    //Now we have a chunk that corresponds the the editBuffer element
-    while(!editBuffer.empty() && _chunk.pos == editBuffer.back().cpos){
-      //Set the block in the chunk.
+    //Overwrite relevant portions
+    while(!editBuffer.empty() && glm::all(glm::equal(_chunk.pos, editBuffer.back().cpos))){
+      //Change the Guy
       _chunk.setPosition(glm::mod(editBuffer.back().pos, glm::vec3(chunkSize)), editBuffer.back().type);
-
-      //Erase the first element
       editBuffer.pop_back();
     }
 
-    //Write the guy to file
-    //_chunk.data.trySimplify();
-    //Write the chunk to file
-    {
-      boost::archive::text_oarchive oa(out);
-      oa << _chunk;
-      n_chunks++;
-    }
-  }
-
-  //Fill up the rest
-  while(n_chunks < dim.x*dim.y*dim.z){
-    boost::archive::text_iarchive ia(in);
-    boost::archive::text_oarchive oa(out);
+    //Write the chunk back
     oa << _chunk;
-    ia >> _chunk;
     n_chunks++;
   }
-
 
   //Close the fstream and ifstream
   in.close();
@@ -551,6 +513,7 @@ int World::getTop(glm::vec2 _pos){
 
 void World::bufferChunks(View view){
   //Load / Reload all Visible Chunks
+  evaluateEditBuffer();
 
   //Chunks that should be loaded
   glm::vec3 a = glm::floor(view.viewPos/glm::vec3(chunkSize))-view.renderDistance;
@@ -581,7 +544,8 @@ void World::bufferChunks(View view){
       //Add the chunk to the erase pile
       remove.push(i);
     }
-    //Make sure that the chunk that we determined will not be removed is also
+
+    //Make sure that the chunk that we determined will not be removed is also not reloaded
     for(unsigned int j = 0; j < load.size(); j++){
       if(load[j].x == chunks[i].pos.x && load[j].y == chunks[i].pos.y && load[j].z == chunks[i].pos.z){
         //Remove the element from load, as it is already inside this guy
@@ -592,70 +556,53 @@ void World::bufferChunks(View view){
 
   updateModels = remove;
 
-  //If we are erasing chunks, then we need to evaluate our editBuffer.
-  if(!remove.empty()){
-    evaluateEditBuffer();
-  }
-
   //Loop over the erase pile, delete the relevant chunks.
   while(!remove.empty()){
     chunks.erase(chunks.begin()+remove.top());
     remove.pop();
   }
 
-  //Theoretically, we only need to load the file once.
-  //we can sort the load vector, then access the relevant chunks ONCE and close the file!
-  //Sort the editBuffer
+  //Check if we want to load any guys
+  if(!load.empty()){
+    //Sort the loading vector, for single file-pass
+    std::sort(load.begin(), load.end(),
+            [](const glm::vec3& a, const glm::vec3& b) {
+              if(a.x > b.x) return true;
+              if(a.x < b.x) return false;
 
-  //Loop over the guys we want to load
-  while(!load.empty()){
-    //Make sure the vector we are trying to load is legit
+              if(a.y > b.y) return true;
+              if(a.y < b.y) return false;
+
+              if(a.z > b.z) return true;
+              if(a.z < b.z) return false;
+
+              return false;
+            });
+
+    boost::filesystem::path data_dir(boost::filesystem::current_path());
+    data_dir /= "save";
+    data_dir /= saveFile;
+    std::ifstream in((data_dir/"world.region").string());
+
     Chunk _chunk;
-    loadChunk(load.back(), _chunk);
-    //Add the chunk
-    chunks.push_back(_chunk);
-    load.pop_back();
+    int n = 0;
+
+    while(!load.empty()){
+      //Skip Lines
+      while(n < load.back().x*dim.z*dim.y+load.back().y*dim.z+load.back().z){
+        in.ignore(1000000,'\n');
+        n++;
+      }
+      //Load the Chunk
+      {
+        boost::archive::text_iarchive ia(in);
+        ia >> _chunk;
+        chunks.push_back(_chunk);
+        load.pop_back();
+      }
+    }
+    in.close();
   }
-}
-
-bool World::writeChunk(Chunk chunk){
-  //Get the Working Directory
-  boost::filesystem::path data_dir(boost::filesystem::current_path());
-  data_dir /= "save";
-  data_dir /= saveFile;
-  data_dir /= "world.region";
-
-  //Save the current loaded chunks to file and the world data
-  std::ofstream out(data_dir.string(), std::ofstream::app);
-  {
-    boost::archive::text_oarchive oa(out);
-    oa << chunk;    //Append the Chunk to the Region File
-  }
-  return true;
-}
-
-bool World::loadChunk(glm::vec3 _c, Chunk &chunk){
-  //Get the Working Directory
-  boost::filesystem::path data_dir(boost::filesystem::current_path());
-  data_dir /= "save";
-  data_dir /= saveFile;
-  data_dir /= "world.region";
-
-  //Load the actual worldfile, and the chunks relevant for the player.
-  std::ifstream in(data_dir.string());
-
-  //Skip the Lines
-  int n = _c.x*dim.z*dim.y+_c.y*dim.z+_c.z;
-  while(n>0){
-    in.ignore(100000,'\n');
-    n--;
-  }
-
-  {
-    boost::archive::text_iarchive ia(in);
-    ia >> chunk;
-  }
-  return true;
 }
 
 bool World::loadWorld(){

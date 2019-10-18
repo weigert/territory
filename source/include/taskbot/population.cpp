@@ -8,7 +8,7 @@ void Population::addBot(World world){
   //Add a bot
   Bot bot(bots.size());
   bot.setupSprite();
-  bot.pos = glm::vec3(85, 19, 233);
+  bot.pos = glm::vec3(90, world.getTop(glm::vec2(90, 90)), 90);
   Task *masterTask = new Task("Human Task", bot.ID, &Task::Dummy);
   bot.current = masterTask;
   bots.push_back(bot);
@@ -32,7 +32,7 @@ void Population::removeBot(int id){
 
 Population::Population(World &world){
   //Create some bots
-  for(int j = 0; j < 10; j++){
+  for(int j = 0; j < 1; j++){
     addBot(world);
   }
 }

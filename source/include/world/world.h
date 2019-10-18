@@ -34,7 +34,7 @@ public:
   int SEED = 10;
   int chunkSize = 16;
   int tickLength = 1;
-  glm::vec3 dim = glm::vec3(3, 3, 3);
+  glm::vec3 dim = glm::vec3(10, 5, 10);
 
   //Items placed / on the ground
   std::vector<Item>placed;
@@ -57,12 +57,10 @@ public:
   std::vector<bufferObject> editBuffer;
   bool addEditBuffer(glm::vec3 _pos, BlockType _type);
   bool evaluateEditBuffer();
+  void bufferChunks(View view);    //Reloads all relevant chunks from file
 
   //File IO Management
   std::string saveFile;
   bool loadWorld();
   bool saveWorld();
-  bool writeChunk(Chunk chunk);
-  bool loadChunk(glm::vec3 _c, Chunk &chunk);
-  void bufferChunks(View view);    //Reloads all relevant chunks from file
 };

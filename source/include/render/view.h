@@ -78,11 +78,10 @@ class View{
     glm::vec3 select = glm::vec3(0);
 
     //Viewposition
-    glm::vec3 viewPos = glm::vec3(30, 0, 30);
-    glm::vec3 renderDistance = glm::vec3(3, 3, 3);
+    glm::vec3 viewPos = glm::vec3(90, 14, 90);
+    glm::vec3 renderDistance = glm::vec3(2, 2, 2);
 
     //LOD Handling
-    bool switchLOD(World &world, Player &player, int _LOD);
     int LOD = 4;
     float zoom = 0.01;
     float zoomInc = 0.001;
