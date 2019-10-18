@@ -32,6 +32,10 @@ void eventHandler::input(SDL_Event *e, bool &quit, bool &paused){
     }
     else if( e->type == SDL_MOUSEBUTTONDOWN){
       mouse = e;
+      click = true;
+    }
+    else if( e->type == SDL_MOUSEMOTION){
+      mouse = e;
       move = true;
     }
   }
@@ -39,13 +43,19 @@ void eventHandler::input(SDL_Event *e, bool &quit, bool &paused){
 
 void eventHandler::update(World &world, Player &player, Population &population, View &view){
   //Do this thingy to get the current mouse position that is being thing'd
-  if(move){
+  if(click){
     glm::vec2 pos = glm::vec2(mouse->button.x, mouse->button.y);
-    view.focus = glm::vec2(1.0)-pos/glm::vec2(view.SCREEN_WIDTH, view.SCREEN_HEIGHT); //Set current focus
+    if(mouse->button.button == SDL_BUTTON_LEFT){
+      view.focus = glm::vec2(1.0)-pos/glm::vec2(view.SCREEN_WIDTH, view.SCREEN_HEIGHT); //Set current focus
+    }
+    else if(mouse->button.button == SDL_BUTTON_RIGHT){
+      view.select = view.intersect(world, glm::vec2(mouse->button.x, mouse->button.y));
+      view.picked = true;
+    }
+    click = false;
+  }
+  if(move){
     move = false;
-
-    //Also do the pick
-    view.picker.pick(pos);
   }
 
   //Check for rotation

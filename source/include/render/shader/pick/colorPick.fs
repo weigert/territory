@@ -1,9 +1,7 @@
 #version 130
-in vec2 ex_Tex;
+uniform vec3 un_Color;
 out vec4 fragColor;
 
-uniform sampler2D spriteTexture;
-
 void main(){
-  fragColor = texture(spriteTexture, ex_Tex);
+  fragColor = vec4(un_Color, 1.0);
 }

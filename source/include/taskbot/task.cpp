@@ -282,6 +282,10 @@ bool Task::collect(World &world, Population &population, State &_args){
 }
 
 bool Task::take(World &world, Population &population, State &_args){
+  //Check if Bot is in Range
+  if(!glm::all(glm::lessThanEqual(population.bots[botID].pos - _args.pos, population.bots[botID].range))){
+    return true;
+  }
   return true;
 }
 
@@ -370,6 +374,7 @@ bool Task::listen(World &world, Population &population, State &_args){
 
 bool Task::decide(World &world, Population &population, State &_args){
   //Check if we have mandates to go
+  /*
   if(population.bots[botID].mandates.empty()){
     //Set the Current Task to Something Abitrary
     Task *masterTask = new Task("Human Task", botID, &Task::Dummy);
@@ -381,7 +386,7 @@ bool Task::decide(World &world, Population &population, State &_args){
     population.bots[botID].mandates.pop_back();
     //For now, we are just taking the back element
   }
-
+  */
   //Take whatever mandate is available
   return false;
 }
@@ -644,7 +649,7 @@ std::vector<glm::vec3> calculatePath(int id, glm::vec3 _dest, Population &popula
       path.clear();
 		}
 		astarsearch.EnsureMemoryFreed();
-    
+
     //Remove the First Guy!
     path.pop_back();
     return path;

@@ -191,14 +191,8 @@ void Interface::render(View &view, World &world, Population &population, Player 
       ImGui::SliderInt("Speed", &b, 0, 10);
       world.tickLength = 2*(10-b)+1;
 
-      if(ImGui::Button("Spawn Item")){
-        ///
-        Item _item;
-        _item.fromTable(BLOCK_STONE);
-        _item.pos = glm::vec3(0, 1, 5);
-        _item.setupSprite();  //Needs to be because it is placed in the world.
-        //_item.pos = world.getTop(glm::vec2(_args.pos.x, _args.pos.y));
-        world.drops.push_back(_item);  //Add the Item to the Drop-Table
+      if(ImGui::Button("Get Camera Position")){
+        //
       }
       ImGui::EndTabItem();
     }
@@ -262,17 +256,12 @@ void Interface::render(View &view, World &world, Population &population, Player 
           const char* handles[] = { "Null", "Look", "Listen", "Think", "Wait", "Move", "Step", "Walk", "Idle", "Follow", "Collect", "Take", "Find", "Search", "Retrieve", "Convert", "Decide", "Request" };
           ImGui::Combo("Task", &_taskHandle, handles, IM_ARRAYSIZE(handles), 4);
 
-          //State Stuff Here
-          static int _statePos[3] = {(int)population.bots[a].pos.x, (int)population.bots[a].pos.y, (int)population.bots[a].pos.z};
-          ImGui::DragInt3("Position", _statePos, 1, 0, 255);
-
           //Do this guy here
           static int _time = 0.0f;
           ImGui::DragInt("Time", &_time, 1, 0, 100);
 
           static int _block = 0.0f;
           ImGui::DragInt("Block", &_block, 1, 0, 9);
-
 
           //Start the Menu
           if (ImGui::Button("Submit")){
@@ -283,7 +272,12 @@ void Interface::render(View &view, World &world, Population &population, Player 
             State state;
             state.task = _task->name;
             state.time = _time;
-            state.pos = glm::vec3(_statePos[0], _statePos[1], _statePos[2]);
+            if(_taskHandle == TASK_WALK){
+              state.pos = view.select+glm::vec3(0, 1, 0);
+            }
+            else{
+              state.pos = view.select;
+            }
             state.block = (BlockType)_block;
 
             //Add the Task

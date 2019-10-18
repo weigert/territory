@@ -394,7 +394,6 @@ bool operator>(const bufferObject& a, const bufferObject& b) {
 bool World::evaluateEditBuffer(){
   //Check if the editBuffer isn't empty!
   if(editBuffer.empty()){
-    std::cout<<"editBuffer is empty."<<std::endl;
     return false;
   }
 

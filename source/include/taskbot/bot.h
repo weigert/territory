@@ -34,6 +34,7 @@ class Bot{
 
     //Inventory and Attributes
     std::vector<Item> inventory;
+    void sortInventory();
 
     //Bot Activities and Actions
     Task* current;

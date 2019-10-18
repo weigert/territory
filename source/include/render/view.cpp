@@ -57,6 +57,7 @@ bool View::Init(){
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glEnable(GL_CULL_FACE);
     glFrontFace(GL_CW);
+  glLineWidth(2.5f);
 
   setupShaders();
 
@@ -277,8 +278,19 @@ REGULAR IMAGE
     models[i].render();               //Render
   }
 
-  //At this point, we should really take the texture from image and feed it to spriteshader.
-  //Render the Sprite
+  /* Picker Cube! */
+  if(picked){
+    picker.shaderColorPick.useProgram();
+    picker.model = glm::mat4(1.0f);
+    glm::vec3 a = select-viewPos;
+    picker.model = glm::translate(picker.model, a);
+    picker.shaderColorPick.setVec3("un_Color", picker.clickColorBlock);
+    picker.shaderColorPick.setMat4("mvp", projection*camera*picker.model);
+    glBindVertexArray(picker.vao);
+    glDrawArrays(GL_LINE_STRIP, 0, 16);
+  }
+
+  /* Character Sprites */
   spriteShader.useProgram();
   //Loop over all Sprites
   for(unsigned int i = 0; i < population.bots.size(); i++){
@@ -290,7 +302,7 @@ REGULAR IMAGE
     population.bots[i].sprite.resetModel();
     //Set the Position of the Sprite relative to the player
     glm::vec3 a = population.bots[i].pos-viewPos;
-    population.bots[i].sprite.model = glm::translate(population.bots[i].sprite.model, glm::vec3(a));
+    population.bots[i].sprite.model = glm::translate(population.bots[i].sprite.model, a);
     glm::vec3 axis = glm::vec3(0.0f, 1.0f, 0.0f);
     population.bots[i].sprite.model = glm::rotate(population.bots[i].sprite.model, glm::radians(45.0f), axis);
     population.bots[i].sprite.model = glm::rotate(population.bots[i].sprite.model, glm::radians(-rotation), glm::vec3(0, 1, 0));
@@ -307,7 +319,7 @@ REGULAR IMAGE
     population.bots[i].sprite.render();
   }
 
-  //Render the Sprite
+  /* Item Sprites */
   itemShader.useProgram();
   //Loop over all Sprites
   for(unsigned int i = 0; i < world.drops.size(); i++){
@@ -331,97 +343,6 @@ REGULAR IMAGE
     //Draw the drops!
     world.drops[i].sprite.render();
   }
-
-/*
-PICKER
-*/
-
-/*
-  //Set the Clear Color to Black
-  glClearColor(0.0f, 0.0f, 0.0f, 1.0f); //Black
-
-  //Render the Block Image
-  glBindFramebuffer(GL_FRAMEBUFFER, picker.imageBlock.fbo);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  picker.shaderPickBlock.useProgram();
-
-  //Set the other matrices
-
-  //Loop over the Stuff
-  for(unsigned int i = 0; i < models.size(); i++){
-    //View Projection Matrix
-    picker.shaderPickBlock.setMat4("mvp", projection * camera * models[i].model);
-    //Old chunks need to be translated too. Translate according to player position.
-
-    picker.shaderPickBlock.setMat4("model", models[i].model);
-    picker.shaderPickBlock.setMat4("camera", camera);
-    picker.shaderPickBlock.setVec3("worldsize", renderDistance*glm::vec3(world.chunkSize));
-    picker.shaderPickBlock.setVec3("viewpos", viewPos);
-    //Render the Model
-    models[i].render();
-  }*/
-
-/*
-  //Render the Sprite Image
-  glBindFramebuffer(GL_FRAMEBUFFER, picker.imageSprite.fbo);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  picker.shaderPickSprite.useProgram();
-
-  //Loop over all Sprites
-  for(unsigned int i = 0; i < population.bots.size(); i++){
-    //Here we should check if the sprite should even be rendered.
-    if(population.bots[i].dead) continue;
-    if(glm::any(glm::greaterThan(glm::abs(glm::floor(population.bots[i].pos/glm::vec3(world.chunkSize))-glm::floor(viewPos/glm::vec3(world.chunkSize))), renderDistance)))
-      continue;
-
-    //Set the Position of the Sprite relative to the player
-    glm::vec3 a = population.bots[i].pos-viewPos;
-    population.bots[i].sprite.resetModel();
-    population.bots[i].sprite.model = glm::translate(population.bots[i].sprite.model, glm::vec3(a));
-    glm::vec3 axis = glm::vec3(0.0f, 1.0f, 0.0f);
-    population.bots[i].sprite.model = glm::rotate(population.bots[i].sprite.model, glm::radians(45.0f), axis);
-    population.bots[i].sprite.model = glm::rotate(population.bots[i].sprite.model, glm::radians(-rotation), glm::vec3(0, 1, 0));
-
-    //Setup the Shader
-    picker.shaderPickSprite.setMat4("mvp", projection * camera * population.bots[i].sprite.model);
-    //Old chunks need to be translated too. Translate according to player position.
-
-    picker.shaderPickSprite.setMat4("model", population.bots[i].sprite.model);
-    picker.shaderPickSprite.setMat4("camera", camera);
-    picker.shaderPickSprite.setVec3("worldsize", renderDistance*glm::vec3(world.chunkSize));
-    picker.shaderPickSprite.setVec3("viewpos", viewPos);
-
-    //Draw
-    population.bots[i].sprite.render();
-  }
-
-  //Loop over all Sprites
-  for(unsigned int i = 0; i < world.drops.size(); i++){
-    //Here we should check if the sprite should even be rendered.
-    if(glm::any(glm::greaterThan(glm::abs(glm::floor(world.drops[i].pos/glm::vec3(world.chunkSize))-glm::floor(viewPos/glm::vec3(world.chunkSize))), renderDistance)))
-      continue;
-
-    //Set the Position of the Sprite relative to the player
-    glm::vec3 a = world.drops[i].pos-viewPos;
-    world.drops[i].sprite.resetModel();
-    world.drops[i].sprite.model = glm::translate(world.drops[i].sprite.model, glm::vec3(a));
-    glm::vec3 axis = glm::vec3(0.0f, 1.0f, 0.0f);
-    world.drops[i].sprite.model = glm::rotate(world.drops[i].sprite.model, glm::radians(45.0f), axis);
-    world.drops[i].sprite.model = glm::rotate(world.drops[i].sprite.model, glm::radians(-rotation), glm::vec3(0, 1, 0));
-
-    //Setup the Shader
-    picker.shaderPickSprite.setMat4("mvp", projection * camera * world.drops[i].sprite.model);
-    //Old chunks need to be translated too. Translate according to player position.
-
-    picker.shaderPickSprite.setMat4("model", world.drops[i].sprite.model);
-    picker.shaderPickSprite.setMat4("camera", camera);
-    picker.shaderPickSprite.setVec3("worldsize", renderDistance*glm::vec3(world.chunkSize));
-    picker.shaderPickSprite.setVec3("viewpos", viewPos);
-    //Draw the drops!
-    world.drops[i].sprite.render();
-  }
-*/
-
 
 /*
 AFTER-EFFECTS

@@ -7,8 +7,8 @@ void Model::setup(){
   reset();
 
   //Setup VAO and VBOs
-  glGenVertexArrays(1, vao);
-  glBindVertexArray(vao[0]);
+  glGenVertexArrays(1, &vao);
+  glBindVertexArray(vao);
   glGenBuffers(3, vbo);
 
   //Positions Buffer
@@ -31,7 +31,7 @@ void Model::setup(){
 }
 
 void Model::update(){
-  glBindVertexArray(vao[0]);
+  glBindVertexArray(vao);
   //Positions Buffer
   glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
   glBufferData(GL_ARRAY_BUFFER, positions.size()*sizeof(GLfloat), &positions[0], GL_STATIC_DRAW);
@@ -54,7 +54,7 @@ void Model::update(){
 void Model::cleanup(){
   glDisableVertexAttribArray(0);
   glDeleteBuffers(3, vbo);
-  glDeleteVertexArrays(1, vao);
+  glDeleteVertexArrays(1, &vao);
 }
 
 //Position Functions
@@ -76,7 +76,7 @@ void Model::rotate(const glm::vec3 &axis, float angle){
 
 void Model::render(){
   //Render the Object, using the shader it has!
-  glBindVertexArray(vao[0]);
+  glBindVertexArray(vao);
   glDrawArrays(GL_TRIANGLES, 0, positions.size()/3);
 }
 
@@ -99,9 +99,6 @@ void Model::fromChunk(Chunk chunk, int LOD){
         if(_type != 0){
           //Number of Faces we added
           int faces = 0;
-
-          //For higher LOD values, we actually need LESS vertices!
-          //In the future, this could be made even more efficient (if deemed necessary)
 
           //Only exposed surfaces!
           if(k+1 == width || chunk.getPosition(glm::vec3(i,j,k+1), LOD) == 0){

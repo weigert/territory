@@ -15,115 +15,49 @@
 
 class Picker{
 public:
-  Shader shaderPickSprite;
-  Shader shaderPickBlock;
   Shader shaderColorPick;
-
-  Billboard imageSprite;
-  Billboard imageBlock;
-
-  //Pick Model
-  std::vector<GLfloat> positions;
   glm::mat4 model = glm::mat4(1.0f);
   GLuint vbo, vao;
 
   //Colorings
   glm::vec3 hoverColorBlock = glm::vec3(1.0f);
-  glm::vec3 clickColorBlock = glm::vec3(0.5f);
-  glm::vec3 hoverColorSprite = glm::vec3(1.0f);
-  glm::vec3 clickColorSprite = glm::vec3(0.5f);
-
-  //Actual Pick IDs
-  glm::vec3 pickBlock = glm::vec3(0);
-  glm::vec3 pickSprite = glm::vec3(0);
-  bool block = false;
-  bool sprite = false;
-  bool picked = false;
+  glm::vec3 clickColorBlock = glm::vec3(1.0f, 1.0f, 1.0f);
 
   void setup();
-  void pick(glm::vec2 mouse);
-  void buffer();
-  glm::vec3 sample(Billboard image, glm::vec2 mouse);
-  void outline();
 };
 
 void Picker::setup(){
-  shaderPickSprite.setup("pick/picker.vs", "pick/picker.fs");
-  shaderPickSprite.addAttribute(0, "in_Position");
-
-  shaderPickBlock.setup("pick/picker.vs", "pick/picker.fs");
-  shaderPickBlock.addAttribute(0, "in_Position");
-
   shaderColorPick.setup("pick/colorPick.vs", "pick/colorPick.fs");
   shaderColorPick.addAttribute(0, "in_Position");
-
-  imageBlock.setup();
-  imageSprite.setup();
 
   //Setup the VAO and stuff
   glGenVertexArrays(1, &vao);
   glBindVertexArray(vao);
 
   glGenBuffers(1, &vbo);
-}
 
-void Picker::outline(){
-  if(block || sprite){
-    //Do a render pass with shaderColorPick
-    shaderColorPick.useProgram();
-    shaderColorPick.setVec3("un_Color", hoverColorBlock);
-
-    //Draw the Lines
-    glBindVertexArray(vao);
-    glDrawArrays(GL_LINES, 0, positions.size()/3);
-  }
-}
-
-void Picker::buffer(){
-  //Generate the Positions Data
-  GLfloat cubewire[30] = {  -0.5, -0.5, -0.5,
-                            -0.5,  0.5, -0.5,
-                             0.5,  0.5, -0.5,
-                             0.5, -0.5, -0.5,
-                            -0.5, -0.5, -0.5,
-                            -0.5, -0.5,  0.5,
-                            -0.5,  0.5,  0.5,
-                             0.5,  0.5,  0.5,
-                             0.5, -0.5,  0.5,
-                            -0.5, -0.5,  0.5};
+  GLfloat cubewire[48] = {   -0.5,  0.5,  0.5,
+                             -0.5,  0.5, -0.5,
+                              0.5,  0.5, -0.5,
+                              0.5,  0.5,  0.5,
+                             -0.5,  0.5,  0.5,
+                             -0.5, -0.5,  0.5,
+                             -0.5, -0.5, -0.5,
+                             -0.5,  0.5, -0.5,
+                             -0.5, -0.5, -0.5,
+                              0.5, -0.5, -0.5,
+                              0.5,  0.5, -0.5,
+                              0.5, -0.5, -0.5,
+                              0.5, -0.5,  0.5,
+                              0.5,  0.5,  0.5,
+                              0.5, -0.5,  0.5,
+                             -0.5, -0.5,  0.5};
 
   //Based on what is picked, draw an outline.
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glBufferData(GL_ARRAY_BUFFER, 30*sizeof(GLfloat), &cubewire[0], GL_STATIC_DRAW); //3*4
+  glBufferData(GL_ARRAY_BUFFER, 48*sizeof(GLfloat), &cubewire[0], GL_STATIC_DRAW); //3*4
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-}
-
-void Picker::pick(glm::vec2 mouse){
-  //Extract the Color from the Texture at mouse position
-  glm::vec3 pickBlock = sample(imageBlock, mouse);
-  glm::vec3 pickSprite = sample(imageSprite, mouse);
-
-  //Set the "found" flags
-  sprite = (glm::all(glm::equal(pickSprite, glm::vec3(0))))?false:true;
-  block = (glm::all(glm::equal(pickBlock, glm::vec3(0))))?false:true;
-
-  //Create the outline object
-  if(block || sprite){
-    buffer();
-    picked = true;
-  }
-  else{
-    picked = false;
-  }
-}
-
-glm::vec3 Picker::sample(Billboard image, glm::vec2 mouse){
-  glBindFramebuffer(GL_FRAMEBUFFER, image.fbo);
-  glBindTexture (GL_TEXTURE_2D, image.texture);
-  unsigned char res[4];
-  glReadPixels(mouse.x, mouse.y, 1,1, GL_BGRA, GL_UNSIGNED_BYTE, &res);
-  return glm::vec3((int)res[0], (int)res[1], (int)res[2]);
 }
 
 class View{
@@ -140,6 +74,8 @@ class View{
     //GUI Handler
     Interface* interface;
     Picker picker;
+    bool picked = false;
+    glm::vec3 select = glm::vec3(0);
 
     //Viewposition
     glm::vec3 viewPos = glm::vec3(30, 0, 30);
@@ -179,7 +115,7 @@ class View{
     void renderGUI(World &world, Player &player, Population &population);
 
     //View Projector (bunch of camera settings here tbh)
-    glm::mat4 camera = glm::lookAt(glm::vec3(10,12,10), glm::vec3(0,2,0), glm::vec3(0,1,0));
+    glm::mat4 camera = glm::lookAt(glm::vec3(10,10,10), glm::vec3(0,0,0), glm::vec3(0,1,0));
     glm::mat4 projection = glm::ortho(-(float)SCREEN_WIDTH*zoom, (float)SCREEN_WIDTH*zoom, -(float)SCREEN_HEIGHT*zoom, (float)SCREEN_HEIGHT*zoom, -200.0f, 200.0f);
     //Light Variables
     glm::vec3 lightPos = glm::vec3(3.0f, 6.0f, 2.0f);
@@ -191,6 +127,9 @@ class View{
     glm::mat4 depthProjection = glm::ortho<float>(-80,80,-80,80,-30,100);
     glm::mat4 depthCamera = glm::lookAt(lightPos, glm::vec3(0,0,0), glm::vec3(0,1,0));
 
+    //Get the Intersection and Stuff
+    glm::vec3 intersect(World world, glm::vec2 mouse);
+
     //FPS Calculator
     void calcFPS();
     int ticks = 0;
@@ -198,3 +137,27 @@ class View{
     float FPS = 0.0f;
     float arr[100] = {0};
 };
+
+glm::vec3 View::intersect(World world, glm::vec2 mouse){
+  //Rotation Matrix
+  glm::mat4 _rotate = glm::rotate(glm::mat4(1.0), glm::radians(-rotation), glm::vec3(0, 1, 0));
+  glm::vec3 _cameraposabs = _rotate*glm::vec4(10.0, 10.0, 10.0, 1.0);
+  glm::vec3 _camerapos = viewPos + _cameraposabs;
+
+  //Get our position offset
+  float scalex = 2.0f*(mouse.x/SCREEN_WIDTH)-1.0f;
+  float scaley = 2.0f*(mouse.y/SCREEN_HEIGHT)-1.0f;
+
+  glm::vec3 _dir =  glm::normalize(glm::vec3(0, 0, 0)-_cameraposabs);
+  glm::vec3 _xdir = glm::normalize(glm::vec3(-_dir.z , 0, _dir.x));
+  glm::vec3 _ydir = glm::normalize(glm::cross(_dir, _xdir));
+  glm::vec3 _startpos = _camerapos + _xdir*scalex*(SCREEN_WIDTH*zoom) + _ydir*scaley*(SCREEN_HEIGHT*zoom);
+
+  float length = 0.0;
+
+  while(world.getBlock(glm::round(_startpos + length * _dir)) == BLOCK_AIR){
+    length += 0.8;
+  }
+
+  return glm::round(_startpos+length*_dir);
+}

@@ -15,7 +15,7 @@ public:
   glm::vec3 pos = glm::vec3(0.0f);
 
   // Create variables for storing the ID of our VAO and VBO
-	GLuint vbo[3], vao[1];
+	GLuint vbo[3], vao;
 
   //Read File Functions
   void setup();
@@ -77,5 +77,4 @@ public:
                       -0.5, -0.5,  0.5,
                       -0.5, -0.5, -0.5,
                       -0.5,  0.5, -0.5};
-
 };

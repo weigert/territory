@@ -39,10 +39,6 @@ void Billboard::renderDepth(){
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
-
-
-
-
 void Billboard::cleanup(){
   //Cleanup Depthmap Stuff
   glDeleteTextures(1, &texture);
