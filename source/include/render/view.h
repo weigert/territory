@@ -18,11 +18,6 @@ public:
   Shader shaderColorPick;
   glm::mat4 model = glm::mat4(1.0f);
   GLuint vbo, vao;
-
-  //Colorings
-  glm::vec3 hoverColorBlock = glm::vec3(1.0f);
-  glm::vec3 clickColorBlock = glm::vec3(1.0f, 1.0f, 1.0f);
-
   void setup();
 };
 
@@ -76,6 +71,7 @@ class View{
     Picker picker;
     bool picked = false;
     glm::vec3 select = glm::vec3(0);
+    glm::vec3 hover = glm::vec3(0);
 
     //Viewposition
     glm::vec3 viewPos = glm::vec3(90, 14, 90);
@@ -113,6 +109,14 @@ class View{
     void render(World &world, Player &player, Population &population);
     void renderGUI(World &world, Player &player, Population &population);
 
+    //Render Parameters
+    int blur = 0; //Degree of Blur
+    bool fog = true;
+    bool grain = false;
+    glm::vec3 fogColor = glm::vec3(1.0f);
+    glm::vec3 clickColorBlock = glm::vec3(1.0f, 1.0f, 1.0f);
+    glm::vec3 hoverColorBlock = glm::vec3(1.0f);
+
     //View Projector (bunch of camera settings here tbh)
     glm::mat4 camera = glm::lookAt(glm::vec3(10,10,10), glm::vec3(0,0,0), glm::vec3(0,1,0));
     glm::mat4 projection = glm::ortho(-(float)SCREEN_WIDTH*zoom, (float)SCREEN_WIDTH*zoom, -(float)SCREEN_HEIGHT*zoom, (float)SCREEN_HEIGHT*zoom, -200.0f, 200.0f);
@@ -120,7 +124,6 @@ class View{
     glm::vec3 lightPos = glm::vec3(3.0f, 6.0f, 2.0f);
     glm::vec3 lightCol = glm::vec3(1.0f, 1.0f, 0.9f);
     glm::vec3 skyCol = glm::vec3(0.6, 0.9f, 0.8f);
-    //glm::vec3 lightCol = glm::vec3(0.15f, 0.05f, 0.15f); //Purple
     float rotation = 0.0;
     glm::mat4 depthModelMatrix = glm::mat4(1.0);
     glm::mat4 depthProjection = glm::ortho<float>(-80,80,-80,80,-30,100);
@@ -136,27 +139,3 @@ class View{
     float FPS = 0.0f;
     float arr[100] = {0};
 };
-
-glm::vec3 View::intersect(World world, glm::vec2 mouse){
-  //Rotation Matrix
-  glm::mat4 _rotate = glm::rotate(glm::mat4(1.0), glm::radians(-rotation), glm::vec3(0, 1, 0));
-  glm::vec3 _cameraposabs = _rotate*glm::vec4(10.0, 10.0, 10.0, 1.0);
-  glm::vec3 _camerapos = viewPos + _cameraposabs;
-
-  //Get our position offset
-  float scalex = 2.0f*(mouse.x/SCREEN_WIDTH)-1.0f;
-  float scaley = 2.0f*(mouse.y/SCREEN_HEIGHT)-1.0f;
-
-  glm::vec3 _dir =  glm::normalize(glm::vec3(0, 0, 0)-_cameraposabs);
-  glm::vec3 _xdir = glm::normalize(glm::vec3(-_dir.z , 0, _dir.x));
-  glm::vec3 _ydir = glm::normalize(glm::cross(_dir, _xdir));
-  glm::vec3 _startpos = _camerapos + _xdir*scalex*(SCREEN_WIDTH*zoom) + _ydir*scaley*(SCREEN_HEIGHT*zoom);
-
-  float length = 0.0;
-
-  while(world.getBlock(glm::round(_startpos + length * _dir)) == BLOCK_AIR){
-    length += 0.8;
-  }
-
-  return glm::round(_startpos+length*_dir);
-}

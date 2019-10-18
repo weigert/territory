@@ -1,6 +1,7 @@
 #version 130
 uniform vec3 lightCol;
 uniform vec3 lightPos;
+uniform bool _grain;
 
 in vec4 ex_Color;
 in vec3 ex_Normal;
@@ -47,6 +48,6 @@ void main(void) {
   //Lighting
   float lightFactor = clamp( dot(ex_Normal, normalize(lightPos)*2.0), 0.3,  1.0);
   vec4 objColor = ex_Color*vec4(lightCol*lightFactor, 1.0f);
-  vec4 grain = 0.1*vec4(rand(ex_WorldPos.xy)*vec3(1.0f), 1.0f);
-  fragColor = shade()*objColor+grain;
+  fragColor = shade()*objColor;
+  if(_grain) fragColor += 0.1*vec4(rand(ex_WorldPos.xy)*vec3(1.0f), 1.0f);
 }

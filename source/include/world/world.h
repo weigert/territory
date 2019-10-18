@@ -1,4 +1,6 @@
 //Include Forward Declaration
+#include "../game/item.h"
+
 #pragma once
 #include "../forward/world.fwd.h"
 //Dependency Forward Declaration
@@ -37,8 +39,10 @@ public:
   glm::vec3 dim = glm::vec3(10, 5, 10);
 
   //Items placed / on the ground
-  std::vector<Item>placed;
-  std::vector<Item>drops;
+  Inventory placed;
+  Inventory drops;
+  void drop(Inventory inventory);
+  Inventory pickup(glm::vec3 pos);
 
   //Movement Weights
   int moveWeight(BlockType _type);

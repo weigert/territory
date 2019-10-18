@@ -3,6 +3,7 @@
 #include "chunk.h"
 #include "octree.h"
 #include "../game/player.h"
+#include "../game/item.h"
 #include "../render/shader.h"
 #include "../render/billboard.h"
 #include "../render/view.h"
@@ -472,7 +473,7 @@ BlockType World::getBlock(glm::vec3 _pos){
       return (BlockType)chunks[i].data[chunks[i].getIndex(p)];
     }
   }
-  return BLOCK_STONE;
+  return BLOCK_AIR;
 }
 
 void World::setBlock(glm::vec3 _pos, BlockType _type){
@@ -504,6 +505,33 @@ int World::getTop(glm::vec2 _pos){
   }
   return max;
 }
+
+/*
+===================================================
+          DROPS AND PLACEMENT FUNCTIONS
+===================================================
+*/
+
+//Drop all the items in the inventory
+void World::drop(Inventory inventory){
+  for(unsigned int i = 0; i < inventory.size(); i++){
+    drops.push_back(inventory[i]);
+  }
+}
+
+//Remove the items from the drops and
+Inventory World::pickup(glm::vec3 pos){
+  Inventory _inventory;
+  for(unsigned int i = 0; i < drops.size(); i++){
+    if(drops[i].pos == pos){
+      //Add to inventory and remove from drops.
+      _inventory.push_back(drops[i]);
+      drops.erase(drops.begin()+i);
+    }
+  }
+  return _inventory;
+}
+
 
 /*
 ===================================================

@@ -255,6 +255,7 @@ REGULAR IMAGE
   cubeShader.setInt("shadowMap", 0);
   cubeShader.setVec3("lightCol", lightCol);
   cubeShader.setVec3("lightPos", lightPos);
+  cubeShader.setBool("_grain", grain);
   //Set the other matrices
   cubeShader.setMat4("projection", projection);
   cubeShader.setMat4("camera", camera);
@@ -271,13 +272,25 @@ REGULAR IMAGE
     models[i].render();               //Render
   }
 
+/*
+//Hover Block Outline
+  picker.shaderColorPick.useProgram();
+  picker.model = glm::mat4(1.0f);
+  glm::vec3 a = hover-viewPos;
+  picker.model = glm::translate(picker.model, a);
+  picker.shaderColorPick.setVec3("un_Color", hoverColorBlock);
+  picker.shaderColorPick.setMat4("mvp", projection*camera*picker.model);
+  glBindVertexArray(picker.vao);
+  glDrawArrays(GL_LINE_STRIP, 0, 16);
+*/
+
   /* Picker Cube! */
   if(picked){
     picker.shaderColorPick.useProgram();
     picker.model = glm::mat4(1.0f);
     glm::vec3 a = select-viewPos;
     picker.model = glm::translate(picker.model, a);
-    picker.shaderColorPick.setVec3("un_Color", picker.clickColorBlock);
+    picker.shaderColorPick.setVec3("un_Color", clickColorBlock);
     picker.shaderColorPick.setMat4("mvp", projection*camera*picker.model);
     glBindVertexArray(picker.vao);
     glDrawArrays(GL_LINE_STRIP, 0, 16);
@@ -349,6 +362,9 @@ AFTER-EFFECTS
   blurShader.setFloat("width", SCREEN_WIDTH);
   blurShader.setFloat("height", SCREEN_HEIGHT);
   blurShader.setBool("vert", false);
+  blurShader.setBool("_fog", fog);
+  blurShader.setInt("_blur", blur);
+  blurShader.setVec3("fogColor", fogColor);
   glActiveTexture(GL_TEXTURE0+0);
   glBindTexture(GL_TEXTURE_2D, image.texture);
   blurShader.setInt("imageTexture", 0);
@@ -393,6 +409,105 @@ void View::renderGUI(World &world, Player &player, Population &population){
   ImGui::Render();
   glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
+
+glm::vec3 View::intersect(World world, glm::vec2 mouse){
+  //Rotation Matrix
+  glm::mat4 _rotate = glm::rotate(glm::mat4(1.0), glm::radians(-rotation), glm::vec3(0, 1, 0));
+  glm::vec3 _cameraposabs = _rotate*glm::vec4(10.0, 10.0, 10.0, 1.0);
+  glm::vec3 _camerapos = viewPos + _cameraposabs;
+
+  //Get our position offset
+  float scalex = 2.0f*(mouse.x/SCREEN_WIDTH)-1.0f;
+  float scaley = 2.0f*(mouse.y/SCREEN_HEIGHT)-1.0f;
+
+  glm::vec3 _dir =  glm::normalize(glm::vec3(0, 0, 0)-_cameraposabs);
+  glm::vec3 _xdir = glm::normalize(glm::vec3(-_dir.z , 0, _dir.x));
+  glm::vec3 _ydir = glm::normalize(glm::cross(_dir, _xdir));
+  glm::vec3 _startpos = _camerapos + _xdir*scalex*(SCREEN_WIDTH*zoom) + _ydir*scaley*(SCREEN_HEIGHT*zoom);
+
+  glm::vec3 a = glm::round(_startpos - _dir * glm::vec3(20));
+  glm::vec3 b = glm::round(_startpos + _dir * glm::vec3(50));
+
+  //Get the direction
+  glm::vec3 dir = glm::abs(b - a);
+  glm::vec3 s = glm::vec3(0);
+
+  s.x = (a.x > b.x)?-1:1;
+  s.y = (a.y > b.y)?-1:1;
+  s.z = (a.z > b.z)?-1:1;
+
+  //Find the driving axis and do the guy
+  if(dir.x >= dir.y && dir.x >= dir.z){
+    //Get these values
+    float p1 = 2*dir.y-dir.x;
+    float p2 = 2*dir.z-dir.x;
+
+    //While we aren't at the goal position
+    while (a.x != b.x){
+      a.x += s.x;
+
+      if (p1 >= 0){
+        a.y += s.y;
+        p1 -= 2 * dir.x;
+      }
+      if (p2 >= 0){
+        a.z += s.z;
+        p2 -= 2 * dir.x;
+      }
+      p1 += 2 * dir.y;
+      p2 += 2 * dir.z;
+
+      //We have found a point... check if it is air or not!
+      if(world.getBlock(a) != BLOCK_AIR) return a;
+    }
+  }
+  else if(dir.y >= dir.x && dir.y >= dir.z){
+    //Get these values
+    float p1 = 2*dir.x-dir.y;
+    float p2 = 2*dir.z-dir.y;
+
+    //While we aren't at the goal position
+    while (a.y != b.y){
+      a.y += s.y;
+
+      if (p1 >= 0){
+        a.x += s.x;
+        p1 -= 2 * dir.y;
+      }
+      if (p2 >= 0){
+        a.z += s.z;
+        p2 -= 2 * dir.y;
+      }
+      p1 += 2 * dir.x;
+      p2 += 2 * dir.z;
+      if(world.getBlock(a) != BLOCK_AIR) return a;
+    }
+  }
+  else{
+    //Get these values
+    float p1 = 2*dir.x-dir.z;
+    float p2 = 2*dir.y-dir.z;
+
+    //While we aren't at the goal position
+    while (a.z != b.z){
+      a.z += s.z;
+
+      if (p1 >= 0){
+        a.x += s.x;
+        p1 -= 2 * dir.z;
+      }
+      if (p2 >= 0){
+        a.y += s.y;
+        p2 -= 2 * dir.z;
+      }
+      p1 += 2 * dir.x;
+      p2 += 2 * dir.y;
+      if(world.getBlock(a) != BLOCK_AIR) return a;
+    }
+  }
+  return glm::vec3(0);
 }
 
 /*

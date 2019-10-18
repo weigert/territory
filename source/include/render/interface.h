@@ -120,8 +120,17 @@ void Interface::drawBot(Bot &bot){
   if (ImGui::TreeNode("Inventory")){
     //Loop over all Items in the Inventory
     for(unsigned int i = 0; i < bot.inventory.size(); i++){
+      ImGui::Text("ID: ");
+      ImGui::SameLine();
+      ImGui::Text("%d", (int)bot.inventory[i]._type);
+      ImGui::SameLine();
       ImGui::Text("%s", bot.inventory[i].name.c_str());
       ImGui::SameLine();
+      ImGui::Text("Amount: ");
+      ImGui::SameLine();
+      ImGui::Text("%d", (int)bot.inventory[i].quantity);
+      ImGui::SameLine();
+
       if(ImGui::Button("-")){
         //Delete the specified item from the guy
         bot.inventory.erase(bot.inventory.begin()+i);
@@ -191,9 +200,18 @@ void Interface::render(View &view, World &world, Population &population, Player 
       ImGui::SliderInt("Speed", &b, 0, 10);
       world.tickLength = 2*(10-b)+1;
 
-      if(ImGui::Button("Get Camera Position")){
-        //
+      if(view.picked){
+        ImGui::Text("Selected: ");
+        ImGui::SameLine();
+        ImGui::Text("%d", (int)view.select.x);
+        ImGui::SameLine();
+        ImGui::Text("%d", (int)view.select.y);
+        ImGui::SameLine();
+        ImGui::Text("%d", (int)view.select.z);
       }
+
+      ImGui::Checkbox("Debug Messages", &(_log._debug));
+
       ImGui::EndTabItem();
     }
 
@@ -295,17 +313,6 @@ void Interface::render(View &view, World &world, Population &population, Player 
     }
 
     if(ImGui::BeginTabItem("View")){
-      //Projection Matrix
-      static bool projectionMatrix = false;
-      ImGui::Checkbox("Projection Matrix", &projectionMatrix);
-      if(projectionMatrix){
-        view.projection = glm::perspective(glm::radians(50.0f), 1200.0f / 800.0f, 0.1f, 100.0f);
-      }
-      else{
-        view.projection = glm::ortho(-(float)view.SCREEN_WIDTH*view.zoom, (float)view.SCREEN_WIDTH*view.zoom, -(float)view.SCREEN_HEIGHT*view.zoom, (float)view.SCREEN_HEIGHT*view.zoom, -200.0f, 200.0f);
-      }
-
-
       //Add an FPS Plot
       ImGui::PlotLines("FPS Counter", view.arr, IM_ARRAYSIZE(view.arr));
 
@@ -314,15 +321,33 @@ void Interface::render(View &view, World &world, Population &population, Player 
       ImGui::ColorEdit3("Sky Color", sky);
       view.skyCol = glm::vec3(sky[0], sky[1], sky[2]);
 
-      //col2[3] = {view.skyCol.x, view.skyCol.y, view.skyCol.z};
       static float light[3] = {view.lightCol.x, view.lightCol.y, view.lightCol.z};
       ImGui::ColorEdit3("Light Color", light);
       view.lightCol = glm::vec3(light[0], light[1], light[2]);
+
+      static float _fogcolor[3] = {view.fogColor.x, view.fogColor.y, view.fogColor.z};
+      ImGui::ColorEdit3("Fog Color", _fogcolor);
+      view.fogColor = glm::vec3(_fogcolor[0], _fogcolor[1], _fogcolor[2]);
+
+      static float _clickcolor[3] = {view.clickColorBlock.x, view.clickColorBlock.y, view.clickColorBlock.z};
+      ImGui::ColorEdit3("Click Color", _clickcolor);
+      view.clickColorBlock = glm::vec3(_clickcolor[0], _clickcolor[1], _clickcolor[2]);
 
       static int _rd[3] = {(int)view.renderDistance.x, (int)view.renderDistance.y, (int)view.renderDistance.z};
       ImGui::DragInt3("Render Distance", _rd);
       view.renderDistance = glm::vec3(_rd[0], _rd[1], _rd[2]);
 
+      static bool _fog = view.fog;
+      ImGui::Checkbox("Distance Fog", &_fog);
+      view.fog = _fog;
+
+      static int _blur = view.blur;
+      ImGui::DragInt("Depth of Field", &_blur, 1, 0, 50);
+      view.blur = _blur;
+
+      static bool _grain = view.grain;
+      ImGui::Checkbox("Texture Grain", &_grain);
+      view.grain = _grain;
 
       ImGui::EndTabItem();
     }

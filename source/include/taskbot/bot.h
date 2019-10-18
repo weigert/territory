@@ -33,7 +33,7 @@ class Bot{
     Bot(std::string s, bool t, bool f, int view, int forag, int mem, int id, glm::vec3 _pos, glm::vec3 _home);
 
     //Inventory and Attributes
-    std::vector<Item> inventory;
+    Inventory inventory;
     void sortInventory();
 
     //Bot Activities and Actions

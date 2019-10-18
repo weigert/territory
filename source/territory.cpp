@@ -3,9 +3,6 @@
 
 //Main Function
 int main( int argc, char* args[] ) {
-	//Logger
-	Logger _log;
-
 	//Handle the Console Arguments
 	if(argc<2){
 		_log.error("Missing Filename.");

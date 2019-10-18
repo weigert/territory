@@ -141,3 +141,21 @@ namespace helper{
 
   //End of Namespace
 }
+
+/*
+================================================================================
+                      IOSTREAM OPERATORS FOR GLM
+================================================================================
+*/
+
+std::ostream & operator << (std::ostream &out, const glm::vec2 &vec)
+{
+    out << "X: "<<vec.x<<", Y: "<<vec.y;
+    return out;
+}
+
+std::ostream & operator << (std::ostream &out, const glm::vec3 &vec)
+{
+    out << "X: "<<vec.x<<", Y: "<<vec.y<<", Z: "<<vec.z;
+    return out;
+}

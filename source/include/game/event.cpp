@@ -55,6 +55,7 @@ void eventHandler::update(World &world, Player &player, Population &population, 
     click = false;
   }
   if(move){
+    //view.hover = view.intersect(world, glm::vec2(mouse->button.x, mouse->button.y));
     move = false;
   }
 

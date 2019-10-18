@@ -239,7 +239,7 @@ bool Task::idle(World &world, Population &population, State &_args){
 
 bool Task::collect(World &world, Population &population, State &_args){
   //If the bot is within range
-  if(glm::all(glm::lessThanEqual(population.bots[botID].pos - _args.pos, population.bots[botID].range))){
+  if(glm::all(glm::lessThanEqual(glm::abs(population.bots[botID].pos - _args.pos), population.bots[botID].range))){
     //Item is within range, check for appropriate tools for collection
     bool find = true;
     for(unsigned int i = 0; i < _args.inventory.size(); i++){
@@ -283,9 +283,45 @@ bool Task::collect(World &world, Population &population, State &_args){
 
 bool Task::take(World &world, Population &population, State &_args){
   //Check if Bot is in Range
-  if(!glm::all(glm::lessThanEqual(population.bots[botID].pos - _args.pos, population.bots[botID].range))){
+  if(glm::all(glm::lessThanEqual(glm::abs(population.bots[botID].pos - _args.pos), population.bots[botID].range))){
+    //New Inventory
+    Inventory _inventory = world.pickup(_args.pos);
+
+    if(_inventory.empty()){
+      _log.debug("Found nothing.");
+      return true;
+    }
+
+    //If we only want specific items...
+    if(!_args.inventory.empty()){
+      //Loop over the inventory!
+      for(unsigned int i = 0; i < _inventory.size(); i++){
+        //Compare the item to the desired items
+        for(unsigned int j = 0; j < _args.inventory.size(); j++){
+          //Compare the item to the desired item...
+          if(_inventory[i] == _args.inventory[j]){
+            //Bot needs this item!
+            population.bots[botID].inventory.push_back(_inventory[i]);
+            //Remove this item from the items currently being considered
+            _inventory.erase(_inventory.end()+i);
+            /* Here we should do some handling for the amount of items specified */
+          }
+        }
+      }
+
+      //Add the non-picked up items back to the world.
+      world.drops.insert(world.drops.begin(), _inventory.begin(), _inventory.end());
+      _log.debug("Picked up specific items.");
+      return true;
+    }
+
+    //Add the inventory to the bots inventory
+    population.bots[botID].inventory.insert(population.bots[botID].inventory.end(), _inventory.begin(), _inventory.end());
+    _log.debug("Picked up everything.");
     return true;
   }
+
+  _log.debug("Too far away.");
   return true;
 }
 
@@ -651,6 +687,8 @@ std::vector<glm::vec3> calculatePath(int id, glm::vec3 _dest, Population &popula
 		astarsearch.EnsureMemoryFreed();
 
     //Remove the First Guy!
-    path.pop_back();
+    if(!path.empty()){
+      path.pop_back();
+    }
     return path;
 }

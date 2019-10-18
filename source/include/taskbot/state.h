@@ -21,7 +21,7 @@ class State{
     int dist = 0;
 
     //States need to contain an inventory!
-    std::vector<Item> inventory;
+    Inventory inventory;
 
     //Get the Current Local State
     void retrieveState(World &world, Population &population, int bot);

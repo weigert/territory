@@ -7,10 +7,12 @@ uniform sampler2D depthTexture;
 uniform float width;
 uniform float height;
 uniform bool vert;
+uniform bool _fog;
+uniform int _blur;
 uniform float mousex;
 uniform float mousey;
 
-vec3 fogcolor = vec3(0.9, 1.0, 1.0);
+uniform vec3 fogColor;
 
 //Compute the Gauss-Blur coefficients
 float gauss(int offset, float stddev){
@@ -59,5 +61,7 @@ vec4 depthblur(int samples, float stddev){
 void main(){
     //Set fragment color, either by blur or depthblur
     float depthVal = clamp(texture(depthTexture, ex_Tex).r, 0.0, 1.0);
-    fragColor = mix(depthblur(10, 5.0), vec4(fogcolor, 1.0), ease(depthVal));
+    fragColor = texture(imageTexture, ex_Tex);
+    if(_blur!=0) fragColor = depthblur(_blur, float(_blur)/2.0);
+    if(_fog)  fragColor = mix(fragColor, vec4(fogColor, 1.0), ease(depthVal));
 }
