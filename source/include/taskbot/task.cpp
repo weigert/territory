@@ -388,7 +388,7 @@ bool Task::seek(World &world, Population &population, State &_args){
       queue.push_back(walk);
     }
     else{
-      
+
       //Find the Clostest Memory available to us...
       std::sort(recalled.begin(), recalled.end(),
               [this, population](const Memory& a, const Memory& b) {
@@ -576,6 +576,7 @@ bool Task::Dummy(World &world, Population &population, State &_args){
     //Use the outputs from the previous task for these tasks.
     Task collect("Collect Pumpkin", botID, &Task::collect);
     collect.pass = true;
+    collect.animation = 3;                         //Set the Task's Animation
 
     Task take("Take Pumpkin", botID, &Task::take);
     take.pass = true;

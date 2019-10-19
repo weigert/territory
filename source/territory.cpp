@@ -43,13 +43,10 @@ int main( int argc, char* args[] ) {
 
 	//Main Game Loop
 	while(!quit){
-		//Create this guy
 		//Handle User Input
 		events.input(&e, quit, paused);
 		events.update(world, player, population, view);
-
-		//Handle with IMGUI
-		//ImGui_ImplSDL2_ProcessEvent(&e);
+		ImGui_ImplSDL2_ProcessEvent(&e);
 
 		//Update the Population
 		if(SDL_GetTicks()%world.tickLength == 0 && !paused){

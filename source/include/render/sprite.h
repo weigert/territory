@@ -11,7 +11,7 @@ public:
 
   //Animation Image Parameters
   int w = 4;
-  int h = 3;
+  int h = 4;
 
   //Translation of Model during animation
   glm::vec3 translate = glm::vec3(0);

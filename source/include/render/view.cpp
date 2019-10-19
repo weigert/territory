@@ -316,7 +316,7 @@ REGULAR IMAGE
     //Setup the Shader
     spriteShader.setInt("spriteTexture", 0);
     spriteShader.setMat4("mvp", projection*camera*population.bots[i].sprite.model);
-    spriteShader.setFloat("nframe", (float)population.bots[i].sprite.animation.nframe);
+    spriteShader.setFloat("nframe", (float)(population.bots[i].sprite.animation.nframe % population.bots[i].sprite.animation.frames));
     spriteShader.setFloat("animation", (float)population.bots[i].sprite.animation.ID);
     spriteShader.setFloat("width", (float)population.bots[i].sprite.animation.w);
     spriteShader.setFloat("height", (float)population.bots[i].sprite.animation.h);
