@@ -11,8 +11,8 @@
 
 //Constructor
 Bot::Bot(int _ID){
-  viewDistance = glm::vec3(1);
-  memorySize = 10;
+  viewDistance = glm::vec3(2);
+  memorySize = 25;
   shortermSize = 5;
   trail = false;
   fly = false;
@@ -59,6 +59,24 @@ void Bot::executeTask(World &world, Population &population){
   }
 }
 
+//Merge the Inventories
+void Bot::mergeInventory(Inventory _merge){
+  //Loop over the stuff that we picked up, and sort it into the inventory
+  for(unsigned int i = 0; i < _merge.size(); i++){
+    bool found = false;
+    for(unsigned int j = 0; j < inventory.size(); j++){
+      if(_merge[i]._type == inventory[j]._type){
+        inventory[j].quantity += _merge[i].quantity;
+        found = true;
+      }
+    }
+    //We haven't found the item in the inventory, so add it to the back
+    if(!found){
+      inventory.push_back(_merge[i]);
+    }
+  }
+}
+
 //Find any memories matching a query and overwrite them
 void Bot::updateMemory(Memory &query, bool all, Memory &memory){
   //Loop through all existing Memories
@@ -100,7 +118,22 @@ std::deque<Memory> Bot::recallMemories(Memory &query, bool all){
 }
 
 void Bot::addMemory(World world, glm::vec3 _pos){
-  //Create new memory
+  //Memory already exists, so overwrite relevant portions.
+  for(unsigned int i = 0; i < memories.size(); i++){
+    //We already have a memory at that location!
+    if(memories[i].state.pos == _pos){
+      //Update the Information at that position
+      memories[i].state.block = world.getBlock(_pos);
+      memories[i].state.task = task;
+
+      //Check if we should remove this memory.
+      if(memories[i].state.block == BLOCK_AIR){
+        memories.erase(memories.begin()+i);
+      }
+      return;
+    }
+  }
+
   Memory memory;
   memory.state.pos = _pos;
   memory.state.block = world.getBlock(memory.state.pos);
@@ -110,14 +143,6 @@ void Bot::addMemory(World world, glm::vec3 _pos){
   if(memory.state.block == BLOCK_GRASS) return;
   memory.state.task = task;
   memory.state.reachable = true;
-
-  Memory query;
-  query.state.pos = _pos;
-
-  //Overwrite any locations we already have a memory of.
-  //Ideally, if an object disappears, and we look at that location,
-  //We just change it to air, it doesn't get recalled anymore and pushed out of the queue.
-  updateMemory(query, true, memory);
 
   //Now shuffle the memories around.
   for(unsigned int i = 1; i < memories.size(); i++){

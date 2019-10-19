@@ -53,7 +53,7 @@ int main( int argc, char* args[] ) {
 
 		//Update the Population
 		if(SDL_GetTicks()%world.tickLength == 0 && !paused){
-			population.update(world);
+			population.update(world, view);
 		}
 
 		//Render the View

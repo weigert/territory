@@ -179,7 +179,7 @@ void Interface::render(View &view, World &world, Population &population, Player 
   ImGui::Begin("Territory Controller");
 
   //Begin the Menu Bar
-/*
+  /*
   if (ImGui::BeginMainMenuBar()){
     if (ImGui::BeginMenu("World")){
       if (ImGui::MenuItem("Save to File", "Ayy")){
@@ -241,19 +241,6 @@ void Interface::render(View &view, World &world, Population &population, Player 
         view.loadChunkModels( world );
       }
 
-      /*
-      Need to be able to add tasks.
-      Need to be able to add states quickly.
-      Need to be able to construct items somehow.
-
-      The best way to do this:
-      Select a specific bot, and create a task using a task creation interface.
-      Then push the task onto their current queue.
-
-      There should also be some kind of inventory tab, where items can be deleted and added.
-
-      */
-
       if (ImGui::BeginPopupModal("ItemAdder", NULL)){
           //Construct an Item
           static Item item;
@@ -273,7 +260,7 @@ void Interface::render(View &view, World &world, Population &population, Player 
       if (ImGui::BeginPopupModal("TaskAdder", NULL)){
           //Construct a Task
           static int _taskHandle = TASK_NULL;
-          const char* handles[] = { "Null", "Look", "Listen", "Think", "Wait", "Move", "Step", "Walk", "Idle", "Follow", "Seek", "Collect", "Take", "Find", "Search", "Retrieve", "Convert", "Decide", "Request" };
+          const char* handles[] = { "Dummy", "Null", "Look", "Listen", "Think", "Wait", "Move", "Walk", "Idle", "Follow", "Seek", "Collect", "Take", "Convert", "Decide", "Request" };
           ImGui::Combo("Task", &_taskHandle, handles, IM_ARRAYSIZE(handles), 4);
 
           //Do this guy here

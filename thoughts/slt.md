@@ -76,7 +76,6 @@ Task::listen    - Write short term to long-term memory
 Task::ask       - Mandate respond task with a query and interrupt
 Task::respond   - Query state of task and tell to issuer
 Task::converse  - Query Memory, construct converse mandate and interrupt (repeat until boredom)
-Task::locate    - Find a bot
 
 ##Mandate Management Tasks
 Task::decide    - From list of possible tasks, sort them / manage and pick one
@@ -97,17 +96,16 @@ Task::attack  - Repeatedly follow and hit adjacent Bot (optionally following at 
 Task::steal   - Rob somebody / Loot somebody? Tell them you robbed them (lol) and Set interrupt flag
 
 ##Inventory Management Tasks???
-Task::drop
-Task::find    - Find an item / block
-Task::destroy
-Task::consume
+Task::seek
+Task::collect
 Task::take
+Task::convert
+
+Task::consume
 Task::give
 Task::trade
-Task::store   - Place in container somehow? (i.e. blocks have inventories)
-Task::retrieve- Get a certain quantity of a certain object?
-Task::empty   - Empty a container
-Task::loot    - Take everything from a container
+Task::store    - Place in container somehow? (i.e. blocks have inventories)
+Task::retrieve - Get a certain quantity of a certain object?
 
 ##Resource Management Tasks??
 -> Storage Handling

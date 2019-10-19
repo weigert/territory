@@ -43,18 +43,10 @@ This includes sub-queries if items contain inventories, so you can look inside c
 This means looking inside placed items if they are the specified location.
 Also still missing handling for taking specified amounts of items.
 
-
-What if I could define a general seek task?
-Like: Specify a state, and the bot will attempt to find locations that satisfy that?
-Seek bots, items, blocks, etc. and try to move within range.
-Then, in the args save the location where the item actually is when within range.
-
-Then you could do a seek and then the bot will find a location near to somewhere
-and you can then execute whatever task you like.
-
-Task::seek
+Task::seek **SEMI-FINISHED**
 Search memory for a location something is known to be, then go to that location (or near).
 If you can't find any memories, then attempt to walk somewhere random and look. return false;
+Still needs to be able to seek for things other than blocks, including items and blocks.
 
 Task::convert
 Take a requested conversion and perform it in a bots inventory if possible.

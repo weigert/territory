@@ -9,7 +9,7 @@ class Population{
   public:
     //Functions
     Population(World &world);
-    void update(World &world);
+    void update(World &world, View view);
 
     //Population Functions
     void addBot(World world);

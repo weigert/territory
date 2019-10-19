@@ -26,4 +26,32 @@ void Item::fromTable(BlockType _block){
     _type = ROCKS;
     quantity = 1;
   }
+  if(_block == BLOCK_PUMPKIN){
+    name = "Pumpkin";
+    _type = PUMPKIN;
+    quantity = 1;
+  }
+  if(_block == BLOCK_LEAVES){
+    name = "Leaves";
+    _type = PUMPKIN;
+    quantity = 1;
+  }
+}
+
+//Merge the Inventories
+void mergeInventory(Inventory &_into, Inventory _merge){
+  //Loop over the stuff that we picked up, and sort it into the inventory
+  for(unsigned int i = 0; i < _merge.size(); i++){
+    bool found = false;
+    for(unsigned int j = 0; j < _into.size(); j++){
+      if(_merge[i]._type == _into[j]._type){
+        _into[j].quantity += _merge[i].quantity;
+        found = true;
+      }
+    }
+    //We haven't found the item in the inventory, so add it to the back
+    if(!found){
+      _into.push_back(_merge[i]);
+    }
+  }
 }

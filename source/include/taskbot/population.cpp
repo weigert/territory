@@ -32,17 +32,19 @@ void Population::removeBot(int id){
 
 Population::Population(World &world){
   //Create some bots
-  for(int j = 0; j < 1; j++){
+  for(int j = 0; j < 25; j++){
     addBot(world);
   }
 }
 
-void Population::update(World &world){
-  //Do some Updating Here
-  //Check if anyone has died here for instance.
+void Population::update(World &world, View view){
+  //For all bots...
   for(unsigned int i = 0; i < bots.size(); i++){
-    if(!bots[i].dead){
-      bots[i].executeTask(world, *this);
-    }
+    //No Execution Conditions
+    if(bots[i].dead) continue;
+    if(!helper::inModRange(bots[i].pos, view.viewPos, view.renderDistance, world.chunkSize)) continue;
+
+    //Execute the Task
+    bots[i].executeTask(world, *this);
   }
 }

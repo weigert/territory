@@ -275,7 +275,7 @@ void World::generatePerlin(){
 
   //Pumpkings
   std::cout<<"Adding Pumpkins"<<std::endl;
-  for(int i = 0; i < 100; i++){
+  for(int i = 0; i < 1000; i++){
     int rock[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
     //Normalize the Block's x,z coordinates
     float x = (float)(rock[0]) / (float)(chunkSize*dim.x);
@@ -290,7 +290,7 @@ void World::generatePerlin(){
 
   //Add Trees
   std::cout<<"Adding Trees"<<std::endl;
-  for(int i = 0; i < 500; i++){
+  for(int i = 0; i < 1000; i++){
     int tree[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
     int treeheight = rand()%6+6;
 
@@ -300,7 +300,7 @@ void World::generatePerlin(){
     float height = perlin.GetValue(x, SEED, z)/5+0.25;
     height *= (dim.y*chunkSize);
 
-    for(int j = 0; j < treeheight; j++){
+    for(int j = 0; j <= treeheight; j++){
       //Add the shit to the editbuffer
       addEditBuffer(glm::vec3(tree[0], (int)height+j, tree[1]), BLOCK_WOOD);
     }
@@ -527,6 +527,7 @@ Inventory World::pickup(glm::vec3 pos){
       //Add to inventory and remove from drops.
       _inventory.push_back(drops[i]);
       drops.erase(drops.begin()+i);
+      i--;
     }
   }
   return _inventory;

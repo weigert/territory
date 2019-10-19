@@ -138,6 +138,15 @@ namespace helper{
     }
   }
 
+  bool inRange(glm::vec3 a, glm::vec3 b, glm::vec3 range){
+    return glm::all(glm::lessThanEqual(glm::abs(a-b), range));
+  }
+
+  bool inModRange(glm::vec3 a, glm::vec3 b, glm::vec3 range, int mod){
+    glm::vec3 _a = glm::floor(a/glm::vec3(mod));
+    glm::vec3 _b = glm::floor(b/glm::vec3(mod));
+    return glm::all(glm::lessThanEqual(glm::abs(_a - _b), range));
+  }
 
   //End of Namespace
 }

@@ -34,7 +34,7 @@ class Bot{
 
     //Inventory and Attributes
     Inventory inventory;
-    void sortInventory();
+    void mergeInventory(Inventory _merge);
 
     //Bot Activities and Actions
     Task* current;
