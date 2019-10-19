@@ -12,8 +12,7 @@ public:
 
   //Data Storage Member
   int data[16*16*16] = {0};
-  bool updated = false;  //Has the data been updated?
-  bool refreshModel = true;
+  bool refreshModel = false;
 
   //Get the Flat-Array Index
   int getIndex(glm::vec3 _p);

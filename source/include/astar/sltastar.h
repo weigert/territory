@@ -157,7 +157,7 @@ public: // methods
 	}
 
 	// Advances search one step
-	unsigned int SearchStep(World &world)
+	unsigned int SearchStep(World &world, glm::vec3 range)
 	{
 		// Firstly break if the user has not initialised the search
 		assert( (m_State > SEARCH_STATE_NOT_INITIALISED) &&
@@ -190,16 +190,15 @@ public: // methods
 		m_OpenList.pop_back();
 
 		// Check for the goal, once we pop that we're done
-		if( n->m_UserState.IsGoal( m_Goal->m_UserState ) )
+		if( n->m_UserState.IsGoal( m_Goal->m_UserState, range ) )
 		{
 			// The user is going to use the Goal Node he passed in
 			// so copy the parent pointer of n
-			m_Goal->parent = n->parent;
-			m_Goal->g = n->g;
+			m_Goal = n;
 
 			// A special case is that the goal was passed in as the start state
 			// so handle that here
-			if( false == n->m_UserState.IsSameState( m_Start->m_UserState ) )
+			if( false == n->m_UserState.IsSameState( m_Start->m_UserState, range ) )
 			{
 				FreeNode( n );
 
@@ -277,7 +276,7 @@ public: // methods
 
 				for( openlist_result = m_OpenList.begin(); openlist_result != m_OpenList.end(); openlist_result ++ )
 				{
-					if( (*openlist_result)->m_UserState.IsSameState( (*successor)->m_UserState ) )
+					if( (*openlist_result)->m_UserState.IsSameState( (*successor)->m_UserState, range ) )
 					{
 						break;
 					}
@@ -301,7 +300,7 @@ public: // methods
 
 				for( closedlist_result = m_ClosedList.begin(); closedlist_result != m_ClosedList.end(); closedlist_result ++ )
 				{
-					if( (*closedlist_result)->m_UserState.IsSameState( (*successor)->m_UserState ) )
+					if( (*closedlist_result)->m_UserState.IsSameState( (*successor)->m_UserState, range ) )
 					{
 						break;
 					}
@@ -798,10 +797,10 @@ template <class T> class AStarState
 public:
 	virtual ~AStarState() {}
 	virtual float GoalDistanceEstimate( T &nodeGoal ) = 0; // Heuristic function which computes the estimated cost to the goal node
-	virtual bool IsGoal( T &nodeGoal ) = 0; // Returns true if this node is the goal node
+	virtual bool IsGoal( T &nodeGoal, glm::vec3 range ) = 0; // Returns true if this node is the goal node
 	virtual bool GetSuccessors(T &world, AStarSearch<T> *astarsearch, T *parent_node ) = 0; // Retrieves all successors to this node and adds them via astarsearch.addSuccessor()
 	virtual float GetCost(T &world, T &successor ) = 0; // Computes the cost of travelling from this node to the successor node
-	virtual bool IsSameState( T &rhs ) = 0; // Returns true if this node is the same as the rhs node
+	virtual bool IsSameState( T &rhs, glm::vec3 range ) = 0; // Returns true if this node is the same as the rhs node
 };
 
 #endif

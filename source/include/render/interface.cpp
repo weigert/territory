@@ -7,4 +7,5 @@
 #include "../taskbot/memory.h"
 #include "../taskbot/task.h"
 #include "../render/view.h"
+#include "../game/item.h"
 #include "interface.h"

@@ -3,126 +3,20 @@
 #include "chunk.h"
 #include "octree.h"
 #include "../game/player.h"
+#include "../game/item.h"
 #include "../render/shader.h"
+#include "../render/billboard.h"
 #include "../render/view.h"
+#include "geology.h"
 #include "world.h"
 
 /*
 ===================================================
           WORLD GENERATING FUNCTIONS
 ===================================================
-Proposed Pipeline:
-  -> Generate Blank Chunks
-
-  -> Generate Base Height-Map
-    -> Low lying areas, flat and! hilly
-    -> High lying areas, flat and! hilly
-
-  -> Add Geological Deposits based on elemental distribution maps in 3D!
-    -> Generate Perlin Maps for all Elements, then cluster to common minerals and rare stuff too!
-    -> Scale the perlin maps by the relative abundance of elements on earth for instance
-    -> Mineral Types Need: Brittleness, Solubility, Porosity,
-    -> This is still deterministic based on the perlin map!
-
-  -> Generate a Volcanism Map Randomly, with varying degrees of intensity in certain spots
-    -> Underground temperature field comes from volcanism
-    -> From this is derived a pressure field, which moves groundwater around
-    -> Groundwater is empty at first, but is filled later
-
-  -> Generate large bodies of water
-    -> Randomly pick minima on the map and grow them up
-    -> Sufficiently large volumes (i.e. > critical mass) are then filled
-    -> If it reaches the edge, it is flood-filled upto "sea-level" with salt-water
-
-  -> Alternatingly Perform:
-    -> Weather Cycle
-    -> Vegetation Cycle
-    -> Erosion Cycle
-
-  -> Weather Cycle (@ chunk-resolution):
-    -> Compute Wind-Speed Map
-      -> Slope of Land affects wind Speed
-      -> Plant Coverage hinders winds
-      -> Heavy wind dropping / rising in P / T very rapidly causes tornadoes?
-    -> Compute Humidity Map
-      -> Humidity is moved around by wind and diffuses
-      -> Bodies of Water add humidity in dependency of temp
-      -> Plants remove humidity from the air
-      -> Rain removes humidity from the air in dependency of temp
-      -> Snow removes humidity from the air
-      -> Evaporation lowers the water level of lakes
-    -> Compute Temperature Map
-      -> Air temperature is moved around by wind and diffuses
-      -> Sunlight adds Temperature
-      -> Plants block sunlight
-      -> Higher elevation has less temperature
-      -> Evaporation from water sources cools the temp
-      -> Temperature / sunlight will melt snow and ice
-    -> Compute Clouds
-      -> Temperature and Humidity give cloud-coverage
-      -> Critical Values then give rain vs. snow in some areas
-      -> Heavy rain causes lightning in hot areas
-      -> Clouds reflect sunlight
-
-  -> Vegation Cycle:
-    -> Plants have a feature vector for their desired weather values (wind / temp / humidity / elevation / sunlight, etc.)
-    -> Plants also have a vector of how they affect those values in turn (wind-blockage, sunlight blockage, soil retention)
-    -> Depending on the predictor vectors in a chunk, we can sample from a distribution of plants given by distance to the plant prototypes
-    -> Place the plants in appropriate locations near other plants of the same type on subsequent cycles
-
-  -> Erosion / Sedimenation Cycle
-    -> Water Erosion:
-      -> Rain spawns particles that move down the map at the steepest slope
-      -> Particles are eroded based on their solubility
-      -> Particles have a certain mass and certain amount of soil the can carry based on mass / speed
-      -> Deposited soil becomes dirt / mud
-      -> Steeper Slopes / Faster Speeds means more sediment capacity
-      -> Particles have inertia based on mass, which moves them along a direction
-      -> When particles (nearly) stop and they still have volume, they spawn an amount of water
-      -> Particles lose mass over time as they move over porous rock / soil
-
-      How does this make rivers as blocks though?
-        -> Track particle frequency of paths and the most frequent areas become rivers based on some width?
-        -> Particles inside rivers lose momentum much less?
-        -> Something like that (i.e. if they hit a body of water, they are propelled forward / lose inertia much less!!)
-
-    -> Glacial Erosion:
-      -> Snow deposits where it falls, lots of snow compacts to ice
-      -> Ice needs to move downhill and away from peaks of course, so you get nice exposed ridges!
-      -> Sunlight will melt snow and ice and spawn particles too
-      -> Ice will also move downhill slowly, leading to erosion based on rock brittleness
-      -> Large rock amounts will be broken off and placed into the ice
-      -> As the ice melts in lower / hotter regions, these large rocks are placed at the mouth of the glacier
-
-    -> Wind Erosion:
-      -> Based on wind-speeds particles are removed and made into a fine sand.
-      -> Sand and loose particles are moved around appropriately
-      -> Wind carry-capacity is dependent on the speed, as it drops, particles leave the wind.
-
-    -> Ground Water Cycle
-      -> Water from the particles of sedimentation will move into porous ground and add to the water amount
-      -> High pressure regions will move to low-pressure regions, based on rock porosity
-      -> Temperature increases the pressure
-      -> Underground pressure is given by the volcanism
-      -> Temperature /pressure above a critical amount will lead to geysering / dissolution of rock
-      -> Also leads to springs when water is moved to certain regions!
-
-    -> Erosion Cycle / Water / Soil Movement
-      -> Water also seeps into the ground when rain falls on flat areas that are porous
-      -> This leads to a larger amount of groundwater
-      -> Water underground flows to more porous areas
-      -> When pressure is above a certain value, you can get geyser formation
-      -> Otherwise groundwater can be moved upwards to natural springs
-      -> Once lakes are overfilled, they can spill over
-      -> Rivers and streams are created by tracking a drainage map over certain areas and growing it!
-      -> Fast winds can move loose soil and erode the sides of rock-faces it runs past.
-      -> Depending on wind-speed model will incentivize different erosion types
-      -> Glaciers move downhill and actively grind the mountain, brittle rocks will be moved by the glacier
-      -> Glaciers melt from sunlight and form strong rivers, they move large rocks down the mountain too
 */
 
 void World::generate(){
-  //I guess we should split the world-gen into multiple steps?
   std::cout<<"Generating New World"<<std::endl;
   std::cout<<"Seed: "<<SEED<<std::endl;
   //Seed the Random Generator
@@ -135,15 +29,16 @@ void World::generate(){
   //Generate Height
   std::cout<<"Filling World"<<std::endl;
   generatePerlin();
-  //generateFlat();
-
-  //Place the Player
-  std::cout<<"Placing Player"<<std::endl;
-  //placePlayer();
 }
 
 void World::generateBlank(){
-  //Add Blank Chunks to Region Files
+  //Get the savefile Path
+  boost::filesystem::path data_dir(boost::filesystem::current_path());
+  data_dir /= "save";
+  data_dir /= saveFile;
+  data_dir /= "world.region";
+  std::ofstream out(data_dir.string(), std::ofstream::app);
+
   //Loop over all Chunks in the World
   for(int i = 0; i < dim.x; i++){
     for(int j = 0; j < dim.y; j++){
@@ -155,8 +50,11 @@ void World::generateBlank(){
         chunk.size = chunkSize;
         chunk.pos = glm::vec3(i, j, k);
 
-        //Write the Chunk to File
-        writeChunk(chunk);
+        //Save the current loaded chunks to file and the world data
+        {
+          boost::archive::text_oarchive oa(out);
+          oa << chunk;    //Append the Chunk to the Region File
+        }
       }
     }
   }
@@ -177,7 +75,7 @@ void World::generateFlat(){
 
   //Rocks
   std::cout<<"Adding Rocks"<<std::endl;
-  for(int i = 0; i < 1000; i++){
+  for(int i = 0; i < 100; i++){
     int rock[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
     addEditBuffer(glm::vec3(rock[0], 1, rock[1]), BLOCK_STONE);
   }
@@ -187,7 +85,7 @@ void World::generateFlat(){
 
   //Trees
   std::cout<<"Adding Trees"<<std::endl;
-  for(int i = 0; i < 1000; i++){
+  for(int i = 0; i < 100; i++){
     int tree[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
 
     //Add the shit to the editbuffer
@@ -246,7 +144,7 @@ void World::generatePerlin(){
 
   //Rocks
   std::cout<<"Adding Rocks"<<std::endl;
-  for(int i = 0; i < 1000; i++){
+  for(int i = 0; i < 100; i++){
     int rock[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
     //Normalize the Block's x,z coordinates
     float x = (float)(rock[0]) / (float)(chunkSize*dim.x);
@@ -278,7 +176,7 @@ void World::generatePerlin(){
 
   //Add Trees
   std::cout<<"Adding Trees"<<std::endl;
-  for(int i = 0; i < 5000; i++){
+  for(int i = 0; i < 1000; i++){
     int tree[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
     int treeheight = rand()%6+6;
 
@@ -288,7 +186,7 @@ void World::generatePerlin(){
     float height = perlin.GetValue(x, SEED, z)/5+0.25;
     height *= (dim.y*chunkSize);
 
-    for(int j = 0; j < treeheight; j++){
+    for(int j = 0; j <= treeheight; j++){
       //Add the shit to the editbuffer
       addEditBuffer(glm::vec3(tree[0], (int)height+j, tree[1]), BLOCK_WOOD);
     }
@@ -299,8 +197,41 @@ void World::generatePerlin(){
     addEditBuffer(glm::vec3(tree[0], (int)height+treeheight, tree[1]+1), BLOCK_LEAVES);
     addEditBuffer(glm::vec3(tree[0], (int)height+treeheight, tree[1]-1), BLOCK_LEAVES);
   }
+  //Evaluate the Guy
+  evaluateEditBuffer();
+}
+
+void World::generateTectonic(){
+  //Generate a geology
+  std::cout<<"Generating Geology"<<std::endl;
+  Geology geology;
+  geology.initialize();
+	geology.generate();
+
+  //Get the Tectonic Surface
+  std::cout<<"Adding to EditBuffer"<<std::endl;
+  for(int i = 0; i < dim.x; i++){
+    for(int k = 0; k < dim.z; k++){
+      //Loop over the height and set the blocks
+      float height = geology.height[helper::getIndex(glm::vec2(i, k), glm::vec2(dim.x, dim.z))];
+      height *= chunkSize*dim.y*0.9;
+
+      //Add the individual Chunks
+      for(int l = 0; l < chunkSize; l++){
+        for(int m = 0; m < chunkSize; m++){
+          //Set the Grass and Dirt
+          for(int j = 0; j < (int)height-1; j++){
+            //Add the block to the editBuffer
+            addEditBuffer(glm::vec3(i*chunkSize+l, j, k*chunkSize+m), BLOCK_DIRT);
+          }
+          addEditBuffer(glm::vec3(i*chunkSize+l, (int)height-1, k*chunkSize+m), BLOCK_GRASS);
+        }
+      }
+    }
+  }
 
   //Evaluate the Guy
+  std::cout<<"Evaluating EditBuffer"<<std::endl;
   evaluateEditBuffer();
 }
 
@@ -328,20 +259,6 @@ bool World::addEditBuffer(glm::vec3 _pos, BlockType _type){
 }
 
 //Sorting Operator for bufferObjects
-bool operator<(const bufferObject& a, const bufferObject& b) {
-  if(a.cpos.x < b.cpos.x) return true;
-  if(a.cpos.x > b.cpos.x) return false;
-
-  if(a.cpos.y < b.cpos.y) return true;
-  if(a.cpos.y > b.cpos.y) return false;
-
-  if(a.cpos.z < b.cpos.z) return true;
-  if(a.cpos.z > b.cpos.z) return false;
-
-  return false;
-}
-
-//Sorting Operator for bufferObjects
 bool operator>(const bufferObject& a, const bufferObject& b) {
   if(a.cpos.x > b.cpos.x) return true;
   if(a.cpos.x < b.cpos.x) return false;
@@ -358,7 +275,6 @@ bool operator>(const bufferObject& a, const bufferObject& b) {
 bool World::evaluateEditBuffer(){
   //Check if the editBuffer isn't empty!
   if(editBuffer.empty()){
-    std::cout<<"editBuffer is empty."<<std::endl;
     return false;
   }
 
@@ -372,68 +288,36 @@ bool World::evaluateEditBuffer(){
 
   //Load File and Write File
   std::ifstream in((data_dir/"world.region").string());
-  std::ofstream out((data_dir/"world.region.temp").string());
+  std::ofstream out((data_dir/"world.region.temp").string(), std::ofstream::app);
 
   //Chunk for Saving Data
   Chunk _chunk;
-
   int n_chunks = 0;
 
-  //While there is still stuff inside the editBuffer...
-  while(!editBuffer.empty()){
-    //Read the File into the Chunk
-
-    {
-      boost::archive::text_iarchive ia(in);
-      ia >> _chunk;
+  //Loop over the Guy
+  while(n_chunks < dim.x*dim.y*dim.z){
+    if(in.eof()){
+      return false;
     }
 
-    //If the chunk is not equal to the editbuffer's element
-    while(_chunk.pos != editBuffer.back().cpos){
-      //Make sure there is an endoffile criterion.
-      if(in.eof()){
-        std::cout<<"Error: Reached end of file."<<std::endl;
-        return false;
-      }
+    //Archive Serializers
+    boost::archive::text_oarchive oa(out);
+    boost::archive::text_iarchive ia(in);
 
-      //Create the Thing
-      {
-        boost::archive::text_oarchive oa(out);
-        oa << _chunk;
-        n_chunks++;
-        boost::archive::text_iarchive ia(in);
-        ia >> _chunk;
-      }
-    }
+    //Load the Chunk
+    ia >> _chunk;
 
-    //Now we have a chunk that corresponds the the editBuffer element
-    while(!editBuffer.empty() && _chunk.pos == editBuffer.back().cpos){
-      //Set the block in the chunk.
+    //Overwrite relevant portions
+    while(!editBuffer.empty() && glm::all(glm::equal(_chunk.pos, editBuffer.back().cpos))){
+      //Change the Guy
       _chunk.setPosition(glm::mod(editBuffer.back().pos, glm::vec3(chunkSize)), editBuffer.back().type);
-
-      //Erase the first element
       editBuffer.pop_back();
     }
 
-    //Write the guy to file
-    //_chunk.data.trySimplify();
-    //Write the chunk to file
-    {
-      boost::archive::text_oarchive oa(out);
-      oa << _chunk;
-      n_chunks++;
-    }
-  }
-
-  //Fill up the rest
-  while(n_chunks < dim.x*dim.y*dim.z){
-    boost::archive::text_iarchive ia(in);
-    boost::archive::text_oarchive oa(out);
+    //Write the chunk back
     oa << _chunk;
-    ia >> _chunk;
     n_chunks++;
   }
-
 
   //Close the fstream and ifstream
   in.close();
@@ -446,7 +330,6 @@ bool World::evaluateEditBuffer(){
   //Success!
   return true;
 }
-
 
 /*
 ===================================================
@@ -466,22 +349,35 @@ int World::moveWeight(BlockType _type){
 }
 
 BlockType World::getBlock(glm::vec3 _pos){
+  //Chunk Position and World Position
+  glm::vec3 c = glm::floor(_pos/glm::vec3(chunkSize));
+  glm::vec3 p = glm::mod(_pos, glm::vec3(chunkSize));
+
+  for(unsigned int i = 0; i < chunks.size(); i++){
+    //Compare to Chunk Position
+    if(c == chunks[i].pos){
+      return (BlockType)chunks[i].data[chunks[i].getIndex(p)];
+    }
+  }
+  return BLOCK_AIR;
+}
+
+void World::setBlock(glm::vec3 _pos, BlockType _type){
   //Check if the position is inside, if not return 0, otherwise return the block
   for(unsigned int i = 0; i < chunks.size(); i++){
     glm::vec3 c = glm::floor(_pos/glm::vec3(chunkSize));
     //Check the Chunkpos
     if(c == chunks[i].pos){
-      //Read the Goy
-      glm::vec3 p = glm::mod(_pos, glm::vec3(chunkSize));
-      return chunks[i].getPosition(p, 0);
+      chunks[i].setPosition(glm::mod(_pos, glm::vec3(chunkSize)), _type);
+      chunks[i].refreshModel = true;
+      break;
     }
   }
-  return BLOCK_STONE;
 }
 
 //Get the Top-Free space position in the x-z position
-int World::getTop(glm::vec2 _pos){
-  //Highest Block you can Stand On
+glm::vec3 World::getTop(glm::vec2 _pos){
+  //Highest Block you can Stand O
   int max = 0;
 
   //Loop over the height
@@ -493,8 +389,36 @@ int World::getTop(glm::vec2 _pos){
       }
     }
   }
-  return max;
+  return glm::vec3(_pos.x, max, _pos.y);
 }
+
+/*
+===================================================
+          DROPS AND PLACEMENT FUNCTIONS
+===================================================
+*/
+
+//Drop all the items in the inventory
+void World::drop(Inventory inventory){
+  for(unsigned int i = 0; i < inventory.size(); i++){
+    drops.push_back(inventory[i]);
+  }
+}
+
+//Remove the items from the drops and
+Inventory World::pickup(glm::vec3 pos){
+  Inventory _inventory;
+  for(unsigned int i = 0; i < drops.size(); i++){
+    if(drops[i].pos == pos){
+      //Add to inventory and remove from drops.
+      _inventory.push_back(drops[i]);
+      drops.erase(drops.begin()+i);
+      i--;
+    }
+  }
+  return _inventory;
+}
+
 
 /*
 ===================================================
@@ -504,8 +428,8 @@ int World::getTop(glm::vec2 _pos){
 
 void World::bufferChunks(View view){
   //Load / Reload all Visible Chunks
+  evaluateEditBuffer();
 
-  //Non-Brute Force Method
   //Chunks that should be loaded
   glm::vec3 a = glm::floor(view.viewPos/glm::vec3(chunkSize))-view.renderDistance;
   glm::vec3 b = glm::floor(view.viewPos/glm::vec3(chunkSize))+view.renderDistance;
@@ -513,8 +437,6 @@ void World::bufferChunks(View view){
   //Can't exceed a certain size
   a = glm::clamp(a, glm::vec3(0), dim-glm::vec3(1));
   b = glm::clamp(b, glm::vec3(0), dim-glm::vec3(1));
-
-  //Construct a vector so we can check which guys need loading
 
   //Chunks that need to be removed
   std::stack<int> remove;
@@ -534,15 +456,11 @@ void World::bufferChunks(View view){
   for(unsigned int i = 0; i < chunks.size(); i++){
     //Check if any of these chunks are outside of the limits of a / b
     if(glm::any(glm::lessThan(chunks[i].pos, a)) || glm::any(glm::greaterThan(chunks[i].pos, b))){
-      //Check if the chunk was updated
-      if(chunks[i].updated){
-        //Save chunk to file
-        //Add the updated stuff the the buffer and evaluate it
-      }
       //Add the chunk to the erase pile
       remove.push(i);
     }
-    //Make sure that the chunk that we determined will not be removed is also
+
+    //Make sure that the chunk that we determined will not be removed is also not reloaded
     for(unsigned int j = 0; j < load.size(); j++){
       if(load[j].x == chunks[i].pos.x && load[j].y == chunks[i].pos.y && load[j].z == chunks[i].pos.z){
         //Remove the element from load, as it is already inside this guy
@@ -559,59 +477,47 @@ void World::bufferChunks(View view){
     remove.pop();
   }
 
-  //Theoretically, we only need to load the file once.
-  //we can sort the load vector, then access the relevant chunks ONCE and close the file!
-  //Sort the editBuffer
+  //Check if we want to load any guys
+  if(!load.empty()){
+    //Sort the loading vector, for single file-pass
+    std::sort(load.begin(), load.end(),
+            [](const glm::vec3& a, const glm::vec3& b) {
+              if(a.x > b.x) return true;
+              if(a.x < b.x) return false;
 
-  //Loop over the guys we want to load
-  while(!load.empty()){
-    //Make sure the vector we are trying to load is legit
+              if(a.y > b.y) return true;
+              if(a.y < b.y) return false;
+
+              if(a.z > b.z) return true;
+              if(a.z < b.z) return false;
+
+              return false;
+            });
+
+    boost::filesystem::path data_dir(boost::filesystem::current_path());
+    data_dir /= "save";
+    data_dir /= saveFile;
+    std::ifstream in((data_dir/"world.region").string());
+
     Chunk _chunk;
-    loadChunk(load.back(), _chunk);
-    //Add the chunk
-    chunks.push_back(_chunk);
-    load.pop_back();
+    int n = 0;
+
+    while(!load.empty()){
+      //Skip Lines
+      while(n < load.back().x*dim.z*dim.y+load.back().y*dim.z+load.back().z){
+        in.ignore(1000000,'\n');
+        n++;
+      }
+      //Load the Chunk
+      {
+        boost::archive::text_iarchive ia(in);
+        ia >> _chunk;
+        chunks.push_back(_chunk);
+        load.pop_back();
+      }
+    }
+    in.close();
   }
-}
-
-bool World::writeChunk(Chunk chunk){
-  //Get the Working Directory
-  boost::filesystem::path data_dir(boost::filesystem::current_path());
-  data_dir /= "save";
-  data_dir /= saveFile;
-  data_dir /= "world.region";
-
-  //Save the current loaded chunks to file and the world data
-  std::ofstream out(data_dir.string(), std::ofstream::app);
-  {
-    boost::archive::text_oarchive oa(out);
-    oa << chunk;    //Append the Chunk to the Region File
-  }
-  return true;
-}
-
-bool World::loadChunk(glm::vec3 _c, Chunk &chunk){
-  //Get the Working Directory
-  boost::filesystem::path data_dir(boost::filesystem::current_path());
-  data_dir /= "save";
-  data_dir /= saveFile;
-  data_dir /= "world.region";
-
-  //Load the actual worldfile, and the chunks relevant for the player.
-  std::ifstream in(data_dir.string());
-
-  //Skip the Lines
-  int n = _c.x*dim.z*dim.y+_c.y*dim.z+_c.z;
-  while(n>0){
-    in.ignore(100000,'\n');
-    n--;
-  }
-
-  {
-    boost::archive::text_iarchive ia(in);
-    ia >> chunk;
-  }
-  return true;
 }
 
 bool World::loadWorld(){

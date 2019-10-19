@@ -3,9 +3,6 @@
 
 //Main Function
 int main( int argc, char* args[] ) {
-	//Logger
-	Logger _log;
-
 	//Handle the Console Arguments
 	if(argc<2){
 		_log.error("Missing Filename.");
@@ -38,27 +35,28 @@ int main( int argc, char* args[] ) {
 
 	//Game Loop
 	bool quit = false;
+	bool paused = true;
 	SDL_Event e;
+
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	//Main Game Loop
 	while(!quit){
-		//Create this guy
 		//Handle User Input
-		events.input(&e, quit);
+		events.input(&e, quit, paused);
 		events.update(world, player, population, view);
-
-		//Handle with IMGUI
-		//ImGui_ImplSDL2_ProcessEvent(&e);
+		ImGui_ImplSDL2_ProcessEvent(&e);
 
 		//Update the Population
-		if(SDL_GetTicks()%world.tickLength == 0){
-			population.update(world);
+		if(SDL_GetTicks()%world.tickLength == 0 && !paused){
+			population.update(world, view);
 		}
 
 		//Render the View
+		view.updateChunkModels( world );
 		view.render(world, player, population);
+
 		view.calcFPS();
 	}
 

@@ -3,26 +3,25 @@
 #include "../forward/world.fwd.h"
 #include "../forward/population.fwd.h"
 #include "../forward/bot.fwd.h"
+#include "../forward/item.fwd.h"
 
 class State{
   public:
-    //Constructor
-    State();
-
     //Basic set of mandate requirements
-    glm::vec3 pos;
-    std::string task;
-    int carry;
+    glm::vec3 pos = glm::vec3(0);
+    glm::vec3 range = glm::vec3(0);
+    std::string task = "Null";
 
     //Target Bot
-    int target;
+    int target = 0;
     //int owner; //Owner of this Memory
     //int starter; //Originator of this Memory
-    BlockType block;
-    bool reachable;
-    //Item item;
-    int time;
-    int dist = 0;
+    BlockType block = BLOCK_AIR;
+    bool reachable = true;
+    int time = 0;
+
+    //States need to contain an inventory!
+    Inventory inventory;
 
     //Get the Current Local State
     void retrieveState(World &world, Population &population, int bot);
@@ -32,11 +31,10 @@ class State{
       //Set all properties
       pos = rhs.pos;
       task = rhs.task;
-      carry = rhs.carry;
       block = rhs.block;
       reachable = rhs.reachable;
       time = rhs.time;
-      dist = rhs.dist;
+      range = rhs.range;
     }
 };
 
@@ -50,9 +48,6 @@ bool operator==(State lhs, const State& rhs) {
   if(lhs.task != rhs.task){
     return false;
   }
-  if(lhs.carry != rhs.carry){
-    return false;
-  }
   if(lhs.block != rhs.block){
     return false;
   }
@@ -62,7 +57,7 @@ bool operator==(State lhs, const State& rhs) {
   if(lhs.time != rhs.time){
     return false;
   }
-  if(lhs.dist != rhs.dist){
+  if(lhs.range != rhs.range){
     return false;
   }
   return true;
@@ -77,9 +72,6 @@ bool operator||(State lhs, const State& rhs) {
   if(lhs.task == rhs.task){
     return true;
   }
-  if(lhs.carry == rhs.carry){
-    return true;
-  }
   if(lhs.block == rhs.block){
     return true;
   }
@@ -89,7 +81,7 @@ bool operator||(State lhs, const State& rhs) {
   if(lhs.time == rhs.time){
     return true;
   }
-  if(lhs.dist == rhs.dist){
+  if(lhs.range == rhs.range){
     return true;
   }
   return false;
@@ -102,10 +94,9 @@ State operator-(State lhs, const State& rhs) {
   //Continuous Values
   newState.pos = lhs.pos - rhs.pos;
   newState.time = lhs.time - rhs.time;
-  newState.dist = lhs.dist - rhs.dist;
+  newState.range = lhs.range - rhs.range;
 
   //Discrete Values
-  newState.carry = (lhs.carry == rhs.carry)?rhs.carry:0;
   newState.task = (lhs.task == rhs.task)?rhs.task:"";
   newState.block = (lhs.block == rhs.block)?rhs.block:BLOCK_AIR;
   newState.reachable = (lhs.reachable == rhs.reachable)?rhs.reachable:1-rhs.reachable;

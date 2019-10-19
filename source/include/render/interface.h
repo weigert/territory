@@ -9,6 +9,7 @@
 #include "../forward/memory.fwd.h"
 #include "../forward/task.fwd.h"
 #include "../forward/view.fwd.h"
+#include "../forward/item.fwd.h"
 
 class Interface{
 public:
@@ -20,7 +21,18 @@ public:
   void drawBot(Bot &bot);
   void drawTask(Task *task);
   void drawState(State state);
+  void drawItem(Item item);
+
+  //I also need creator interfaces for all these guys!!
+  void createItem(Item &item);
+  void createState(State &state);
+  void createTask(Task &task);
 };
+
+void Interface::createItem(Item &item){
+  //Edit and Return the Item
+
+}
 
 void Interface::drawBot(Bot &bot){
   //Jump to Bots Location
@@ -35,7 +47,7 @@ void Interface::drawBot(Bot &bot){
 
   ImGui::Text("Species: ");
   ImGui::SameLine();
-  ImGui::Text(bot.species.c_str());
+  ImGui::Text(bot.species.c_str(), "%s");
 
   //Alive Status
   ImGui::Text("Status: ");
@@ -47,6 +59,27 @@ void Interface::drawBot(Bot &bot){
     ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Alive");
   }
 
+  //Position
+  ImGui::Text("Position: ");
+  ImGui::SameLine();
+  ImGui::Text("%d", (int)bot.pos.x);
+  ImGui::SameLine();
+  ImGui::Text("%d", (int)bot.pos.y);
+  ImGui::SameLine();
+  ImGui::Text("%d", (int)bot.pos.z);
+
+  //Options for Manipulating Data
+  if (ImGui::Button("Add Task")){
+    ImGui::OpenPopup("TaskAdder");
+  }
+  ImGui::SameLine();
+  if (ImGui::Button("Add Item")){
+    ImGui::OpenPopup("ItemAdder");
+  }
+  ImGui::SameLine();
+  if (ImGui::Button("Add Memory")){
+    ImGui::OpenPopup("MemoryAdder");
+  }
 
   //Sprite / Animation Tab
   if (ImGui::TreeNode("Sprite")){
@@ -83,18 +116,45 @@ void Interface::drawBot(Bot &bot){
     }
     ImGui::TreePop();
   }
+
+  if (ImGui::TreeNode("Inventory")){
+    //Loop over all Items in the Inventory
+    for(unsigned int i = 0; i < bot.inventory.size(); i++){
+      ImGui::Text("ID: ");
+      ImGui::SameLine();
+      ImGui::Text("%d", (int)bot.inventory[i]._type);
+      ImGui::SameLine();
+      ImGui::Text("%s", bot.inventory[i].name.c_str());
+      ImGui::SameLine();
+      ImGui::Text("Amount: ");
+      ImGui::SameLine();
+      ImGui::Text("%d", (int)bot.inventory[i].quantity);
+      ImGui::SameLine();
+
+      if(ImGui::Button("-")){
+        //Delete the specified item from the guy
+        bot.inventory.erase(bot.inventory.begin()+i);
+      }
+    }
+
+    //Render the Actual Mandates
+    ImGui::TreePop();
+  }
+
 }
 
 void Interface::drawState(State state){
   //Draw the State Stuff
-  ImGui::Text(state.task.c_str()); ImGui::SameLine();
+  ImGui::Text(state.task.c_str(), "%s"); ImGui::SameLine();
   ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "%d", (int)state.pos.x); ImGui::SameLine();
   ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "%d", (int)state.pos.y); ImGui::SameLine();
   ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "%d", (int)state.pos.z); ImGui::SameLine();
   ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "%d", (int)state.block); ImGui::SameLine();
   ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "%d", (int)state.reachable); ImGui::SameLine();
   ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "%d", (int)state.time); ImGui::SameLine();
-  ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%d", (int)state.dist);
+  ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%d", (int)state.range.x); ImGui::SameLine();
+  ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%d", (int)state.range.y); ImGui::SameLine();
+  ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%d", (int)state.range.z);
 }
 
 void Interface::drawTask(Task *task){
@@ -119,7 +179,7 @@ void Interface::render(View &view, World &world, Population &population, Player 
   ImGui::Begin("Territory Controller");
 
   //Begin the Menu Bar
-/*
+  /*
   if (ImGui::BeginMainMenuBar()){
     if (ImGui::BeginMenu("World")){
       if (ImGui::MenuItem("Save to File", "Ayy")){
@@ -142,6 +202,18 @@ void Interface::render(View &view, World &world, Population &population, Player 
       ImGui::SliderInt("Speed", &b, 0, 10);
       world.tickLength = 2*(10-b)+1;
 
+      if(view.picked){
+        ImGui::Text("Selected: ");
+        ImGui::SameLine();
+        ImGui::Text("%d", (int)view.select.x);
+        ImGui::SameLine();
+        ImGui::Text("%d", (int)view.select.y);
+        ImGui::SameLine();
+        ImGui::Text("%d", (int)view.select.z);
+      }
+
+      ImGui::Checkbox("Debug Messages", &(_log._debug));
+
       ImGui::EndTabItem();
     }
 
@@ -162,27 +234,70 @@ void Interface::render(View &view, World &world, Population &population, Player 
 
       //Draw the Bot
       drawBot(population.bots[a]);
+
       //Set the view position to the bots positin
       if(follow){
         view.viewPos = population.bots[a].pos;
         view.loadChunkModels( world );
       }
 
+      if (ImGui::BeginPopupModal("ItemAdder", NULL)){
+          //Construct an Item
+          static Item item;
+          item.name = "Test";
+          ImGui::InputText("Name:", &item.name[0], IM_ARRAYSIZE(&item.name));
+          ImGui::SliderInt("Quantity:", &item.quantity, 0, 99);
+
+          //Start the Menu
+          if (ImGui::Button("Submit")){
+            //Add the item to the inventory.
+            population.bots[a].inventory.push_back(item);
+            ImGui::CloseCurrentPopup();
+          }
+          ImGui::EndPopup();
+      }
+
+      if (ImGui::BeginPopupModal("TaskAdder", NULL)){
+          //Construct a Task
+          static int _taskHandle = TASK_NULL;
+          const char* handles[] = { "Dummy", "Null", "Look", "Listen", "Think", "Wait", "Move", "Walk", "Idle", "Follow", "Seek", "Collect", "Take", "Convert", "Decide", "Request" };
+          ImGui::Combo("Task", &_taskHandle, handles, IM_ARRAYSIZE(handles), 4);
+
+          //Do this guy here
+          static int _time = 0.0f;
+          ImGui::DragInt("Time", &_time, 1, 0, 100);
+
+          static int _block = 0.0f;
+          ImGui::DragInt("Block", &_block, 1, 0, 10);
+
+          //Start the Menu
+          if (ImGui::Button("Submit")){
+            //Add the item to the inventory.
+            Task *_task = new Task(TaskName[_taskHandle].c_str(), a, (TaskHandle)_taskHandle);
+
+            //Construct a State
+            State state;
+            state.task = _task->name;
+            state.time = _time;
+            state.pos = view.select;
+            state.block = (BlockType)_block;
+            state.range = population.bots[a].range;
+
+            //Add the Task
+            _task->args = state;
+            population.bots[a].current = _task;
+            ImGui::CloseCurrentPopup();
+          }
+          ImGui::SameLine();
+          if (ImGui::Button("Cancel")){
+            ImGui::CloseCurrentPopup();
+          }
+          ImGui::EndPopup();
+      }
       ImGui::EndTabItem();
     }
 
     if(ImGui::BeginTabItem("View")){
-      //Projection Matrix
-      static bool projectionMatrix = false;
-      ImGui::Checkbox("Projection Matrix", &projectionMatrix);
-      if(projectionMatrix){
-        view.projection = glm::perspective(glm::radians(50.0f), 1200.0f / 800.0f, 0.1f, 100.0f);
-      }
-      else{
-        view.projection = glm::ortho(-(float)view.SCREEN_WIDTH*view.zoom, (float)view.SCREEN_WIDTH*view.zoom, -(float)view.SCREEN_HEIGHT*view.zoom, (float)view.SCREEN_HEIGHT*view.zoom, -200.0f, 200.0f);
-      }
-
-
       //Add an FPS Plot
       ImGui::PlotLines("FPS Counter", view.arr, IM_ARRAYSIZE(view.arr));
 
@@ -191,27 +306,38 @@ void Interface::render(View &view, World &world, Population &population, Player 
       ImGui::ColorEdit3("Sky Color", sky);
       view.skyCol = glm::vec3(sky[0], sky[1], sky[2]);
 
-      //col2[3] = {view.skyCol.x, view.skyCol.y, view.skyCol.z};
       static float light[3] = {view.lightCol.x, view.lightCol.y, view.lightCol.z};
       ImGui::ColorEdit3("Light Color", light);
       view.lightCol = glm::vec3(light[0], light[1], light[2]);
+
+      static float _fogcolor[3] = {view.fogColor.x, view.fogColor.y, view.fogColor.z};
+      ImGui::ColorEdit3("Fog Color", _fogcolor);
+      view.fogColor = glm::vec3(_fogcolor[0], _fogcolor[1], _fogcolor[2]);
+
+      static float _clickcolor[3] = {view.clickColorBlock.x, view.clickColorBlock.y, view.clickColorBlock.z};
+      ImGui::ColorEdit3("Click Color", _clickcolor);
+      view.clickColorBlock = glm::vec3(_clickcolor[0], _clickcolor[1], _clickcolor[2]);
+
+      static int _rd[3] = {(int)view.renderDistance.x, (int)view.renderDistance.y, (int)view.renderDistance.z};
+      ImGui::DragInt3("Render Distance", _rd);
+      view.renderDistance = glm::vec3(_rd[0], _rd[1], _rd[2]);
+
+      static bool _fog = view.fog;
+      ImGui::Checkbox("Distance Fog", &_fog);
+      view.fog = _fog;
+
+      static int _blur = view.blur;
+      ImGui::DragInt("Depth of Field", &_blur, 1, 0, 50);
+      view.blur = _blur;
+
+      static bool _grain = view.grain;
+      ImGui::Checkbox("Texture Grain", &_grain);
+      view.grain = _grain;
 
       ImGui::EndTabItem();
     }
     ImGui::EndTabBar();
   }
-
-  //ImGui::Text("Ayy");
-
-  /*
-  //This works..
-  if (ImGui::CollapsingHeader("Help"))
-    {
-        ImGui::Text("PROGRAMMER GUIDE:");
-    }
-*/
-
-
 
   ImGui::End();
 }

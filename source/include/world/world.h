@@ -1,12 +1,17 @@
 //Include Forward Declaration
+#include "../game/item.h"
+
 #pragma once
 #include "../forward/world.fwd.h"
 //Dependency Forward Declaration
 #include "../forward/view.fwd.h"
+#include "../forward/geology.fwd.h"
 #include "../forward/shader.fwd.h"
+#include "../forward/billboard.fwd.h"
 #include "../forward/chunk.fwd.h"
 #include "../forward/octree.fwd.h"
 #include "../forward/player.fwd.h"
+#include "../forward/item.fwd.h"
 
 //EditBuffer Struct
 struct bufferObject {
@@ -31,16 +36,24 @@ public:
   int SEED = 10;
   int chunkSize = 16;
   int tickLength = 1;
-  glm::vec3 dim = glm::vec3(20, 5, 20);
+  glm::vec3 dim = glm::vec3(10, 5, 10);
+
+  //Items placed / on the ground
+  Inventory placed;
+  Inventory drops;
+  void drop(Inventory inventory);
+  Inventory pickup(glm::vec3 pos);
 
   //Movement Weights
   int moveWeight(BlockType _type);
   BlockType getBlock(glm::vec3 _pos);
-  int getTop(glm::vec2 _pos);
+  void setBlock(glm::vec3 _pos, BlockType _type);
+  glm::vec3 getTop(glm::vec2 _pos);
 
   //Generate Function / Chunk Handlers
   void generate();
   void generateBlank();
+  void generateTectonic();
   void generateFlat();
   void generatePerlin();
 
@@ -48,12 +61,10 @@ public:
   std::vector<bufferObject> editBuffer;
   bool addEditBuffer(glm::vec3 _pos, BlockType _type);
   bool evaluateEditBuffer();
+  void bufferChunks(View view);    //Reloads all relevant chunks from file
 
   //File IO Management
   std::string saveFile;
   bool loadWorld();
   bool saveWorld();
-  bool writeChunk(Chunk chunk);
-  bool loadChunk(glm::vec3 _c, Chunk &chunk);
-  void bufferChunks(View view);    //Reloads all relevant chunks from file
 };

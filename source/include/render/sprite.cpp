@@ -31,7 +31,12 @@ bool Sprite::loadImage(std::string fileName){
   return true;
 }
 
-void Sprite::setupBuffer(){
+void Sprite::setupBuffer(bool small){
+  GLfloat _small[] = {-0.5, 0.0, 0.0,
+                    -0.5, 1.0, 0.0,
+                    0.5, 0.0, 0.0,
+                    0.5, 1.0, 0.0};
+
   GLfloat vert[] = {-0.8, 0.0, 0.0,
                     -0.8, 3.2, 0.0,
                     0.8, 0.0, 0.0,
@@ -43,13 +48,20 @@ void Sprite::setupBuffer(){
                    1.0, 0.0};
 
    //Load it into a buffer thingy
-   glGenVertexArrays(1, vao);
-   glBindVertexArray(vao[0]);
+   glGenVertexArrays(1, &vao);
+   glBindVertexArray(vao);
    glGenBuffers(2, vbo);
 
    //Buff' it
    glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-   glBufferData(GL_ARRAY_BUFFER, 12*sizeof(GLfloat), &vert[0], GL_STATIC_DRAW);
+   if(small){
+     glBufferData(GL_ARRAY_BUFFER, 12*sizeof(GLfloat), &_small[0], GL_STATIC_DRAW);
+   }
+   else{
+     glBufferData(GL_ARRAY_BUFFER, 12*sizeof(GLfloat), &vert[0], GL_STATIC_DRAW);
+
+   }
+
    glEnableVertexAttribArray(0);
    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
@@ -62,6 +74,7 @@ void Sprite::setupBuffer(){
 void Sprite::resetModel(){
   //Stuff to get the sprite looking right
   model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.5f, 0.0f));
+  model = glm::translate(model, animation.translate*glm::vec3(animation.nframe));
 }
 
 void Sprite::setAnimation(int id, glm::vec3 _translate){
@@ -80,6 +93,9 @@ void Sprite::setAnimation(int id, glm::vec3 _translate){
   else if(id == 2){
     animation.frames = 4;
   }
+  else if(id == 3){
+    animation.frames = 8;
+  }
 }
 
 bool Sprite::doAnimationFrame(){
@@ -90,9 +106,15 @@ bool Sprite::doAnimationFrame(){
     setAnimation(0, glm::vec3(0));
     return true;
   }
-  //Translate the model, not complete!
-  model = glm::translate(model, animation.translate);
   return false;
+}
+
+void Sprite::render(){
+  //Bind our VAO, render it.
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, texture);
+  glBindVertexArray(vao);
+  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
 void Sprite::cleanup(){
@@ -100,7 +122,7 @@ void Sprite::cleanup(){
   glDeleteTextures(1, &texture);
 
   //Delete the Stuff
-  glDisableVertexAttribArray(vao[0]);
+  glDisableVertexAttribArray(vao);
   glDeleteBuffers(2, vbo);
-  glDeleteVertexArrays(1, vao);
+  glDeleteVertexArrays(1, &vao);
 }

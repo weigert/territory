@@ -8,7 +8,7 @@ void Population::addBot(World world){
   //Add a bot
   Bot bot(bots.size());
   bot.setupSprite();
-  bot.pos = glm::vec3(90, world.getTop(glm::vec2(90,90)), 90);
+  bot.pos = world.getTop(glm::vec2(90, 90));
   Task *masterTask = new Task("Human Task", bot.ID, &Task::Dummy);
   bot.current = masterTask;
   bots.push_back(bot);
@@ -32,17 +32,17 @@ void Population::removeBot(int id){
 
 Population::Population(World &world){
   //Create some bots
-  for(int j = 0; j < 100; j++){
+  for(int j = 0; j < 1; j++){
     addBot(world);
   }
 }
 
-void Population::update(World &world){
-  //Do some Updating Here
-  //Check if anyone has died here for instance.
-  for(unsigned int i = 0; i < bots.size(); i++){
-    if(!bots[i].dead){
-      bots[i].executeTask(world, *this);
-    }
+void Population::update(World &world, View view){
+  for(Bot& bot : bots){
+    //No Execution Conditions
+    if(bot.dead) continue;
+    if(!helper::inModRange(bot.pos, view.viewPos, view.renderDistance, world.chunkSize)) continue;
+    //Execute the Task
+    bot.executeTask(world, *this);
   }
 }

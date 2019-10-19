@@ -2,6 +2,7 @@
 #include "population.h"
 #include "../world/world.h"
 #include "state.h"
+#include "../game/item.h"
 
 #include "task.h"
 
@@ -10,13 +11,22 @@
                       CONSTRUCTORS
 =========================================================
 */
-Task::Task(std::string taskName, int taskBotID, bool (Task::*taskHandle)(World&, Population&, State &_args)){
+
+Task::Task(){}
+
+Task::Task(std::string taskName, int taskBotID, TaskHandle _handle){
+  name = taskName;
+  botID = taskBotID;
+  handle = TaskHandles[_handle];
+}
+
+Task::Task(std::string taskName, int taskBotID, Handle taskHandle){
   name = taskName;
   botID = taskBotID;
   handle = taskHandle;
 }
 
-Task::Task(std::string taskName, int taskBotID, int animationID, glm::vec3 animationTranslate, bool (Task::*taskHandle)(World&, Population&, State &_args)){
+Task::Task(std::string taskName, int taskBotID, int animationID, glm::vec3 animationTranslate, Handle taskHandle){
   name = taskName;
   botID = taskBotID;
   handle = taskHandle;
@@ -71,6 +81,12 @@ bool Task::handleQueue(World &world, Population &population){
       //We need to repeat the animation
       queue.push_back(newtask);
     }
+
+    //Pass the arguments
+    if(!queue.empty() && queue.back().pass){
+      queue.back().args = newtask.args;
+    }
+
     //Task was performed successfully, we leave it off.
     return false;
   }
@@ -86,7 +102,7 @@ bool Task::example(World &world, Population &population, State &_args){
   if(initFlag){
     Task null("Example", botID, &Task::null);   //Construct the Task "null"
     null.animation = 0;                         //Set the Task's Animation
-    queue.push_back(null);                           //Add it to the Queue
+    queue.push_back(null);                      //Add it to the Queue
   }
 
   //Handle the Queue appropriately.
@@ -115,83 +131,62 @@ bool Task::wait(World &world, Population &population, State &_args){
   return handleQueue(world, population);
 }
 
-//Move - Teleport to Location
 bool Task::move(World &world, Population &population, State &_args){
-  //Do the Value-Change
   population.bots[botID].pos = _args.pos;
-  population.bots[botID].path.pop_back();
   return true;
-}
-
-//Step - Multiple Moves Along a Path
-bool Task::step(World &world, Population &population, State &_args){
-
-  //We now want to step towards our goal. Check if we have a path.
-  if(population.bots[botID].path.empty()){
-    //Calculate a Path Here.
-    population.bots[botID].path = calculatePath(botID, _args.pos, population, world);
-    //If the Path is still empty
-    if(population.bots[botID].path.empty()){
-      //No valid Path!
-      //if(debug){std::cout<<botID<<": No valid path."<<std::endl;
-      //Make this location unreachable if it is in memory and reachable
-      glm::vec3 point = _args.pos;
-      Memory query;
-      query.state.pos = point;
-
-      //Overwrite Memory, which is unreachable
-      Memory memory;
-      memory.state.reachable = false;
-
-      //Overwrite any specified points in memory in all memories matching all points in query
-      population.bots[botID].updateMemory(query, true, memory);
-      return true;
-    }
-    //We now have a valid path.
-  }
-
-  /*Check for path stil valid in this next move!*/
-
-  if(queue.empty()){
-    Task move("Move to Position", botID, &Task::move);
-    move.args.pos = population.bots[botID].path.back();
-    move.animation = 1;
-    move.translate = glm::vec3(move.args.pos - population.bots[botID].pos)/glm::vec3(4);
-    queue.push_back(move);
-  }
-
-  return handleQueue(world, population);
 }
 
 //Walk - Multiple Steps with Error Handling
 bool Task::walk(World &world, Population &population, State &_args){
-  //Goal Position
-  glm::vec3 goal = _args.pos;
 
   /*
-  Check if bot is outside position or inside
-  Check if goal is outside position or inside
-
-  If goal and start are outside, teleport and wiat
-  If otherwise you need to crop the two endpoints and include waiting
+    Handle outside-of-visible-bounds bots travelling
   */
 
-  //Check If The Goal Position is Free
-  if(world.getBlock(goal) != BLOCK_AIR){
-    return true;
-  }
-
-  //Check if we're already there
-  if(population.bots[botID].pos == goal){
+  //Check if we're already there (or in range)
+  if(helper::inRange(population.bots[botID].pos, _args.pos, _args.range)){
+    _log.debug("Arrived at location within range.");
     return true;
   }
 
   //Do the Stuff
-  if(initFlag){
-    //Setup some tasks
-    Task step("Step", botID, &Task::step);
-    step.args.pos = goal;
-    queue.push_back(step);
+  if(population.bots[botID].path.empty()){
+    //Calculate a Path Here.
+    _log.debug("Calculating Path.");
+    population.bots[botID].path = calculatePath(botID, _args.pos, population, world, _args.range);
+    //If the Path is still empty
+    if(population.bots[botID].path.empty()){
+      _log.debug("No valid path.");
+
+      /*
+        Update Memory at Location if Unreachable
+      */
+
+      //Memory Query
+      //Loop through memories
+      for(unsigned int i = 0; i < population.bots[botID].memories.size(); i++){
+        //If all matches are required and we have all matches
+        if(population.bots[botID].memories[i].state.pos == _args.pos){
+          population.bots[botID].memories[i].state.reachable = false;
+        }
+      }
+
+      return true;
+
+
+    }
+  }
+
+  /*Check for path stil valid in this next move!*/
+
+
+  if(queue.empty()){
+    Task move("Move to Position", botID, &Task::move);
+    move.args.pos = population.bots[botID].path.back();
+    population.bots[botID].path.pop_back();
+    move.animation = 1;
+    move.translate = glm::vec3(move.args.pos - population.bots[botID].pos)/glm::vec3(4);
+    queue.push_back(move);
   }
 
   //Only perform the queue as specified!
@@ -203,9 +198,9 @@ bool Task::idle(World &world, Population &population, State &_args){
   //Check for initial flag
   if(initFlag){
     Task walk("Walk", botID, &Task::walk);
-    int _shift[2] = {rand()%10-5, rand()%10-5};
-    glm::vec2 _pos = glm::vec2(population.bots[botID].pos.x,population.bots[botID].pos.z ) + glm::vec2(_shift[0], _shift[1]);
-    walk.args.pos = glm::vec3(_pos.x, world.getTop(_pos), _pos.y);
+    int _shift[2] = {rand()%11-5, rand()%11-5};
+    glm::vec2 _pos = glm::vec2(population.bots[botID].pos.x, population.bots[botID].pos.z ) + glm::vec2(_shift[0], _shift[1]);
+    walk.args.pos = world.getTop(_pos);
 
     Task wait("Wait", botID, &Task::wait);
     wait.args.time = _args.time;
@@ -221,6 +216,215 @@ bool Task::idle(World &world, Population &population, State &_args){
   return handleQueue(world, population);
 }
 
+bool Task::follow(World &world, Population &population, State &_args){
+  return true;
+}
+
+/*
+================================================================================
+                            ITEM MANAGEMENT TASKS
+================================================================================
+*/
+
+bool Task::collect(World &world, Population &population, State &_args){
+  //If the bot is out of range range
+  if(!helper::inRange(population.bots[botID].pos, _args.pos, population.bots[botID].range)){
+    return true;
+  }
+
+  //Found the item, drop it
+  BlockType _type = world.getBlock(_args.pos);
+
+  if(_type == BLOCK_AIR){
+    _log.debug("Block is air");
+    return true;
+  }
+
+  //Item is within range, check for appropriate tools for collection
+  bool find = true;
+  for(unsigned int i = 0; i < _args.inventory.size(); i++){
+    find = false;
+    //Check if this item is inside the bot's inventory
+    for(unsigned int j = 0; j < _args.inventory.size(); j++){
+      if(_args.inventory[i] == population.bots[botID].inventory[j]){
+        find = true;
+        break;
+      }
+    }
+    //Didn't find the item!
+    if(!find){
+      break;
+    }
+  }
+
+  //Check if we found the item.
+  if(!find){
+    _log.debug("Bot doesn't have required items.");
+    return true;
+  }
+
+  //Inventory of Drops at the specific position
+  Inventory _inventory;
+  Item _item;
+
+  //Loop over all possible blocks
+  glm::vec3 _pseudopos = _args.pos;
+
+  while(_type != BLOCK_AIR){
+    //Destroy the Block
+    world.setBlock(_pseudopos, BLOCK_AIR);
+    world.addEditBuffer(_pseudopos, BLOCK_AIR);
+
+    //Construct the Item
+    _item.fromTable(_type);
+    _item.pos = _args.pos;
+    _item.setupSprite();  //Needs to be because it is placed in the world.
+    _inventory.push_back(_item);  //Add the Item to the Drop-Table
+    _pseudopos += glm::vec3(0, 1, 0);
+    _type = world.getBlock(_pseudopos);
+  }
+
+  //Merge the Inventory into a new inventory (i.e. condense the new items into stacks)
+  Inventory _new;
+  mergeInventory(_new, _inventory);
+  world.drops.insert(world.drops.begin(), _inventory.begin(), _inventory.end());
+
+  //Look to update
+  Task inspect("Inspect", botID, &Task::look);
+  inspect.args.range = population.bots[botID].viewDistance;
+  inspect.perform(world, population);
+
+  return true;
+}
+
+bool Task::take(World &world, Population &population, State &_args){
+
+  if(!helper::inRange(population.bots[botID].pos, _args.pos, population.bots[botID].range)){
+    _log.debug("Too far away.");
+    return true;
+  }
+
+  //Pickup everything from a location
+  Inventory _inventory = world.pickup(_args.pos);
+
+  if(_inventory.empty()){
+    _log.debug("Found nothing.");
+    return true;
+  }
+
+  /*
+  This actually needs to look inside the inventories of other items to see if it is inside somewhere!
+  */
+
+  //We don't want specific items
+  if(_args.inventory.empty()){
+    mergeInventory(population.bots[botID].inventory, _inventory);
+    _log.debug("Picked up everything.");
+    return true;
+  }
+
+  //Loop over the inventory!
+  for(unsigned int i = 0; i < _inventory.size(); i++){
+    //Compare the item to the desired items
+    for(unsigned int j = 0; j < _args.inventory.size(); j++){
+      //Compare the item to the desired item...
+      if(_inventory[i] == _args.inventory[j]){
+        //Bot needs this item!
+        population.bots[botID].inventory.push_back(_inventory[i]);
+        //Remove this item from the items currently being considered
+        _inventory.erase(_inventory.end()+i);
+
+        /*
+          Here we should do some handling for the amount of items specified
+        */
+
+      }
+    }
+  }
+
+  //Add the non-picked up items back to the world.
+  mergeInventory(world.drops, _inventory);
+  _log.debug("Picked up specific items.");
+  return true;
+
+  //Add the inventory to the bots inventory
+}
+
+bool Task::convert(World &world, Population &population, State &_args){
+  return true;
+}
+
+bool Task::seek(World &world, Population &population, State &_args){
+  //Do this guy here
+  if(!handleQueue(world, population)){
+    return false;
+  }
+
+  if(initFlag){
+    //Execute a look task!
+    Task inspect("Inspect", botID, &Task::look);
+    inspect.args.range = population.bots[botID].viewDistance;
+    inspect.perform(world, population);
+
+    //Memory Query
+    std::deque<Memory> recalled;
+    //Loop through memories
+    for(unsigned int i = 0; i < population.bots[botID].memories.size(); i++){
+      //If all matches are required and we have all matches
+      if(population.bots[botID].memories[i].state.block == _args.block && population.bots[botID].memories[i].state.reachable){
+        recalled.push_back(population.bots[botID].memories[i]);
+        population.bots[botID].memories[i].recallScore++;
+      }
+    }
+
+    if(recalled.empty()){
+      //Pick a random location and walk there...
+      _log.debug("No relevant location found in memory. Walking to random location nearby.");
+      Task walk("Stroll", botID, &Task::walk);
+      walk.args.pos = world.getTop(glm::vec2(population.bots[botID].pos.x, population.bots[botID].pos.z) + glm::vec2(rand()%21-10, rand()%21-10));
+      walk.args.range = population.bots[botID].range;
+      _args.pos = walk.args.pos;
+
+      queue.push_back(walk);
+    }
+    else{
+
+      //Find the Clostest Memory available to us...
+      std::sort(recalled.begin(), recalled.end(),
+              [this, population](const Memory& a, const Memory& b) {
+                if(a.state.pos.x - population.bots[botID].pos.x > b.state.pos.x - population.bots[botID].pos.x) return true;
+                if(a.state.pos.x - population.bots[botID].pos.x < b.state.pos.x - population.bots[botID].pos.x) return false;
+
+                if(a.state.pos.y - population.bots[botID].pos.y > b.state.pos.y - population.bots[botID].pos.y) return true;
+                if(a.state.pos.y - population.bots[botID].pos.y < b.state.pos.y - population.bots[botID].pos.y) return false;
+
+                if(a.state.pos.z - population.bots[botID].pos.z > b.state.pos.z - population.bots[botID].pos.z) return true;
+                if(a.state.pos.z - population.bots[botID].pos.z < b.state.pos.z - population.bots[botID].pos.z) return false;
+                return false;
+              });
+
+      //Walk to the location we have in memory (within range!)
+      Task walk("Seek", botID, &Task::walk);
+      walk.args.pos = recalled.back().state.pos;
+      walk.args.range = population.bots[botID].range;
+      _args.pos = walk.args.pos;
+
+      //Check if we are within range of the memory location.
+      if(helper::inRange(population.bots[botID].pos, walk.args.pos, population.bots[botID].range)){
+        //We are within range of a validated location
+        _log.debug("Accessed location in range of seek objective.");
+        return true;
+      }
+
+      _log.debug("Walking within range of location in memory.");
+      queue.push_back(walk);
+    }
+    initFlag = false;
+  }
+
+  return false;
+}
+
 /*
 =========================================================
                     MEMORY TASKS
@@ -229,13 +433,10 @@ bool Task::idle(World &world, Population &population, State &_args){
 
 //Look - Scan surroundings and write to memory queue
 bool Task::look(World &world, Population &population, State &_args){
-  //Parse Arguments
-  int rad = _args.dist; //View Square Size
-
   //Character Searches on Grid and Adds what it finds.
-  for(int i = population.bots[botID].pos.x-rad; i <= population.bots[botID].pos.x+rad; i++){
-    for(int j = population.bots[botID].pos.y-rad; j <= population.bots[botID].pos.y+rad; j++){
-      for(int k = population.bots[botID].pos.z-rad; k <= population.bots[botID].pos.z+rad; k++){
+  for(int i = population.bots[botID].pos.x-_args.range.x; i <= population.bots[botID].pos.x+_args.range.x; i++){
+    for(int j = population.bots[botID].pos.y-_args.range.y; j <= population.bots[botID].pos.y+_args.range.y; j++){
+      for(int k = population.bots[botID].pos.z-_args.range.z; k <= population.bots[botID].pos.z+_args.range.z; k++){
         //Form new Memories from Surroundings
         population.bots[botID].addMemory(world, glm::vec3(i, j, k));
       }
@@ -290,6 +491,7 @@ bool Task::listen(World &world, Population &population, State &_args){
 
 bool Task::decide(World &world, Population &population, State &_args){
   //Check if we have mandates to go
+  /*
   if(population.bots[botID].mandates.empty()){
     //Set the Current Task to Something Abitrary
     Task *masterTask = new Task("Human Task", botID, &Task::Dummy);
@@ -301,8 +503,12 @@ bool Task::decide(World &world, Population &population, State &_args){
     population.bots[botID].mandates.pop_back();
     //For now, we are just taking the back element
   }
-
+  */
   //Take whatever mandate is available
+
+  Task *masterTask = new Task("Testing Dummy Task", botID, &Task::Dummy);
+  population.bots[botID].current = masterTask;
+
   return false;
 }
 
@@ -361,147 +567,29 @@ bool Task::converse(World &world, Population &population, State &_args){
 
 //Special Functions
 bool Task::Dummy(World &world, Population &population, State &_args){
-  //Set Intial Tasks
+  //Seek the Block
   if(initFlag){
-    Task idle("Walk Around", botID, &Task::idle);
-    idle.args.time = 5;
-    queue.push_back(idle);
-  }
+    Task seek("Seek Pumpkin", botID, &Task::seek);
+    seek.args.block = BLOCK_WOOD;
+    seek.args.range = population.bots[botID].range;
 
-  //Only perform the queue as specified!
-  return handleQueue(world, population);
-}
+    //Use the outputs from the previous task for these tasks.
+    Task collect("Collect Pumpkin", botID, &Task::collect);
+    collect.pass = true;
+    collect.animation = 3;                         //Set the Task's Animation
 
-//Secondaries (Multi-Step, Multi-Task)
-bool Task::search(World &world, Population &population, State &_args){
-  /*
+    Task take("Take Pumpkin", botID, &Task::take);
+    take.pass = true;
 
-  Task inspect("Inspect", botID, &Task::look);
-  inspect.args[0] = 0;
-
-  //If we are on the item we are looking for
-  if(world.fill[population.bots[botID].pos[0]][population.bots[botID].pos[1]] == arguments[0]){
-    if(debug){std::cout<<"Found Item: "<<world.getFillName(arguments[0])<<std::endl;}
-    return true;
-  }
-
-  if(initFlag){
-    //Memory Query
-    //Recal the Memories
-    //Recall Memory
-    Memory query;
-    query.object = world.getFillName(arguments[0]);
-    query.reachable = true;
-    query.queryable[0] = true;
-    query.queryable[3] = true;
-    //Query the memory requiring all components to be exact matches
-    std::deque<Memory> memories = population.bots[botID].recallMemories(query, true);
-
-    //If memories isn't empty, we have to add some move to and analyze tasks.
-    if(!memories.empty()){
-      //We need to go look in these places!!
-      //Pick a random memory from here
-      for(unsigned int i = memories.size(); i > 0; i--){
-        Task walk("Seek", botID, &Task::walk);
-        walk.args[0] = memories[i-1].location.x;
-        walk.args[1] = memories[i-1].location.y;
-
-        queue.push_back(inspect);
-        queue.push_back(walk);
-      }
-      //We have some tasks, so we can skip the repeating this.
-    }
-    else{
-      Task walk("Stroll", botID, &Task::walk);
-      walk.args[0] = rand()%100;
-      walk.args[1] = rand()%100;
-
-      Task look("Scan", botID, &Task::look);
-      look.args[0] = population.bots[botID].viewDistance;
-
-      queue.push_back(inspect);
-      queue.push_back(look);
-      queue.push_back(walk);
-
-      //We didn't find anything. Therefore we must search!
-      //Walk to a random location and look
-    }
-    //Do not repeat this step yet.
-    initFlag = false;
-  }
-
-  //Work off our allocated queue.
-  if(!queue.empty()){
-    //Get the Top Task
-    Task newtask = queue.top();
-    queue.pop_back();
-    //If our new Task is not performed successfully
-    if(!newtask.perform(world, population)){
-      //Put the Task back on
-      queue.push_back(newtask);
-      return false;
-    }
-    //If it was successful, we leave it off
-    return false;
-  }
-
-  if(debug){std::cout<<"Bot with ID: "<<botID<<" found nothing. Restarting search."<<std::endl;}
-
-  //Reset For Next Time
-  initFlag = true;*/
-  return false;
-}
-
-bool Task::forage(World &world, Population &population, State &_args){
-/*
-  //Task Starting from the Beginning
-  if(initFlag){
-    //Define our Tasks
-    Task search("Locate Food", botID, &Task::search);
-    search.args[0] = arguments[0];
-
-    Task look("Look for more Food", botID, &Task::look);
-    look.args[0] = 2;
-
-    Task take("Take Food", botID, &Task::take);
-
-    Task home("Walk Home", botID, &Task::walk);
-    home.args[0] = population.loc[0];
-    home.args[1] = population.loc[1];
-
-    Task store("Store", botID, &Task::store);
-
-    //Add in reverse order!
-    queue.push_back(store);
-    queue.push_back(home);
-    queue.push_back(look);
+    //Add them to the queue
     queue.push_back(take);
-    queue.push_back(search);
+    queue.push_back(collect);
+    queue.push_back(seek);
 
     initFlag = false;
   }
 
-  //Debug Flag
-  if(debug){std::cout<<"Bot with ID: "<<botID<<" is foraging."<<std::endl;}
-
-  //Work off our allocated queue.
-  if(!queue.empty()){
-    //Get the Top Task
-    Task newtask = queue.top();
-    queue.pop_back();
-    //If our new Task is not performed successfully
-    if(!newtask.perform(world, population)){
-      //Put the Task back on
-      queue.push_back(newtask);
-    }
-    //If it was successful, we leave it off
-    return false;
-  }
-
-  //Return Success Case
-  if(debug){std::cout<<"Bot with ID: "<<botID<<" finished foraging."<<std::endl;}
-  initFlag = true;*/
-  return true;
+  return handleQueue(world, population);
 }
 
 /*
@@ -511,7 +599,7 @@ bool Task::forage(World &world, Population &population, State &_args){
 */
 
 //Calculatepath - Return a path that the bots should follow along until a goal in 3D
-std::vector<glm::vec3> calculatePath(int id, glm::vec3 _dest, Population &population, World &world){
+std::vector<glm::vec3> calculatePath(int id, glm::vec3 _dest, Population &population, World &world, glm::vec3 range){
     //Vector to Return
     std::vector<glm::vec3> path;
 
@@ -533,7 +621,7 @@ std::vector<glm::vec3> calculatePath(int id, glm::vec3 _dest, Population &popula
 		astarsearch.SetStartAndGoalStates( nodeStart, nodeEnd );
 
 		unsigned int SearchState;
-		do{ SearchState = astarsearch.SearchStep(world); }
+		do{ SearchState = astarsearch.SearchStep(world, range); }
 		while( SearchState == AStarSearch<MapSearchNode>::SEARCH_STATE_SEARCHING );
 
 		if( SearchState == AStarSearch<MapSearchNode>::SEARCH_STATE_SUCCEEDED ){
@@ -556,5 +644,10 @@ std::vector<glm::vec3> calculatePath(int id, glm::vec3 _dest, Population &popula
       path.clear();
 		}
 		astarsearch.EnsureMemoryFreed();
+
+    //Remove the First Guy!
+    if(!path.empty()){
+      path.pop_back();
+    }
     return path;
 }

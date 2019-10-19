@@ -6,7 +6,7 @@
 
 #include "event.h"
 
-void eventHandler::input(SDL_Event *e, bool &quit){
+void eventHandler::input(SDL_Event *e, bool &quit, bool &paused){
   //User input detected
   if( SDL_PollEvent( e ) != 0 ) {
     //Quit Event
@@ -19,6 +19,10 @@ void eventHandler::input(SDL_Event *e, bool &quit){
       else if(e->key.keysym.sym == SDLK_DOWN  && rotate.empty()){
         rotate.push_front(e);
       }
+      else if(e->key.keysym.sym == SDLK_p){
+        //Invert the Pause State
+        paused = !paused;
+      }
       else{
         inputs.push_front(e);
       }
@@ -26,10 +30,35 @@ void eventHandler::input(SDL_Event *e, bool &quit){
     else if( e->type == SDL_MOUSEWHEEL){
       scroll.push_front(e);
     }
+    else if( e->type == SDL_MOUSEBUTTONDOWN){
+      mouse = e;
+      click = true;
+    }
+    else if( e->type == SDL_MOUSEMOTION){
+      mouse = e;
+      move = true;
+    }
   }
 }
 
 void eventHandler::update(World &world, Player &player, Population &population, View &view){
+  //Do this thingy to get the current mouse position that is being thing'd
+  if(click){
+    glm::vec2 pos = glm::vec2(mouse->button.x, mouse->button.y);
+    if(mouse->button.button == SDL_BUTTON_LEFT){
+      view.focus = glm::vec2(1.0)-pos/glm::vec2(view.SCREEN_WIDTH, view.SCREEN_HEIGHT); //Set current focus
+    }
+    else if(mouse->button.button == SDL_BUTTON_RIGHT){
+      view.select = view.intersect(world, glm::vec2(mouse->button.x, mouse->button.y));
+      view.picked = true;
+    }
+    click = false;
+  }
+  if(move){
+    //view.hover = view.intersect(world, glm::vec2(mouse->button.x, mouse->button.y));
+    move = false;
+  }
+
   //Check for rotation
   if(!inputs.empty()){
     //Handle the Player Move
@@ -82,31 +111,12 @@ void eventHandler::update(World &world, Player &player, Population &population, 
       //Change the Zoom Value and Projection Matrix
       view.zoom+=view.zoomInc;
       view.projection = glm::ortho(-(float)view.SCREEN_WIDTH*view.zoom, (float)view.SCREEN_WIDTH*view.zoom, -(float)view.SCREEN_HEIGHT*view.zoom, (float)view.SCREEN_HEIGHT*view.zoom, -100.0f, 100.0f);
-
-      //LOD Change Here
-      if((int)(view.zoom*1000) == 50){
-        view.switchLOD(world, player, 3);
-      }
-      //LOD Change Here
-      else if((int)(view.zoom*1000) == 100){
-        view.switchLOD(world, player, 2);
-      }
       scroll.pop_back();
     }
     //Scroll Closer
     else if(scroll.back()->wheel.y < -0.99 && view.zoom > 0.005){
       view.zoom-=view.zoomInc;
       view.projection = glm::ortho(-(float)view.SCREEN_WIDTH*view.zoom, (float)view.SCREEN_WIDTH*view.zoom, -(float)view.SCREEN_HEIGHT*view.zoom, (float)view.SCREEN_HEIGHT*view.zoom, -100.0f, 100.0f);
-
-      //LOD Change Here
-      if((int)(view.zoom*1000) == 50){
-        view.switchLOD(world, player, 4);
-
-      }
-      //LOD Change Here
-      else if((int)(view.zoom*1000) == 99){
-        view.switchLOD(world, player, 3);
-      }
       scroll.pop_back();
     }
     else if(scroll.back()->wheel.x < -0.8){
@@ -165,13 +175,11 @@ void eventHandler::handlePlayerMove(World &world, Player &player, View &view, in
   }
 
   //Regularly shift player's position
-  else if(glm::all(glm::greaterThanEqual(view.viewPos+m, glm::vec3(0))) && glm::all(glm::lessThanEqual(view.viewPos+m, glm::vec3(world.chunkSize)*world.dim-glm::vec3(1)))){
+  else if(glm::all(glm::greaterThan(view.viewPos+m, glm::vec3(0))) && glm::all(glm::lessThan(view.viewPos+m, glm::vec3(world.chunkSize)*world.dim-glm::vec3(1)))){
     //Shift the Player's Position
     view.viewPos += m;
     for(unsigned int i = 0; i < view.models.size(); i++){
       view.models[i].translate(-m);
     }
   }
-
-
 }

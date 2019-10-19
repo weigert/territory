@@ -40,30 +40,26 @@ public:
 	MapSearchNode( int px, int py, int pz ) { x=px; y=py; z=pz; }
 
 	float GoalDistanceEstimate( MapSearchNode &nodeGoal );
-	bool IsGoal( MapSearchNode &nodeGoal );
+	bool IsGoal( MapSearchNode &nodeGoal, glm::vec3 range );
 	bool GetSuccessors(World &world, AStarSearch<MapSearchNode> *astarsearch, MapSearchNode *parent_node );
 	float GetCost(World &world, MapSearchNode &successor );
-	bool IsSameState( MapSearchNode &rhs );
+	bool IsSameState( MapSearchNode &rhs, glm::vec3 range );
 
 	void PrintNodeInfo();
 
 
 };
 
-bool MapSearchNode::IsSameState( MapSearchNode &rhs )
+bool MapSearchNode::IsSameState( MapSearchNode &rhs, glm::vec3 range )
 {
-	// same state in a maze search is simply when (x,y) are the same
-	if( (x == rhs.x) &&
-		  (y == rhs.y) &&
+  if( (x == rhs.x) &&
+      (y == rhs.y) &&
       (z == rhs.z))
-	{
-		return true;
-	}
-	else
-	{
-		return false;
-	}
+  {
+    return true;
+  }
 
+  return false;
 }
 
 void MapSearchNode::PrintNodeInfo()
@@ -82,17 +78,16 @@ float MapSearchNode::GoalDistanceEstimate( MapSearchNode &nodeGoal )
 	return abs(x - nodeGoal.x) + abs(y - nodeGoal.y) + abs(z - nodeGoal.z);
 }
 
-bool MapSearchNode::IsGoal( MapSearchNode &nodeGoal )
+bool MapSearchNode::IsGoal( MapSearchNode &nodeGoal, glm::vec3 range )
 {
+    if( abs(x - nodeGoal.x)<= range.x &&
+        abs(y - nodeGoal.y)<= range.y &&
+        abs(z - nodeGoal.z)<= range.z)
+    {
+      return true;
+    }
 
-	if( (x == nodeGoal.x) &&
-		  (y == nodeGoal.y) &&
-      (z == nodeGoal.z))
-	{
-		return true;
-	}
-
-	return false;
+    return false;
 }
 
 // This generates the successors to the given Node. It uses a helper function called
