@@ -13,9 +13,9 @@ class Bot{
     glm::vec3 home = glm::vec3(0);
     glm::vec3 pos = glm::vec3(0);
     glm::vec3 range = glm::vec3(1);
+    glm::vec3 viewDistance = glm::vec3(1);
 
     int ID;
-    int viewDistance;
     unsigned int memorySize;
     unsigned int shortermSize;
     int forage;
@@ -30,7 +30,7 @@ class Bot{
 
     //Raw Constructor
     Bot(int _ID);
-    Bot(std::string s, bool t, bool f, int view, int forag, int mem, int id, glm::vec3 _pos, glm::vec3 _home);
+    Bot(std::string s, bool t, bool f,int forag, int mem, int id, glm::vec3 _pos, glm::vec3 _view, glm::vec3 _home);
 
     //Inventory and Attributes
     Inventory inventory;

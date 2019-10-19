@@ -8,20 +8,20 @@
 
 using namespace std;
 
-std::vector<glm::vec3> calculatePath(int id, glm::vec3 _dest, Population &population, World &world);
+std::vector<glm::vec3> calculatePath(int id, glm::vec3 _dest, Population &population, World &world, glm::vec3 range);
 using namespace std::placeholders;
 
 //Add this Typedef for easier reading
 typedef bool (Task::*Handle)(World&, Population&, State&);
 
 enum TaskHandle{
-  TASK_NULL, TASK_LOOK, TASK_LISTEN, TASK_THINK, TASK_WAIT, TASK_MOVE, TASK_STEP, TASK_WALK, TASK_IDLE, TASK_FOLLOW, TASK_COLLECT,
+  TASK_NULL, TASK_LOOK, TASK_LISTEN, TASK_THINK, TASK_WAIT, TASK_MOVE, TASK_STEP, TASK_WALK, TASK_IDLE, TASK_FOLLOW, TASK_SEEK, TASK_COLLECT,
   TASK_TAKE, TASK_FIND, TASK_SEARCH, TASK_RETRIEVE, TASK_CONVERT, TASK_DECIDE, TASK_REQUEST, TASK_INTERRUPT,
   TASK_TELL, TASK_ASK, TASK_RESPOND, TASK_CONVERSE, TASK_LOCATE
 };
 
-std::string TaskName[24] = {
-  "NULL", "LOOK", "LISTEN", "THINK", "WAIT", "MOVE", "STEP", "WALK", "IDLE", "FOLLOW", "COLLECT", "TAKE", "FIND", "SEARCH",
+std::string TaskName[25] = {
+  "NULL", "LOOK", "LISTEN", "THINK", "WAIT", "MOVE", "STEP", "WALK", "IDLE", "FOLLOW", "SEEK", "COLLECT", "TAKE", "FIND", "SEARCH",
   "RETRIEVE", "CONVERT", "DECIDE", "REQUEST", "INTERRUPT", "TELL", "ASK", "RESPOND", "CONVERSE", "LOCATE"
 };
 
@@ -64,6 +64,7 @@ class Task{
     bool walk(World &world, Population &population, State &_args);
     bool idle(World &world, Population &population, State &_args);
     bool follow(World &world, Population &population, State &_args);
+    bool seek(World &world, Population &population, State &_args);
 
     //Item Management Tasks
     bool collect(World &world, Population &population, State &_args);
@@ -89,8 +90,8 @@ class Task{
     bool Dummy(World &world, Population &population, State &_args);
 };
 
-Handle TaskHandles[24] = {
+Handle TaskHandles[25] = {
   &Task::null, &Task::look, &Task::listen, &Task::think, &Task::wait, &Task::move, &Task::step, &Task::walk,
-  &Task::idle, &Task::follow, &Task::collect, &Task::take, &Task::find, &Task::search, &Task::retrieve,
+  &Task::idle, &Task::follow, &Task::seek, &Task::collect, &Task::take, &Task::find, &Task::search, &Task::retrieve,
   &Task::convert, &Task::decide, &Task::request, &Task::interrupt, &Task::tell, &Task::respond, &Task::converse, &Task::locate
 };

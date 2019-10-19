@@ -11,7 +11,7 @@
 
 //Constructor
 Bot::Bot(int _ID){
-  viewDistance = 2;
+  viewDistance = glm::vec3(1);
   memorySize = 10;
   shortermSize = 5;
   trail = false;
@@ -22,8 +22,8 @@ Bot::Bot(int _ID){
   home = glm::vec3(0);
 }
 
-Bot::Bot(std::string s, bool t, bool f, int view, int forag, int mem, int id, glm::vec3 _pos, glm::vec3 _home){
-  viewDistance = view;
+Bot::Bot(std::string s, bool t, bool f, int forag, int mem, int id, glm::vec3 _pos, glm::vec3 _view, glm::vec3 _home){
+  viewDistance = _view;
   forage = forag;
   memorySize = mem;
   shortermSize = 5;
@@ -104,8 +104,12 @@ void Bot::addMemory(World world, glm::vec3 _pos){
   Memory memory;
   memory.state.pos = _pos;
   memory.state.block = world.getBlock(memory.state.pos);
+  if(memory.state.block == BLOCK_AIR) return;
+  if(memory.state.block == BLOCK_STONE) return;
+  if(memory.state.block == BLOCK_DIRT) return;
+  if(memory.state.block == BLOCK_GRASS) return;
   memory.state.task = task;
-  memory.state.reachable = (memory.state.block == BLOCK_AIR)?true:false;
+  memory.state.reachable = true;
 
   Memory query;
   query.state.pos = _pos;

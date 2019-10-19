@@ -135,27 +135,27 @@ bool Task::move(World &world, Population &population, State &_args){
 
 //Step - Multiple Moves Along a Path
 bool Task::step(World &world, Population &population, State &_args){
-
   //We now want to step towards our goal. Check if we have a path.
   if(population.bots[botID].path.empty()){
     //Calculate a Path Here.
-    population.bots[botID].path = calculatePath(botID, _args.pos, population, world);
+    population.bots[botID].path = calculatePath(botID, _args.pos, population, world, _args.range);
     //If the Path is still empty
     if(population.bots[botID].path.empty()){
-      //No valid Path!
-      //if(debug){std::cout<<botID<<": No valid path."<<std::endl;
+      _log.debug("No valid path.");
+      return true;
+      /*
       //Make this location unreachable if it is in memory and reachable
       glm::vec3 point = _args.pos;
       Memory query;
       query.state.pos = point;
 
       //Overwrite Memory, which is unreachable
-      Memory memory;
       memory.state.reachable = false;
 
       //Overwrite any specified points in memory in all memories matching all points in query
       population.bots[botID].updateMemory(query, true, memory);
       return true;
+      */
     }
     //We now have a valid path.
   }
@@ -175,9 +175,6 @@ bool Task::step(World &world, Population &population, State &_args){
 
 //Walk - Multiple Steps with Error Handling
 bool Task::walk(World &world, Population &population, State &_args){
-  //Goal Position
-  glm::vec3 goal = _args.pos;
-
   /*
   Check if bot is outside position or inside
   Check if goal is outside position or inside
@@ -186,13 +183,9 @@ bool Task::walk(World &world, Population &population, State &_args){
   If otherwise you need to crop the two endpoints and include waiting
   */
 
-  //Check If The Goal Position is Free
-  if(world.getBlock(goal) != BLOCK_AIR){
-    return true;
-  }
-
   //Check if we're already there
-  if(population.bots[botID].pos == goal){
+  if(population.bots[botID].pos == _args.pos){
+    _log.debug("Arrived at location.");
     return true;
   }
 
@@ -200,8 +193,10 @@ bool Task::walk(World &world, Population &population, State &_args){
   if(initFlag){
     //Setup some tasks
     Task step("Step", botID, &Task::step);
-    step.args.pos = goal;
+    step.args.pos = _args.pos;
+    step.args.range = _args.range; //Walk to the exact location
     queue.push_back(step);
+    _log.debug("Walking towards location.");
   }
 
   //Only perform the queue as specified!
@@ -215,7 +210,7 @@ bool Task::idle(World &world, Population &population, State &_args){
     Task walk("Walk", botID, &Task::walk);
     int _shift[2] = {rand()%10-5, rand()%10-5};
     glm::vec2 _pos = glm::vec2(population.bots[botID].pos.x,population.bots[botID].pos.z ) + glm::vec2(_shift[0], _shift[1]);
-    walk.args.pos = glm::vec3(_pos.x, world.getTop(_pos), _pos.y);
+    walk.args.pos = world.getTop(_pos);
 
     Task wait("Wait", botID, &Task::wait);
     wait.args.time = _args.time;
@@ -246,7 +241,7 @@ bool Task::collect(World &world, Population &population, State &_args){
       find = false;
       //Check if this item is inside the bot's inventory
       for(unsigned int j = 0; j < _args.inventory.size(); j++){
-        if(_args.inventory[i]._type == population.bots[botID].inventory[j]._type){
+        if(_args.inventory[i] == population.bots[botID].inventory[j]){
           find = true;
           break;
         }
@@ -259,6 +254,7 @@ bool Task::collect(World &world, Population &population, State &_args){
 
     //Check if we found the item.
     if(!find){
+      _log.debug("Bot doesn't have required items.");
       return true;
     }
 
@@ -278,7 +274,7 @@ bool Task::collect(World &world, Population &population, State &_args){
       world.drops.push_back(_item);  //Add the Item to the Drop-Table
     }
   }
-  return true;
+    return true;
 }
 
 bool Task::take(World &world, Population &population, State &_args){
@@ -291,6 +287,10 @@ bool Task::take(World &world, Population &population, State &_args){
       _log.debug("Found nothing.");
       return true;
     }
+
+    /*
+    This actually needs to look inside the inventories of other items to see if it is inside somewhere!
+    */
 
     //If we only want specific items...
     if(!_args.inventory.empty()){
@@ -341,6 +341,57 @@ bool Task::convert(World &world, Population &population, State &_args){
   return true;
 }
 
+bool Task::seek(World &world, Population &population, State &_args){
+  //Do this guy here
+  if(!handleQueue(world, population)){
+    return false;
+  }
+
+  if(initFlag){
+    //Execute a look task!
+    Task inspect("Inspect", botID, &Task::look);
+    inspect.args.range = population.bots[botID].viewDistance;
+    inspect.perform(world, population);
+
+    //Memory Query
+    std::deque<Memory> recalled;
+    //Loop through memories
+    for(unsigned int i = 0; i < population.bots[botID].memories.size(); i++){
+      //If all matches are required and we have all matches
+      if(population.bots[botID].memories[i].state.block == _args.block && population.bots[botID].memories[i].state.reachable){
+        recalled.push_back(population.bots[botID].memories[i]);
+        population.bots[botID].memories[i].recallScore++;
+      }
+    }
+
+    if(recalled.empty()){
+      //Pick a random location and walk there...
+      _log.debug("No relevant location found in memory. Walking to random location nearby.");
+      Task walk("Stroll", botID, &Task::walk);
+      walk.args.pos = world.getTop(glm::vec2(population.bots[botID].pos.x, population.bots[botID].pos.z) + glm::vec2(rand()%20-10, rand()%20-10));
+      queue.push_back(walk);
+    }
+    else{
+      //Walk to the location we have in memory
+      Task walk("Seek", botID, &Task::walk);
+      walk.args.pos = recalled.back().state.pos;
+
+      //Check if we are within range of the memory location.
+      if(glm::all(glm::lessThanEqual(glm::abs(population.bots[botID].pos - walk.args.pos), population.bots[botID].range))){
+        //We are within range of a validated location
+        _log.debug("Accessed location in range of seek objective.");
+        return true;
+      }
+
+      _log.debug("Walking within range of location in memory.");
+      queue.push_back(walk);
+    }
+    initFlag = false;
+  }
+
+  return false;
+}
+
 /*
 =========================================================
                     MEMORY TASKS
@@ -349,13 +400,10 @@ bool Task::convert(World &world, Population &population, State &_args){
 
 //Look - Scan surroundings and write to memory queue
 bool Task::look(World &world, Population &population, State &_args){
-  //Parse Arguments
-  int rad = _args.dist; //View Square Size
-
   //Character Searches on Grid and Adds what it finds.
-  for(int i = population.bots[botID].pos.x-rad; i <= population.bots[botID].pos.x+rad; i++){
-    for(int j = population.bots[botID].pos.y-rad; j <= population.bots[botID].pos.y+rad; j++){
-      for(int k = population.bots[botID].pos.z-rad; k <= population.bots[botID].pos.z+rad; k++){
+  for(int i = population.bots[botID].pos.x-_args.range.x; i <= population.bots[botID].pos.x+_args.range.x; i++){
+    for(int j = population.bots[botID].pos.y-_args.range.y; j <= population.bots[botID].pos.y+_args.range.y; j++){
+      for(int k = population.bots[botID].pos.z-_args.range.z; k <= population.bots[botID].pos.z+_args.range.z; k++){
         //Form new Memories from Surroundings
         population.bots[botID].addMemory(world, glm::vec3(i, j, k));
       }
@@ -640,7 +688,7 @@ bool Task::forage(World &world, Population &population, State &_args){
 */
 
 //Calculatepath - Return a path that the bots should follow along until a goal in 3D
-std::vector<glm::vec3> calculatePath(int id, glm::vec3 _dest, Population &population, World &world){
+std::vector<glm::vec3> calculatePath(int id, glm::vec3 _dest, Population &population, World &world, glm::vec3 range){
     //Vector to Return
     std::vector<glm::vec3> path;
 
@@ -662,7 +710,7 @@ std::vector<glm::vec3> calculatePath(int id, glm::vec3 _dest, Population &popula
 		astarsearch.SetStartAndGoalStates( nodeStart, nodeEnd );
 
 		unsigned int SearchState;
-		do{ SearchState = astarsearch.SearchStep(world); }
+		do{ SearchState = astarsearch.SearchStep(world, range); }
 		while( SearchState == AStarSearch<MapSearchNode>::SEARCH_STATE_SEARCHING );
 
 		if( SearchState == AStarSearch<MapSearchNode>::SEARCH_STATE_SUCCEEDED ){

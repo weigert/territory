@@ -490,8 +490,8 @@ void World::setBlock(glm::vec3 _pos, BlockType _type){
 }
 
 //Get the Top-Free space position in the x-z position
-int World::getTop(glm::vec2 _pos){
-  //Highest Block you can Stand On
+glm::vec3 World::getTop(glm::vec2 _pos){
+  //Highest Block you can Stand O
   int max = 0;
 
   //Loop over the height
@@ -503,7 +503,7 @@ int World::getTop(glm::vec2 _pos){
       }
     }
   }
-  return max;
+  return glm::vec3(_pos.x, max, _pos.y);
 }
 
 /*

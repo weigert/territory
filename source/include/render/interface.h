@@ -152,7 +152,9 @@ void Interface::drawState(State state){
   ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "%d", (int)state.block); ImGui::SameLine();
   ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "%d", (int)state.reachable); ImGui::SameLine();
   ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "%d", (int)state.time); ImGui::SameLine();
-  ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%d", (int)state.dist);
+  ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%d", (int)state.range.x); ImGui::SameLine();
+  ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%d", (int)state.range.y); ImGui::SameLine();
+  ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%d", (int)state.range.z);
 }
 
 void Interface::drawTask(Task *task){
@@ -271,7 +273,7 @@ void Interface::render(View &view, World &world, Population &population, Player 
       if (ImGui::BeginPopupModal("TaskAdder", NULL)){
           //Construct a Task
           static int _taskHandle = TASK_NULL;
-          const char* handles[] = { "Null", "Look", "Listen", "Think", "Wait", "Move", "Step", "Walk", "Idle", "Follow", "Collect", "Take", "Find", "Search", "Retrieve", "Convert", "Decide", "Request" };
+          const char* handles[] = { "Null", "Look", "Listen", "Think", "Wait", "Move", "Step", "Walk", "Idle", "Follow", "Seek", "Collect", "Take", "Find", "Search", "Retrieve", "Convert", "Decide", "Request" };
           ImGui::Combo("Task", &_taskHandle, handles, IM_ARRAYSIZE(handles), 4);
 
           //Do this guy here
@@ -279,7 +281,7 @@ void Interface::render(View &view, World &world, Population &population, Player 
           ImGui::DragInt("Time", &_time, 1, 0, 100);
 
           static int _block = 0.0f;
-          ImGui::DragInt("Block", &_block, 1, 0, 9);
+          ImGui::DragInt("Block", &_block, 1, 0, 10);
 
           //Start the Menu
           if (ImGui::Button("Submit")){
@@ -290,13 +292,9 @@ void Interface::render(View &view, World &world, Population &population, Player 
             State state;
             state.task = _task->name;
             state.time = _time;
-            if(_taskHandle == TASK_WALK){
-              state.pos = view.select+glm::vec3(0, 1, 0);
-            }
-            else{
-              state.pos = view.select;
-            }
+            state.pos = view.select;
             state.block = (BlockType)_block;
+            state.range = population.bots[a].range;
 
             //Add the Task
             _task->args = state;

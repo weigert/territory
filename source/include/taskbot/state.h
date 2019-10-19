@@ -9,6 +9,7 @@ class State{
   public:
     //Basic set of mandate requirements
     glm::vec3 pos = glm::vec3(0);
+    glm::vec3 range = glm::vec3(0);
     std::string task = "Null";
 
     //Target Bot
@@ -18,7 +19,6 @@ class State{
     BlockType block = BLOCK_AIR;
     bool reachable = true;
     int time = 0;
-    int dist = 0;
 
     //States need to contain an inventory!
     Inventory inventory;
@@ -34,7 +34,7 @@ class State{
       block = rhs.block;
       reachable = rhs.reachable;
       time = rhs.time;
-      dist = rhs.dist;
+      range = rhs.range;
     }
 };
 
@@ -57,7 +57,7 @@ bool operator==(State lhs, const State& rhs) {
   if(lhs.time != rhs.time){
     return false;
   }
-  if(lhs.dist != rhs.dist){
+  if(lhs.range != rhs.range){
     return false;
   }
   return true;
@@ -81,7 +81,7 @@ bool operator||(State lhs, const State& rhs) {
   if(lhs.time == rhs.time){
     return true;
   }
-  if(lhs.dist == rhs.dist){
+  if(lhs.range == rhs.range){
     return true;
   }
   return false;
@@ -94,7 +94,7 @@ State operator-(State lhs, const State& rhs) {
   //Continuous Values
   newState.pos = lhs.pos - rhs.pos;
   newState.time = lhs.time - rhs.time;
-  newState.dist = lhs.dist - rhs.dist;
+  newState.range = lhs.range - rhs.range;
 
   //Discrete Values
   newState.task = (lhs.task == rhs.task)?rhs.task:"";

@@ -37,19 +37,24 @@ There are a number of tasks that are required to allow the bots to interact with
 Task::collect **FINISHED**
 Destroy a block and place drop it at the location. Check for appropriate tools.
 
-Task::take
-At a specified location, attempt to take a specified item out of world and place in inventory.
+Task::take **SEMI-FINISHED**
+At a specified location in range, attempt to take a specified item out of world and place in inventory.
 This includes sub-queries if items contain inventories, so you can look inside containers in this manner.
 This means looking inside placed items if they are the specified location.
+Also still missing handling for taking specified amounts of items.
 
-Task::find
-In range, attempt to find a specified item or block at a location, and put the location inside the state.
 
-Task::search
-Recursively walk around and attempt to find.
+What if I could define a general seek task?
+Like: Specify a state, and the bot will attempt to find locations that satisfy that?
+Seek bots, items, blocks, etc. and try to move within range.
+Then, in the args save the location where the item actually is when within range.
 
-Task::retrieve
-Search memory for a location where an item is known to be, then go to that location (or near) and take.
+Then you could do a seek and then the bot will find a location near to somewhere
+and you can then execute whatever task you like.
+
+Task::seek
+Search memory for a location something is known to be, then go to that location (or near).
+If you can't find any memories, then attempt to walk somewhere random and look. return false;
 
 Task::convert
 Take a requested conversion and perform it in a bots inventory if possible.
