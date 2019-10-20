@@ -14,6 +14,7 @@ int main( int argc, char* args[] ) {
 
 	//Add a Renderer
 	View view;
+	Audio audio;
 
 	//Add an Eventhandler
 	eventHandler events;
@@ -21,6 +22,11 @@ int main( int argc, char* args[] ) {
 	//Initialize the View
 	if(!view.Init()){
 		_log.error("View could not be initialized.");
+		return 0;
+	}
+
+	if(!audio.Init()){
+	  _log.debug("Failed to load audio.");
 		return 0;
 	}
 
@@ -45,13 +51,14 @@ int main( int argc, char* args[] ) {
 	while(!quit){
 		//Handle User Input
 		events.input(&e, quit, paused);
-		events.update(world, player, population, view);
+		events.update(world, player, population, view, audio);
 		ImGui_ImplSDL2_ProcessEvent(&e);
 
 		//Update the Population
 		if(SDL_GetTicks()%world.tickLength == 0 && !paused){
-			population.update(world, view);
+			population.update(world, view, audio);
 		}
+		audio.process();
 
 		//Render the View
 		view.updateChunkModels( world );

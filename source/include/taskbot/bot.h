@@ -6,6 +6,7 @@
 #include "../forward/sprite.fwd.h"
 #include "../forward/state.fwd.h"
 #include "../forward/item.fwd.h"
+#include "../forward/audio.fwd.h"
 
 class Bot{
   public:
@@ -42,7 +43,7 @@ class Bot{
     bool tryInterrupt(State _state); //Attempt an Interruption of the Bot
     std::string task = "Idle"; //Task Name
     std::vector<glm::vec3> path;   //Movement Path
-    void executeTask(World &world, Population &population);
+    void executeTask(World &world, Population &population, Audio &audio);
 
     //Memories / Brain
     std::deque<Memory> shorterm; //Shortterm Sensory Memory

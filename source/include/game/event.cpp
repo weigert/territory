@@ -2,6 +2,7 @@
 //Include Dependencies
 #include "../world/world.h"
 #include "../render/view.h"
+#include "../render/audio.h"
 #include "player.h"
 
 #include "event.h"
@@ -23,6 +24,10 @@ void eventHandler::input(SDL_Event *e, bool &quit, bool &paused){
         //Invert the Pause State
         paused = !paused;
       }
+      else if(e->key.keysym.sym == SDLK_F11){
+        //Add fullscreen mode
+        fullscreen = true;
+      }
       else{
         inputs.push_front(e);
       }
@@ -38,10 +43,14 @@ void eventHandler::input(SDL_Event *e, bool &quit, bool &paused){
       mouse = e;
       move = true;
     }
+    else if( e->type == SDL_WINDOWEVENT){
+      windowevent = e;
+      _window = true;
+    }
   }
 }
 
-void eventHandler::update(World &world, Player &player, Population &population, View &view){
+void eventHandler::update(World &world, Player &player, Population &population, View &view, Audio &audio){
   //Do this thingy to get the current mouse position that is being thing'd
   if(click){
     glm::vec2 pos = glm::vec2(mouse->button.x, mouse->button.y);
@@ -57,6 +66,38 @@ void eventHandler::update(World &world, Player &player, Population &population, 
   if(move){
     //view.hover = view.intersect(world, glm::vec2(mouse->button.x, mouse->button.y));
     move = false;
+  }
+  if(_window && windowevent->window.event == SDL_WINDOWEVENT_RESIZED ){
+    //Change the Screen Width and Height
+    view.SCREEN_WIDTH = windowevent->window.data1;
+    view.SCREEN_HEIGHT = windowevent->window.data2;
+
+    view.image.cleanup();
+    view.shadow.cleanup();
+    view.temp1.cleanup();
+    view.temp2.cleanup();
+
+    view.image.setup(view.SCREEN_WIDTH, view.SCREEN_HEIGHT);
+    view.shadow.setup2(view.SHADOW_WIDTH, view.SHADOW_HEIGHT);
+    view.temp1.setup(view.SCREEN_WIDTH, view.SCREEN_HEIGHT);
+    view.temp2.setup(view.SCREEN_WIDTH, view.SCREEN_HEIGHT);
+    view.projection = glm::ortho(-(float)view.SCREEN_WIDTH*view.zoom, (float)view.SCREEN_WIDTH*view.zoom, -(float)view.SCREEN_HEIGHT*view.zoom, (float)view.SCREEN_HEIGHT*view.zoom, -100.0f, 100.0f);
+
+
+    _window = false;
+  }
+  if(fullscreen){
+    //Toggle fullscreen mode
+
+    if(!view.fullscreen){
+      SDL_SetWindowFullscreen(view.gWindow, SDL_WINDOW_FULLSCREEN_DESKTOP);
+      view.fullscreen = true;
+    }
+    else{
+      SDL_SetWindowFullscreen(view.gWindow, 0);
+      view.fullscreen = false;
+    }
+    fullscreen = false;
   }
 
   //Check for rotation
@@ -81,6 +122,8 @@ void eventHandler::update(World &world, Player &player, Population &population, 
       handlePlayerMove(world, player, view, 5);
     }
     else if(inputs.front()->key.keysym.sym == SDLK_m){
+      //Play some music
+      Mix_PlayChannel( -1, audio.med, 1 );
     }
     //Remove the command
     inputs.pop_back();

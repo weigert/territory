@@ -61,6 +61,12 @@ enum BlockType{
   BLOCK_PUMPKIN = 10,
 };
 
+enum SoundByte{
+  SOUND_NONE = 0,
+  SOUND_HIT = 1
+};
+
+
 //Dear IMgui Dependencies
 #include "include/imgui/imgui.h"
 #include "include/imgui/imgui_impl_sdl.h"
@@ -70,6 +76,7 @@ enum BlockType{
 #include <GL/glew.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_mixer.h>
 #include <SDL2/SDL_ttf.h>
 #include <glm/glm.hpp>
 #include "glm/gtc/matrix_transform.hpp"
@@ -117,6 +124,7 @@ using namespace cimg_library;
 #include "include/render/model.cpp"
 #include "include/render/sprite.cpp"
 #include "include/render/shader.cpp"
+#include "include/render/audio.cpp"
 
 //Game Classes
 #include "include/game/event.cpp"
