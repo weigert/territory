@@ -10,13 +10,9 @@ Todo:
 - Reimplement LOD for flat-array
 
 Renderer:
-- World Fog
 - Bloom (Lighting Blocks)
-- Blur (Characters, DOF)
-- Grain (Surfaces)
 - Particles
 - Texture Shadows (i.e. sprites)
-- Outlines and Picking (e.g. characters)
 
 //3.5 MB for a HIGH-DETAIL (10*16)^2 * 10 World
 
