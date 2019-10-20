@@ -3,6 +3,7 @@
 #include "../world/world.h"
 #include "state.h"
 #include "../game/item.h"
+#include "../render/audio.h"
 
 #include "task.h"
 
@@ -40,25 +41,27 @@ Task::Task(std::string taskName, int taskBotID, int animationID, glm::vec3 anima
 =========================================================
 */
 //Empty Task
-bool Task::null(World &world, Population &population, State &_args){
+bool Task::null(World &world, Population &population, Audio &audio, State &_args){
   //Simply Return True
   return true;
 }
 
 //Execute Task Function
-bool Task::perform(World &world, Population &population){
+bool Task::perform(World &world, Population &population, Audio &audio){
   //Change the Name and Execute the Task
   population.bots[botID].task = name;
 
   //When initially performing a task, make sure to set the animation!
   if(initFlag){
+    //Set the animation and play the sound associated with the action
+    if(sound != SOUND_NONE) audio.unprocessed.push_back(sound);
     population.bots[botID].sprite.setAnimation(animation, translate);
   }
 
   //When the animation is complete, reset the animation.
   if(population.bots[botID].sprite.doAnimationFrame()){
     //We actually want to set the animation after it is completed
-    if((*this.*handle)(world, population, args)){
+    if((*this.*handle)(world, population, audio, args)){
       return true;
     }
   }
@@ -69,7 +72,7 @@ bool Task::perform(World &world, Population &population){
 }
 
 //Handle the Queue
-bool Task::handleQueue(World &world, Population &population){
+bool Task::handleQueue(World &world, Population &population, Audio &audio){
   //If the Queue isn't empty, handle top task
   if(!queue.empty()){
     //Get the Top Task
@@ -77,7 +80,7 @@ bool Task::handleQueue(World &world, Population &population){
     queue.pop_back();
 
     //Perform the Task and Put it back on when successful
-    if(!newtask.perform(world, population)){
+    if(!newtask.perform(world, population, audio)){
       //We need to repeat the animation
       queue.push_back(newtask);
     }
@@ -97,7 +100,7 @@ bool Task::handleQueue(World &world, Population &population){
 }
 
 //Example - How to Construct a High-Level Task
-bool Task::example(World &world, Population &population, State &_args){
+bool Task::example(World &world, Population &population, Audio &audio, State &_args){
   //Check
   if(initFlag){
     Task null("Example", botID, &Task::null);   //Construct the Task "null"
@@ -106,7 +109,7 @@ bool Task::example(World &world, Population &population, State &_args){
   }
 
   //Handle the Queue appropriately.
-  return handleQueue(world, population);
+  return handleQueue(world, population, audio);
 }
 
 /*
@@ -116,7 +119,7 @@ bool Task::example(World &world, Population &population, State &_args){
 */
 
 //Wait - Do a series of Null Tasks
-bool Task::wait(World &world, Population &population, State &_args){
+bool Task::wait(World &world, Population &population, Audio &audio, State &_args){
   //Set the Stuff
   if(initFlag){
     Task null("Null", botID, &Task::null);
@@ -128,16 +131,16 @@ bool Task::wait(World &world, Population &population, State &_args){
   }
 
   //Handle the Queue
-  return handleQueue(world, population);
+  return handleQueue(world, population, audio);
 }
 
-bool Task::move(World &world, Population &population, State &_args){
+bool Task::move(World &world, Population &population, Audio &audio, State &_args){
   population.bots[botID].pos = _args.pos;
   return true;
 }
 
 //Walk - Multiple Steps with Error Handling
-bool Task::walk(World &world, Population &population, State &_args){
+bool Task::walk(World &world, Population &population, Audio &audio, State &_args){
 
   /*
     Handle outside-of-visible-bounds bots travelling
@@ -190,11 +193,11 @@ bool Task::walk(World &world, Population &population, State &_args){
   }
 
   //Only perform the queue as specified!
-  return handleQueue(world, population);
+  return handleQueue(world, population, audio);
 }
 
 //Idle - Move Around Randomly and Wait some time
-bool Task::idle(World &world, Population &population, State &_args){
+bool Task::idle(World &world, Population &population, Audio &audio, State &_args){
   //Check for initial flag
   if(initFlag){
     Task walk("Walk", botID, &Task::walk);
@@ -213,10 +216,10 @@ bool Task::idle(World &world, Population &population, State &_args){
     initFlag = false;
   }
 
-  return handleQueue(world, population);
+  return handleQueue(world, population, audio);
 }
 
-bool Task::follow(World &world, Population &population, State &_args){
+bool Task::follow(World &world, Population &population, Audio &audio, State &_args){
   return true;
 }
 
@@ -226,7 +229,7 @@ bool Task::follow(World &world, Population &population, State &_args){
 ================================================================================
 */
 
-bool Task::collect(World &world, Population &population, State &_args){
+bool Task::collect(World &world, Population &population, Audio &audio, State &_args){
   //If the bot is out of range range
   if(!helper::inRange(population.bots[botID].pos, _args.pos, population.bots[botID].range)){
     return true;
@@ -292,12 +295,12 @@ bool Task::collect(World &world, Population &population, State &_args){
   //Look to update
   Task inspect("Inspect", botID, &Task::look);
   inspect.args.range = population.bots[botID].viewDistance;
-  inspect.perform(world, population);
+  inspect.perform(world, population, audio);
 
   return true;
 }
 
-bool Task::take(World &world, Population &population, State &_args){
+bool Task::take(World &world, Population &population, Audio &audio, State &_args){
 
   if(!helper::inRange(population.bots[botID].pos, _args.pos, population.bots[botID].range)){
     _log.debug("Too far away.");
@@ -350,13 +353,13 @@ bool Task::take(World &world, Population &population, State &_args){
   //Add the inventory to the bots inventory
 }
 
-bool Task::convert(World &world, Population &population, State &_args){
+bool Task::convert(World &world, Population &population, Audio &audio, State &_args){
   return true;
 }
 
-bool Task::seek(World &world, Population &population, State &_args){
+bool Task::seek(World &world, Population &population, Audio &audio, State &_args){
   //Do this guy here
-  if(!handleQueue(world, population)){
+  if(!handleQueue(world, population, audio)){
     return false;
   }
 
@@ -364,7 +367,7 @@ bool Task::seek(World &world, Population &population, State &_args){
     //Execute a look task!
     Task inspect("Inspect", botID, &Task::look);
     inspect.args.range = population.bots[botID].viewDistance;
-    inspect.perform(world, population);
+    inspect.perform(world, population, audio);
 
     //Memory Query
     std::deque<Memory> recalled;
@@ -432,7 +435,7 @@ bool Task::seek(World &world, Population &population, State &_args){
 */
 
 //Look - Scan surroundings and write to memory queue
-bool Task::look(World &world, Population &population, State &_args){
+bool Task::look(World &world, Population &population, Audio &audio, State &_args){
   //Character Searches on Grid and Adds what it finds.
   for(int i = population.bots[botID].pos.x-_args.range.x; i <= population.bots[botID].pos.x+_args.range.x; i++){
     for(int j = population.bots[botID].pos.y-_args.range.y; j <= population.bots[botID].pos.y+_args.range.y; j++){
@@ -446,7 +449,7 @@ bool Task::look(World &world, Population &population, State &_args){
 }
 
 //Think - Query Memory
-bool Task::think(World &world, Population &population, State &_args){
+bool Task::think(World &world, Population &population, Audio &audio, State &_args){
   //Generate Memory Query
   Memory query;
   query.state = _args;
@@ -465,7 +468,7 @@ bool Task::think(World &world, Population &population, State &_args){
 }
 
 //Think - Write Short-Term to Long-Term Memory
-bool Task::listen(World &world, Population &population, State &_args){
+bool Task::listen(World &world, Population &population, Audio &audio, State &_args){
   //Add listen elements directly to long-term memory stack
   while(!population.bots[botID].shorterm.empty()){
     //Check if we already know the information
@@ -489,7 +492,7 @@ bool Task::listen(World &world, Population &population, State &_args){
 =========================================================
 */
 
-bool Task::decide(World &world, Population &population, State &_args){
+bool Task::decide(World &world, Population &population, Audio &audio, State &_args){
   //Check if we have mandates to go
   /*
   if(population.bots[botID].mandates.empty()){
@@ -507,12 +510,14 @@ bool Task::decide(World &world, Population &population, State &_args){
   //Take whatever mandate is available
 
   Task *masterTask = new Task("Testing Dummy Task", botID, &Task::Dummy);
+  masterTask->sound = SOUND_HIT;
+
   population.bots[botID].current = masterTask;
 
   return false;
 }
 
-bool Task::request(World &world, Population &population, State &_args){
+bool Task::request(World &world, Population &population, Audio &audio, State &_args){
   //Write a mandate request to a different bot
   //something something...
 
@@ -525,7 +530,7 @@ bool Task::request(World &world, Population &population, State &_args){
 =========================================================
 */
 
-bool Task::interrupt(World &world, Population &population, State &_args){
+bool Task::interrupt(World &world, Population &population, Audio &audio, State &_args){
   //Attempt to set an interrupt on a different bot
   if(population.bots[_args.target].tryInterrupt(_args)){ //!!!!Note this uses botID
     return true;
@@ -533,7 +538,7 @@ bool Task::interrupt(World &world, Population &population, State &_args){
   return false;
 }
 
-bool Task::tell(World &world, Population &population, State &_args){
+bool Task::tell(World &world, Population &population, Audio &audio, State &_args){
   if(initFlag){
     //Write to the bots shortterm memory
     population.bots[_args.target].addSound(_args);
@@ -544,18 +549,18 @@ bool Task::tell(World &world, Population &population, State &_args){
     queue.push_back(interrupt);
   }
 
-  return handleQueue(world, population);
+  return handleQueue(world, population, audio);
 }
 
-bool Task::ask(World &world, Population &population, State &_args){
+bool Task::ask(World &world, Population &population, Audio &audio, State &_args){
   return true;
 }
 
-bool Task::respond(World &world, Population &population, State &_args){
+bool Task::respond(World &world, Population &population, Audio &audio, State &_args){
   return true;
 }
 
-bool Task::converse(World &world, Population &population, State &_args){
+bool Task::converse(World &world, Population &population, Audio &audio, State &_args){
   return true;
 }
 
@@ -566,8 +571,7 @@ bool Task::converse(World &world, Population &population, State &_args){
 */
 
 //Special Functions
-bool Task::Dummy(World &world, Population &population, State &_args){
-  //Seek the Block
+bool Task::Dummy(World &world, Population &population, Audio &audio, State &_args){
   if(initFlag){
     Task seek("Seek Pumpkin", botID, &Task::seek);
     seek.args.block = BLOCK_WOOD;
@@ -575,6 +579,7 @@ bool Task::Dummy(World &world, Population &population, State &_args){
 
     //Use the outputs from the previous task for these tasks.
     Task collect("Collect Pumpkin", botID, &Task::collect);
+    collect.sound = SOUND_HIT;
     collect.pass = true;
     collect.animation = 3;                         //Set the Task's Animation
 
@@ -589,7 +594,7 @@ bool Task::Dummy(World &world, Population &population, State &_args){
     initFlag = false;
   }
 
-  return handleQueue(world, population);
+  return handleQueue(world, population, audio);
 }
 
 /*

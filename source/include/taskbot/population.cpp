@@ -2,6 +2,7 @@
 #include "bot.h"
 #include "../world/world.h"
 #include "task.h"
+#include "../render/audio.h"
 #include "population.h"
 
 void Population::addBot(World world){
@@ -37,12 +38,12 @@ Population::Population(World &world){
   }
 }
 
-void Population::update(World &world, View view){
+void Population::update(World &world, View view, Audio &audio){
   for(Bot& bot : bots){
     //No Execution Conditions
     if(bot.dead) continue;
     if(!helper::inModRange(bot.pos, view.viewPos, view.renderDistance, world.chunkSize)) continue;
     //Execute the Task
-    bot.executeTask(world, *this);
+    bot.executeTask(world, *this, audio);
   }
 }

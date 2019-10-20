@@ -33,6 +33,7 @@ bool View::Init(){
     printf( "Window could not be created! SDL_Error: %s\n", SDL_GetError() );
     return false;
   }
+  SDL_SetWindowResizable(gWindow, SDL_TRUE);
   gContext = SDL_GL_CreateContext(	gWindow );
 
   //Initialize OPENGL Stuff
@@ -62,12 +63,10 @@ bool View::Init(){
   setupShaders();
 
   //This shoudl now work.
-  image.setup();
-  shadow.width = SHADOW_WIDTH;
-  shadow.height = SHADOW_HEIGHT;
-  shadow.setup2();
-  temp1.setup();
-  temp2.setup();
+  image.setup(SCREEN_WIDTH, SCREEN_HEIGHT);
+  shadow.setup2(SHADOW_WIDTH, SHADOW_HEIGHT);
+  temp1.setup(SCREEN_WIDTH, SCREEN_HEIGHT);
+  temp2.setup(SCREEN_WIDTH, SCREEN_HEIGHT);
 
   picker.setup();
 

@@ -5,6 +5,7 @@
 #include "memory.h"
 #include "../render/sprite.h"
 #include "state.h"
+#include "../render/audio.h"
 //Link to class
 #include "bot.h"
 
@@ -40,9 +41,13 @@ bool Bot::tryInterrupt(State _state){
   return true;
 }
 
-//Per Tick Executor Task
-void Bot::executeTask(World &world, Population &population){
+/*
+Bots make sounds, but so do other things.
+So we should actually have a storage vector of sound effects, and process them by the audio guy as they come.
+*/
 
+//Per Tick Executor Task
+void Bot::executeTask(World &world, Population &population, Audio &audio){
   //Check for interrupt!
   if(interrupt){
     //Reevaluate Mandates, so we can respond
@@ -52,7 +57,7 @@ void Bot::executeTask(World &world, Population &population){
   }
   else{
     //Execute Current Task, upon success overwrite.
-    if((current->perform)(world, population)){
+    if((current->perform)(world, population, audio)){
       Task *decide = new Task("Decide on Action", ID, &Task::decide);
       current = decide;
     }

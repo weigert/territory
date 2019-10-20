@@ -10,24 +10,20 @@ public:
   GLuint vao;
   GLuint vbo[2];
 
-  //Billboard Width and Height in Pixels
-  int width = 1200;
-  int height = 800;
-
   //Load the Texture from some surface
   bool fromRaw(SDL_Surface* TextureImage);
   bool fromImage(std::string file);
 
   //Render the Billboard to a specific quad
-  bool setup();
-  bool setup2();
+  bool setup(int width, int height);
+  bool setup2(int width, int height);
   void render();
   void renderDepth();
   void cleanup();
 };
 
 //Generate all the Data for this Billboard (which can be rendered to in 3D in theory)
-bool Billboard::setup(){
+bool Billboard::setup(int width, int height){
   //Generate Framebuffer and Texture
   glGenFramebuffers(1, &fbo);
   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
@@ -84,7 +80,7 @@ bool Billboard::setup(){
   return true;
 }
 
-bool Billboard::setup2(){
+bool Billboard::setup2(int width, int height){
   //Generate Framebuffer and Texture
   glGenFramebuffers(1, &fbo);
   glBindFramebuffer(GL_FRAMEBUFFER, fbo);

@@ -85,7 +85,7 @@ void World::generateFlat(){
 
   //Trees
   std::cout<<"Adding Trees"<<std::endl;
-  for(int i = 0; i < 100; i++){
+  for(int i = 0; i < 1000; i++){
     int tree[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
 
     //Add the shit to the editbuffer
@@ -113,7 +113,7 @@ void World::generatePerlin(){
   //Perlin Noise Generator
   noise::module::Perlin perlin;
   perlin.SetOctaveCount(10);
-  perlin.SetFrequency(5);
+  perlin.SetFrequency(6);
   perlin.SetPersistence(0.5);
 
   //Loop over the world-size
@@ -176,7 +176,7 @@ void World::generatePerlin(){
 
   //Add Trees
   std::cout<<"Adding Trees"<<std::endl;
-  for(int i = 0; i < 1000; i++){
+  for(int i = 0; i < 5000; i++){
     int tree[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
     int treeheight = rand()%6+6;
 
