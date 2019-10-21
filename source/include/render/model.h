@@ -23,7 +23,8 @@ public:
   void cleanup();
 
   //Model Generation Functions
-  void fromChunk(Chunk _chunk, int LOD);
+  void fromChunkNaive(Chunk _chunk);
+  void fromChunkGreedy(Chunk _chunk);
   //void fromOctree(Octree _octree, int LOD, glm::vec3 translate);
 
   //Position Handling Functions
@@ -36,12 +37,13 @@ public:
 
   //Face Stuff
   //Construct the Coordinates
-  GLfloat front[18] = { -0.5,  0.5, 0.5,
-                       0.5,  0.5, 0.5,
-                       0.5, -0.5, 0.5,
-                      -0.5,  0.5, 0.5,
-                       0.5, -0.5, 0.5,
-                      -0.5, -0.5, 0.5};
+  GLfloat front[18] = {  -0.5,  0.5, 0.5,
+                          0.5,  0.5, 0.5,
+                          0.5, -0.5, 0.5,
+                          0.5, -0.5, 0.5,
+                         -0.5, -0.5, 0.5,
+                         -0.5,  0.5, 0.5,
+                      };
 
   GLfloat top[18] = {   -0.5,  0.5,  0.5,
                        0.5,  0.5, -0.5,

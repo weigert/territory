@@ -158,7 +158,7 @@ void View::loadChunkModels(World &world){
     //If we are at capacity, add a new item
     if(i == models.size()){
       Model model;
-      model.fromChunk(world.chunks[i], LOD);
+      model.fromChunkGreedy(world.chunks[i]);
       model.setup();
       models.push_back(model);
     }
@@ -178,7 +178,7 @@ void View::updateChunkModels(World &world){
   //Loop over all chunks, see if they are updated.
   for(unsigned int i = 0; i < world.chunks.size(); i++){
     if(world.chunks[i].refreshModel){
-      models[i].fromChunk(world.chunks[i], LOD);
+      models[i].fromChunkGreedy(world.chunks[i]);
       models[i].update();
       world.chunks[i].refreshModel = false;
     }
