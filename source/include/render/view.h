@@ -69,6 +69,7 @@ class View{
 
     //GUI Handler
     Interface* interface;
+    bool showmenu = false;
     Picker picker;
     bool picked = false;
     glm::vec3 select = glm::vec3(0);
@@ -116,12 +117,13 @@ class View{
     bool grain = false;
     glm::vec3 fogColor = glm::vec3(1.0f);
     glm::vec3 clickColorBlock = glm::vec3(1.0f, 1.0f, 1.0f);
-    glm::vec3 hoverColorBlock = glm::vec3(1.0f);
+    glm::vec3 hoverColorBlock = glm::vec3(1.0f, 0.0, 0.0f);
 
     //View Projector (bunch of camera settings here tbh)
-    glm::mat4 camera = glm::lookAt(glm::vec3(10,10,10), glm::vec3(0,0,0), glm::vec3(0,1,0));
+    glm::mat4 camera = glm::lookAt(glm::vec3(10,12,10), glm::vec3(0,2,0), glm::vec3(0,1,0));
     glm::mat4 projection = glm::ortho(-(float)SCREEN_WIDTH*zoom, (float)SCREEN_WIDTH*zoom, -(float)SCREEN_HEIGHT*zoom, (float)SCREEN_HEIGHT*zoom, -200.0f, 200.0f);
     //Light Variables
+    int lookstate = 1;
     glm::vec3 lightPos = glm::vec3(3.0f, 6.0f, 2.0f);
     glm::vec3 lightCol = glm::vec3(1.0f, 1.0f, 0.9f);
     glm::vec3 skyCol = glm::vec3(0.6, 0.9f, 0.8f);
@@ -129,6 +131,13 @@ class View{
     glm::mat4 depthModelMatrix = glm::mat4(1.0);
     glm::mat4 depthProjection = glm::ortho<float>(-80,80,-80,80,-30,100);
     glm::mat4 depthCamera = glm::lookAt(lightPos, glm::vec3(0,0,0), glm::vec3(0,1,0));
+
+    glm::mat4 biasMatrix = glm::mat4(
+        0.5, 0.0, 0.0, 0.0,
+        0.0, 0.5, 0.0, 0.0,
+        0.0, 0.0, 0.5, 0.0,
+        0.5, 0.5, 0.5, 1.0
+    );
 
     //Get the Intersection and Stuff
     glm::vec3 intersect(World world, glm::vec2 mouse);
