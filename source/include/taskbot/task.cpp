@@ -574,7 +574,7 @@ bool Task::converse(World &world, Population &population, Audio &audio, State &_
 bool Task::Dummy(World &world, Population &population, Audio &audio, State &_args){
   if(initFlag){
     Task seek("Seek Pumpkin", botID, &Task::seek);
-    seek.args.block = BLOCK_WOOD;
+    seek.args.block = BLOCK_PUMPKIN;
     seek.args.range = population.bots[botID].range;
 
     //Use the outputs from the previous task for these tasks.

@@ -80,7 +80,7 @@ void Model::render(){
   glDrawArrays(GL_TRIANGLES, 0, positions.size()/3);
 }
 
-void Model::fromChunk(Chunk chunk, int LOD){
+void Model::fromChunkNaive(Chunk chunk){
   //Clear the Containers
   positions.clear();
   colors.clear();
@@ -101,7 +101,7 @@ void Model::fromChunk(Chunk chunk, int LOD){
           int faces = 0;
 
           //Only exposed surfaces!
-          if(k+1 == width || chunk.getPosition(glm::vec3(i,j,k+1), LOD) == 0){
+          if(k+1 == width || chunk.getPosition(glm::vec3(i,j,k+1)) == 0){
             for(int l = 0; l < 6; l++){
               positions.push_back((front[l*3]+i));
               positions.push_back((front[l*3+1]+j));
@@ -112,7 +112,7 @@ void Model::fromChunk(Chunk chunk, int LOD){
             faces++;
           }
 
-          if(j+1 == width || chunk.getPosition(glm::vec3(i,j+1,k), LOD) == 0){
+          if(j+1 == width || chunk.getPosition(glm::vec3(i,j+1,k)) == 0){
             //Draw the Back Face
             for(int l = 0; l < 6; l++){
               positions.push_back((top[l*3]+i));
@@ -123,7 +123,7 @@ void Model::fromChunk(Chunk chunk, int LOD){
             faces++;
           }
 
-          if(i+1 == width || chunk.getPosition(glm::vec3(i+1,j,k), LOD) == 0){
+          if(i+1 == width || chunk.getPosition(glm::vec3(i+1,j,k)) == 0){
             //Draw the Top Face
             for(int l = 0; l < 6; l++){
               positions.push_back((right[l*3]+i));
@@ -133,7 +133,7 @@ void Model::fromChunk(Chunk chunk, int LOD){
 
             faces++;
           }
-          if(k-1 < 0 || chunk.getPosition(glm::vec3(i,j,k-1), LOD) == 0){
+          if(k-1 < 0 || chunk.getPosition(glm::vec3(i,j,k-1)) == 0){
             for(int l = 0; l < 6; l++){
               positions.push_back((back[l*3]+i));
               positions.push_back((back[l*3+1]+j));
@@ -153,7 +153,7 @@ void Model::fromChunk(Chunk chunk, int LOD){
             }
             faces++;
           }*/
-          if(i-1 < 0 || chunk.getPosition(glm::vec3(i-1,j,k), LOD) == 0){
+          if(i-1 < 0 || chunk.getPosition(glm::vec3(i-1,j,k)) == 0){
             //Draw the Right Face
             for(int l = 0; l < 6; l++){
               positions.push_back((left[l*3]+i));
@@ -164,7 +164,7 @@ void Model::fromChunk(Chunk chunk, int LOD){
           }
 
           //We need to get a color
-          glm::vec4 color = chunk.getColorByID(chunk.getPosition(glm::vec3(i,j,k), LOD));
+          glm::vec4 color = chunk.getColorByID(chunk.getPosition(glm::vec3(i,j,k)));
 
           for(int m = 0; m < 6*faces; m++){
             colors.push_back(color.x);
@@ -193,4 +193,175 @@ void Model::fromChunk(Chunk chunk, int LOD){
       normals.push_back(normal.z);
     }
   }
+}
+
+void Model::fromChunkGreedy(Chunk chunk){
+  //Clear the Containers
+  positions.clear();
+  colors.clear();
+  normals.clear();
+
+  //Loop over all 6 possible orientations...
+  for(int d = 0; d < 6; d++){
+
+    //Our actual dimensional indices
+    int u = (d/2+0)%3;  //u = 0, 0, 1, 1, 2, 2
+    int v = (d/2+1)%3;  //v = 1, 1, 2, 2, 0, 0
+    int w = (d/2+2)%3;  //w = 2, 2, 0, 0, 1, 1
+
+    int x[3] = {0};
+    int q[3] = {0};
+    int y[3] = {0};
+
+    int n = 2*(d%2)-1;  //Normal Direction
+    q[u] = n;           //Normal Vector
+    y[u] = 1;           //Simple Vector
+
+    //Slice Mask
+    std::array<BlockType, 16*16> mask = {BLOCK_AIR};
+
+    //Loop over the Positions
+    for(x[u] = 0; x[u] < chunk.size; x[u]++){
+
+      //Loop over a slice... (prepare mask)
+      for(x[v] = 0; x[v] < chunk.size; x[v]++){
+        for(x[w] = 0; x[w] < chunk.size; x[w]++){
+
+          int s = x[w] + x[v]*chunk.size;
+          BlockType atPos = chunk.getPosition(glm::vec3(x[0],x[1],x[2]));
+          mask[s] = BLOCK_AIR;
+
+          //Basically, we are facing out of the chunk, so we do take over the surface.
+          if(x[u] + q[u] < 0 || x[u] + q[u] >= chunk.size){
+            mask[s] = atPos;
+            continue;
+          }
+
+          //Now see if we should remove this mask element or not, i.e. not visible!
+          BlockType facing = chunk.getPosition(glm::vec3(x[0]+q[0],x[1]+q[1],x[2]+q[2]));
+          if(facing == BLOCK_AIR){
+            mask[s] = atPos;
+          }
+        }
+      }
+
+      //Loop AGAIN over the slice (evaluate mask)
+      for(x[v] = 0; x[v] < chunk.size; x[v]++){
+        for(x[w] = 0; x[w] < chunk.size; x[w]++){
+
+          int width = 1;
+          int height = 1;
+
+          //Get the index of the current slice object we are observing!
+          int s = x[w] + x[v]*chunk.size;
+
+          //Get current blocktype, ignore air.
+          BlockType current = mask[s];
+
+          //Ignore this surface if it is not part of the mask.
+          if(current == BLOCK_AIR) continue;
+
+          //Compute the Width
+          while(mask[s+width] == current && x[w] + width < chunk.size) width++;
+
+          bool done = false;
+          for(height = 1; x[v] + height < chunk.size; height++) {
+            //Loop over the width guy
+            for(int k = 0; k < width; k++) {
+              if(mask[s+k+height*chunk.size] != current) {
+                done = true;
+                break;
+              }
+            }
+            if(done) {
+              break;
+            }
+          }
+
+          //Zero Mask
+          for(int l = x[v]; l < x[v] + height; l++){
+            for(int k = x[w]; k < x[w] + width; k++){
+              mask[k+l*chunk.size] = BLOCK_AIR;
+            }
+          }
+
+          int du[3] = {0}; du[v] = height;
+          int dv[3] = {0}; dv[w] = width;
+
+          if(n < 0){
+            //Some need to go clock-wise, others need to go counterclockwise.
+            positions.push_back(x[0]-0.5);
+            positions.push_back(x[1]-0.5);
+            positions.push_back(x[2]-0.5);
+            //Vertex 2
+            positions.push_back(x[0]+du[0]-0.5);
+            positions.push_back(x[1]+du[1]-0.5);
+            positions.push_back(x[2]+du[2]-0.5);
+            //Vertex 3
+            positions.push_back(x[0]+du[0]+dv[0]-0.5);
+            positions.push_back(x[1]+du[1]+dv[1]-0.5);
+            positions.push_back(x[2]+du[2]+dv[2]-0.5);
+            //Vertex 4
+            positions.push_back(x[0]+du[0]+dv[0]-0.5);
+            positions.push_back(x[1]+du[1]+dv[1]-0.5);
+            positions.push_back(x[2]+du[2]+dv[2]-0.5);
+            //Vertex 5
+            positions.push_back(x[0]+dv[0]-0.5);
+            positions.push_back(x[1]+dv[1]-0.5);
+            positions.push_back(x[2]+dv[2]-0.5);
+            //Vertex 6
+            positions.push_back(x[0]-0.5);
+            positions.push_back(x[1]-0.5);
+            positions.push_back(x[2]-0.5);
+          }
+          else{
+            positions.push_back(x[0]-0.5+y[0]);
+            positions.push_back(x[1]-0.5+y[1]);
+            positions.push_back(x[2]-0.5+y[2]);
+            //Vertex 3
+            positions.push_back(x[0]+du[0]+dv[0]-0.5+y[0]);
+            positions.push_back(x[1]+du[1]+dv[1]-0.5+y[1]);
+            positions.push_back(x[2]+du[2]+dv[2]-0.5+y[2]);
+            //Vertex 2
+            positions.push_back(x[0]+du[0]-0.5+y[0]);
+            positions.push_back(x[1]+du[1]-0.5+y[1]);
+            positions.push_back(x[2]+du[2]-0.5+y[2]);
+            //Vertex 4
+            positions.push_back(x[0]+du[0]+dv[0]-0.5+y[0]);
+            positions.push_back(x[1]+du[1]+dv[1]-0.5+y[1]);
+            positions.push_back(x[2]+du[2]+dv[2]-0.5+y[2]);
+            //Vertex 6
+            positions.push_back(x[0]-0.5+y[0]);
+            positions.push_back(x[1]-0.5+y[1]);
+            positions.push_back(x[2]-0.5+y[2]);
+            //Vertex 5
+            positions.push_back(x[0]+dv[0]-0.5+y[0]);
+            positions.push_back(x[1]+dv[1]-0.5+y[1]);
+            positions.push_back(x[2]+dv[2]-0.5+y[2]);
+          }
+
+          //Add Colors and Normals to all vertices.
+          glm::vec4 color = chunk.getColorByID(current);
+
+          for(int m = 0; m < 6; m++){
+            //Add Colors
+            colors.push_back(color.x);
+            colors.push_back(color.y);
+            colors.push_back(color.z);
+            colors.push_back(color.w);
+
+            //Add Normals
+            normals.push_back(q[0]);
+            normals.push_back(q[1]);
+            normals.push_back(q[2]);
+          }
+
+          //Next Quad
+        }
+      }
+      //Next Slice
+    }
+    //Next Surface Orientation
+  }
+  //Finish!
 }

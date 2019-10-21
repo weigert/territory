@@ -88,7 +88,6 @@ void eventHandler::update(World &world, Player &player, Population &population, 
   }
   if(fullscreen){
     //Toggle fullscreen mode
-
     if(!view.fullscreen){
       SDL_SetWindowFullscreen(view.gWindow, SDL_WINDOW_FULLSCREEN_DESKTOP);
       view.fullscreen = true;
@@ -121,6 +120,9 @@ void eventHandler::update(World &world, Player &player, Population &population, 
     else if(inputs.front()->key.keysym.sym == SDLK_LSHIFT){
       handlePlayerMove(world, player, view, 5);
     }
+    else if(inputs.front()->key.keysym.sym == SDLK_ESCAPE){
+      view.showmenu = !view.showmenu; //Toggle Menu Visibility
+    }
     else if(inputs.front()->key.keysym.sym == SDLK_m){
       //Play some music
       Mix_PlayChannel( -1, audio.med, 1 );
@@ -132,20 +134,25 @@ void eventHandler::update(World &world, Player &player, Population &population, 
   if(!rotate.empty()){
     //We want to perform an event now..
     if(rotate.front()->key.keysym.sym == SDLK_UP){
-      glm::vec3 axis(0.0f, 1.0f, 0.0f);
-      view.camera = glm::lookAt(glm::vec3(10,12,10), glm::vec3(0,2,0), glm::vec3(0,1,0));
-      view.camera = glm::rotate(view.camera, glm::radians(view.rotation), axis);
-      rotate.pop_back();
+      view.lookstate = (view.lookstate + 1)%3;
     }
     else if(rotate.back()->key.keysym.sym == SDLK_DOWN){
-      glm::vec3 axis(0.0f, 1.0f, 0.0f);
+      view.lookstate = (view.lookstate + 2)%3;
+    }
+
+    //Check the Lookstate
+    if(view.lookstate == 0){
       view.camera = glm::lookAt(glm::vec3(10,2,10), glm::vec3(0,2,0), glm::vec3(0,1,0));
-      view.camera = glm::rotate(view.camera, glm::radians(view.rotation), axis);
-      rotate.pop_back();
     }
-    else{
-      rotate.pop_back();
+    if(view.lookstate == 1){
+      view.camera = glm::lookAt(glm::vec3(10,12,10), glm::vec3(0,2,0), glm::vec3(0,1,0));
     }
+    if(view.lookstate == 2){
+      view.camera = glm::lookAt(glm::vec3(4,12,4), glm::vec3(0,2,0), glm::vec3(0,1,0));
+    }
+
+    view.camera = glm::rotate(view.camera, glm::radians(view.rotation), glm::vec3(0,1,0));
+    rotate.pop_back();
   }
 
   if(!scroll.empty()){

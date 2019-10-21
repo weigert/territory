@@ -158,7 +158,7 @@ void View::loadChunkModels(World &world){
     //If we are at capacity, add a new item
     if(i == models.size()){
       Model model;
-      model.fromChunk(world.chunks[i], LOD);
+      model.fromChunkGreedy(world.chunks[i]);
       model.setup();
       models.push_back(model);
     }
@@ -178,7 +178,7 @@ void View::updateChunkModels(World &world){
   //Loop over all chunks, see if they are updated.
   for(unsigned int i = 0; i < world.chunks.size(); i++){
     if(world.chunks[i].refreshModel){
-      models[i].fromChunk(world.chunks[i], LOD);
+      models[i].fromChunkGreedy(world.chunks[i]);
       models[i].update();
       world.chunks[i].refreshModel = false;
     }
@@ -199,10 +199,8 @@ void View::update(){
 }
 
 void View::render(World &world, Player &player, Population &population){
-/*
-SHADOW MAPPING
-*/
-  //-- Screen: Shadow FBO, No Filter
+
+  /* SHADOW MAPPING */
   glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
   glBindFramebuffer(GL_FRAMEBUFFER, shadow.fbo);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -224,31 +222,14 @@ SHADOW MAPPING
   }
   glBindVertexArray(0);
 
-/*
-REGULAR IMAGE
-*/
-
+  /* REGULAR IMAGE */
   glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-  //Render entire scene to the actual image!
   glBindFramebuffer(GL_FRAMEBUFFER, image.fbo);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-
-  //Clear the Color and Stuff
   glClearColor(skyCol.x, skyCol.y, skyCol.z, 1.0f); //Blue
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  //glCullFace(GL_BACK);
-
-  glm::mat4 biasMatrix(
-			0.5, 0.0, 0.0, 0.0,
-			0.0, 0.5, 0.0, 0.0,
-			0.0, 0.0, 0.5, 0.0,
-			0.5, 0.5, 0.5, 1.0
-	);
 
   //Use the Shader
   cubeShader.useProgram();    //Use the model's shader
-
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, shadow.depthTexture);
   cubeShader.setInt("shadowMap", 0);
@@ -261,27 +242,21 @@ REGULAR IMAGE
   cubeShader.setMat4("dbmvp", biasMatrix * depthProjection * depthCamera * glm::mat4(1.0f));
   cubeShader.setMat4("dmvp", depthProjection * depthCamera * glm::mat4(1.0f));
 
-  //Activate and Bind the Texture
-
   //Loop over the Stuff
   for(unsigned int i = 0; i < models.size(); i++){
     //View Projection Matrix
     cubeShader.setMat4("model", models[i].model);
     //Render the Model
-    models[i].render();               //Render
+    models[i].render();               //Render Scene
   }
 
-/*
-//Hover Block Outline
+  /* View Position Cube */
   picker.shaderColorPick.useProgram();
   picker.model = glm::mat4(1.0f);
-  glm::vec3 a = hover-viewPos;
-  picker.model = glm::translate(picker.model, a);
   picker.shaderColorPick.setVec3("un_Color", hoverColorBlock);
   picker.shaderColorPick.setMat4("mvp", projection*camera*picker.model);
   glBindVertexArray(picker.vao);
   glDrawArrays(GL_LINE_STRIP, 0, 16);
-*/
 
   /* Picker Cube! */
   if(picked){
@@ -297,51 +272,47 @@ REGULAR IMAGE
 
   /* Character Sprites */
   spriteShader.useProgram();
+  spriteShader.setInt("spriteTexture", 0);
+
   //Loop over all Sprites
   for(unsigned int i = 0; i < population.bots.size(); i++){
-    //Here we should check if the sprite should even be rendered.
+    //Check for No-Render Condition
     if(population.bots[i].dead) continue;
-    if(glm::any(glm::greaterThan(glm::abs(glm::floor(population.bots[i].pos/glm::vec3(world.chunkSize))-glm::floor(viewPos/glm::vec3(world.chunkSize))), renderDistance)))
-      continue;
+    if(!helper::inModRange(population.bots[i].pos, viewPos, renderDistance, world.chunkSize)) continue;
 
-    population.bots[i].sprite.resetModel();
     //Set the Position of the Sprite relative to the player
-    glm::vec3 a = population.bots[i].pos-viewPos;
-    population.bots[i].sprite.model = glm::translate(population.bots[i].sprite.model, a);
-    glm::vec3 axis = glm::vec3(0.0f, 1.0f, 0.0f);
-    population.bots[i].sprite.model = glm::rotate(population.bots[i].sprite.model, glm::radians(45.0f), axis);
+    population.bots[i].sprite.resetModel();
+    population.bots[i].sprite.model = glm::translate(population.bots[i].sprite.model, population.bots[i].pos-viewPos);
+    population.bots[i].sprite.model = glm::rotate(population.bots[i].sprite.model, glm::radians(45.0f), glm::vec3(0, 1, 0));
     population.bots[i].sprite.model = glm::rotate(population.bots[i].sprite.model, glm::radians(-rotation), glm::vec3(0, 1, 0));
 
-    //Setup the Shader
-    spriteShader.setInt("spriteTexture", 0);
+    //Setup the Uniforms
     spriteShader.setMat4("mvp", projection*camera*population.bots[i].sprite.model);
     spriteShader.setFloat("nframe", (float)(population.bots[i].sprite.animation.nframe % population.bots[i].sprite.animation.frames));
     spriteShader.setFloat("animation", (float)population.bots[i].sprite.animation.ID);
     spriteShader.setFloat("width", (float)population.bots[i].sprite.animation.w);
     spriteShader.setFloat("height", (float)population.bots[i].sprite.animation.h);
 
-    //Draw
+    //Render the Sprite Billboard
     population.bots[i].sprite.render();
   }
 
   /* Item Sprites */
   itemShader.useProgram();
+  itemShader.setInt("spriteTexture", 0);
+
   //Loop over all Sprites
   for(unsigned int i = 0; i < world.drops.size(); i++){
-    //Here we should check if the sprite should even be rendered.
-    if(glm::any(glm::greaterThan(glm::abs(glm::floor(world.drops[i].pos/glm::vec3(world.chunkSize))-glm::floor(viewPos/glm::vec3(world.chunkSize))), renderDistance)))
-      continue;
+    //Check for No-Render Condition
+    if(!helper::inModRange(world.drops[i].pos, viewPos, renderDistance, world.chunkSize)) continue;
 
     //Set the Position of the Sprite relative to the player
     world.drops[i].sprite.resetModel();
-    glm::vec3 a = world.drops[i].pos-viewPos;
-    world.drops[i].sprite.model = glm::translate(world.drops[i].sprite.model, glm::vec3(a));
-    glm::vec3 axis = glm::vec3(0.0f, 1.0f, 0.0f);
-    world.drops[i].sprite.model = glm::rotate(world.drops[i].sprite.model, glm::radians(45.0f), axis);
+    world.drops[i].sprite.model = glm::translate(world.drops[i].sprite.model, world.drops[i].pos-viewPos);
+    world.drops[i].sprite.model = glm::rotate(world.drops[i].sprite.model, glm::radians(45.0f), glm::vec3(0, 1, 0));
     world.drops[i].sprite.model = glm::rotate(world.drops[i].sprite.model, glm::radians(-rotation), glm::vec3(0, 1, 0));
 
     //Setup the Shader
-    itemShader.setInt("spriteTexture", 0);
     itemShader.setFloat("index", (float)world.drops[i]._type);
     itemShader.setMat4("mvp", projection*camera*world.drops[i].sprite.model);
 
@@ -349,9 +320,7 @@ REGULAR IMAGE
     world.drops[i].sprite.render();
   }
 
-/*
-AFTER-EFFECTS
-*/
+  /* AFTER-EFFECTS */
 
   //Render Temp to Screen with a horizontal blur shader
   glBindFramebuffer(GL_FRAMEBUFFER, temp1.fbo);
@@ -394,15 +363,18 @@ AFTER-EFFECTS
 
 //User Interface
 void View::renderGUI(World &world, Player &player, Population &population){
+  //ImGUI Drawing Context
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplSDL2_NewFrame(gWindow);
   ImGui::NewFrame();
 
-  //Draw to ImGui
-  interface->render(*this, world, population, player);
+  //Render this here interface...
 
-  //Draw the cool window
-  ImGui::ShowDemoWindow();
+  //Draw to ImGui
+  if(showmenu){
+    interface->render(*this, world, population, player);
+    ImGui::ShowDemoWindow();
+  }
 
   //Render IMGUI
   ImGui::Render();

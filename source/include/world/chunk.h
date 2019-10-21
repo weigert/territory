@@ -17,7 +17,7 @@ public:
   //Get the Flat-Array Index
   int getIndex(glm::vec3 _p);
   void setPosition(glm::vec3 _p, BlockType _type);
-  BlockType getPosition(glm::vec3 _p, int LOD);
+  BlockType getPosition(glm::vec3 _p);
   glm::vec4 getColorByID(BlockType _type);
 };
 
@@ -33,7 +33,7 @@ void Chunk::setPosition(glm::vec3 _p, BlockType _type){
   data[getIndex(_p)] = (int)_type;
 }
 
-BlockType Chunk::getPosition(glm::vec3 _p, int LOD){
+BlockType Chunk::getPosition(glm::vec3 _p){
   return (BlockType)data[getIndex(_p)];
 }
 
