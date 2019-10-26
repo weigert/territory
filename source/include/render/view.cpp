@@ -37,7 +37,7 @@ bool View::Init(){
   gContext = SDL_GL_CreateContext(	gWindow );
 
   //Initialize OPENGL Stuff
-	SDL_GL_SetSwapInterval(1);
+	SDL_GL_SetSwapInterval(vsync);
 	glewExperimental = GL_TRUE;
 	glewInit();
 

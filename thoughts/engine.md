@@ -5,7 +5,6 @@ A number of engine improvements need to be made, and there are options I haven't
 Greedy meshing has been implemented without a bunch of fucky for-loops.
 
 
-
 I would like asynchronous chunk loading and saving. So that can simply be done in the background, while other stuff is happening on the important threads.
 
 Play around with better data storage formats.
@@ -42,8 +41,11 @@ Renderer:
 - Sprite and Block Outlines (-> picking)
 - Shader Effects: Fog, Bloom, Blur, Grain, Particles
 
-
-
+- VBO Indexing
+- Different Draw Shape Possibilities!
+  -> Chairs? Tables? etc!
+  -> Grasses and similar plant stuff!
+- Add the Blueprint class and allow for generation of "models" of objects.
 
 and: I want to see if I can get the DOF shader to slightly make the map that we can see see-through in a visually appealing way, so that we can still see stuff behind a certain area.
 
