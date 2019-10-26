@@ -78,15 +78,23 @@ void World::generateFlat(){
   //Trees
   std::cout<<"Adding Trees"<<std::endl;
   Blueprint _tree;
-  _tree.cactus(4); //Construct a tree blueprint (height = 9)
 
   for(int i = 0; i < 2000; i++){
+    _tree.editBuffer.clear();
+    _tree.cactus(); //Construct a tree blueprint (height = 9
     //Append the Translated Blueprint to the full blueprint.
     int tree[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
     blueprint.merge(_tree.translate(glm::vec3(tree[0], 1, tree[1])));
   }
 
   //Evaluate the Buffer
+  evaluateBlueprint(blueprint);
+
+  //Add a simple hut
+  std::cout<<"Adding House"<<std::endl;
+  Blueprint _hut;
+  _hut.hut();
+  blueprint.merge(_hut.translate(glm::vec3(75, 1, 75)));
   evaluateBlueprint(blueprint);
 }
 
@@ -156,9 +164,9 @@ void World::generatePerlin(){
   std::cout<<"Adding Trees"<<std::endl;
   Blueprint _tree;
 
-  for(int i = 0; i < 5000; i++){
+  for(int i = 0; i < 2000; i++){
     //Generate a random size tree model.
-    int treeheight = rand()%6+6;
+    int treeheight = rand()%6+8;
     _tree.editBuffer.clear();
     _tree.tree(treeheight); //Construct a tree blueprint (height = 9)
 

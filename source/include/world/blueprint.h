@@ -49,8 +49,9 @@ public:
 
   //Blueprint Constructors
   void flatSurface(int x, int z);
+  void hut();
   void tree(int height);
-  void cactus(int height);
+  void cactus();
 };
 
 namespace boost {

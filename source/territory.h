@@ -59,6 +59,8 @@ enum BlockType{
   BLOCK_LEAVES = 8,
   BLOCK_WOOD = 9,
   BLOCK_PUMPKIN = 10,
+  BLOCK_CACTUS = 11,
+  BLOCK_PLANKS = 12
 };
 
 enum SoundByte{

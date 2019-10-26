@@ -117,7 +117,7 @@ void eventHandler::update(World &world, Player &player, Population &population, 
     else if(inputs.front()->key.keysym.sym == SDLK_SPACE){
       handlePlayerMove(world, player, view, 4);
     }
-    else if(inputs.front()->key.keysym.sym == SDLK_LSHIFT){
+    else if(inputs.front()->key.keysym.sym == SDLK_c){
       handlePlayerMove(world, player, view, 5);
     }
     else if(inputs.front()->key.keysym.sym == SDLK_ESCAPE){

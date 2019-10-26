@@ -252,7 +252,6 @@ void Model::fromChunkGreedy(Chunk chunk){
             normals.push_back(q[1]);
             normals.push_back(q[2]);
           }
-
           //Next Quad
         }
       }

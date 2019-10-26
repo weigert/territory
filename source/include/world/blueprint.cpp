@@ -83,10 +83,11 @@ void Blueprint::flatSurface(int x, int z){
 }
 
 //Do this guy
-void Blueprint::cactus(int height){
+void Blueprint::cactus(){
   //Loop until the height
+  int height = 4+rand()%2;
   for(int i = 0; i < height; i++){
-    addEditBuffer(glm::vec3(0, i, 0), BLOCK_GRASS, true);
+    addEditBuffer(glm::vec3(0, i, 0), BLOCK_CACTUS, true);
   }
 }
 
@@ -103,4 +104,46 @@ void Blueprint::tree(int height){
   addEditBuffer(glm::vec3(0, height, 1), BLOCK_LEAVES, true);
   addEditBuffer(glm::vec3(-1, height, 0), BLOCK_LEAVES, true);
   addEditBuffer(glm::vec3(0, height, -1), BLOCK_LEAVES, true);
+
+  addEditBuffer(glm::vec3(1, height-1, 0), BLOCK_LEAVES, true);
+  addEditBuffer(glm::vec3(0, height-1, 1), BLOCK_LEAVES, true);
+  addEditBuffer(glm::vec3(-1, height-1, 0), BLOCK_LEAVES, true);
+  addEditBuffer(glm::vec3(0, height-1, -1), BLOCK_LEAVES, true);
+
+  addEditBuffer(glm::vec3(1, height-1, 1), BLOCK_LEAVES, true);
+  addEditBuffer(glm::vec3(-1, height-1, 1), BLOCK_LEAVES, true);
+  addEditBuffer(glm::vec3(-1, height-1, -1), BLOCK_LEAVES, true);
+  addEditBuffer(glm::vec3(1, height-1, -1), BLOCK_LEAVES, true);
+
+  addEditBuffer(glm::vec3(2, height-1, 0), BLOCK_LEAVES, true);
+  addEditBuffer(glm::vec3(0, height-1, 2), BLOCK_LEAVES, true);
+  addEditBuffer(glm::vec3(-2, height-1, 0), BLOCK_LEAVES, true);
+  addEditBuffer(glm::vec3(0, height-1, -2), BLOCK_LEAVES, true);
+}
+
+void Blueprint::hut(){
+  //Create a hut!
+  for(int i = 0; i < 5; i++){
+    for(int j = 0; j < 5; j++){
+      for(int k = 0; k < 5; k++){
+        if(i == 0 || i == 4 || j == 4 || k == 0 || k == 4 ){
+          addEditBuffer(glm::vec3(i, j, k), BLOCK_WOOD, true);
+          continue;
+        }
+        //Fill the Volume!
+        addEditBuffer(glm::vec3(i, j, k), BLOCK_AIR, true);
+      }
+    }
+  }
+
+  //Add an entrance
+  addEditBuffer(glm::vec3(2, 0, 0), BLOCK_AIR, true);
+  addEditBuffer(glm::vec3(2, 1, 0), BLOCK_AIR, true);
+  addEditBuffer(glm::vec3(2, 2, 0), BLOCK_AIR, true);
+
+  //Add some stairs on the side
+  addEditBuffer(glm::vec3(5, 0, 1), BLOCK_STONE, true);
+  addEditBuffer(glm::vec3(5, 1, 2), BLOCK_STONE, true);
+  addEditBuffer(glm::vec3(5, 2, 3), BLOCK_STONE, true);
+  addEditBuffer(glm::vec3(5, 3, 4), BLOCK_STONE, true);
 }
