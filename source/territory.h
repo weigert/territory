@@ -110,6 +110,7 @@ Logger _log;
 #include "include/astar/astar.h"
 
 //World Classes
+#include "include/world/blueprint.cpp"
 #include "include/world/octree.cpp"
 #include "include/world/chunk.cpp"
 #include "include/world/world.cpp"

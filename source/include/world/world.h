@@ -1,5 +1,6 @@
 //Include Forward Declaration
 #include "../game/item.h"
+#include "blueprint.h"
 
 #pragma once
 #include "../forward/world.fwd.h"
@@ -12,14 +13,6 @@
 #include "../forward/octree.fwd.h"
 #include "../forward/player.fwd.h"
 #include "../forward/item.fwd.h"
-
-//EditBuffer Struct
-struct bufferObject {
-  int chunkSize;
-  glm::vec3 pos;
-  glm::vec3 cpos;
-  BlockType type;
-};
 
 class World{
 public:
@@ -57,11 +50,10 @@ public:
   void generateFlat();
   void generatePerlin();
 
-  //Edit Buffer (Efficient World Editing)
-  std::vector<bufferObject> editBuffer;
-  bool addEditBuffer(glm::vec3 _pos, BlockType _type);
-  bool evaluateEditBuffer();
-  void bufferChunks(View view);    //Reloads all relevant chunks from file
+  //Helpers for Blueprint
+  Blueprint blueprint;
+  bool evaluateBlueprint(Blueprint &_blueprint);
+  void bufferChunks(View view);
 
   //File IO Management
   std::string saveFile;

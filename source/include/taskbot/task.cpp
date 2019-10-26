@@ -276,7 +276,7 @@ bool Task::collect(World &world, Population &population, Audio &audio, State &_a
   while(_type != BLOCK_AIR){
     //Destroy the Block
     world.setBlock(_pseudopos, BLOCK_AIR);
-    world.addEditBuffer(_pseudopos, BLOCK_AIR);
+    world.blueprint.addEditBuffer(_pseudopos, BLOCK_AIR, false);
 
     //Construct the Item
     _item.fromTable(_type);
