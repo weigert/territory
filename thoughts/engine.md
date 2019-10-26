@@ -41,7 +41,6 @@ Renderer:
 - Sprite and Block Outlines (-> picking)
 - Shader Effects: Fog, Bloom, Blur, Grain, Particles
 
-- VBO Indexing
 - Different Draw Shape Possibilities!
   -> Chairs? Tables? etc!
   -> Grasses and similar plant stuff!
