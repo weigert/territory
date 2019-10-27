@@ -37,7 +37,7 @@ bool View::Init(){
   gContext = SDL_GL_CreateContext(	gWindow );
 
   //Initialize OPENGL Stuff
-	SDL_GL_SetSwapInterval(1);
+	SDL_GL_SetSwapInterval(vsync);
 	glewExperimental = GL_TRUE;
 	glewInit();
 
@@ -250,14 +250,16 @@ void View::render(World &world, Player &player, Population &population){
     models[i].render();               //Render Scene
   }
 
+
   /* View Position Cube */
+  /*
   picker.shaderColorPick.useProgram();
   picker.model = glm::mat4(1.0f);
   picker.shaderColorPick.setVec3("un_Color", hoverColorBlock);
   picker.shaderColorPick.setMat4("mvp", projection*camera*picker.model);
   glBindVertexArray(picker.vao);
   glDrawArrays(GL_LINE_STRIP, 0, 16);
-
+*/
   /* Picker Cube! */
   if(picked){
     picker.shaderColorPick.useProgram();
@@ -373,7 +375,7 @@ void View::renderGUI(World &world, Player &player, Population &population){
   //Draw to ImGui
   if(showmenu){
     interface->render(*this, world, population, player);
-    ImGui::ShowDemoWindow();
+    //ImGui::ShowDemoWindow();
   }
 
   //Render IMGUI

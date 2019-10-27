@@ -1,6 +1,7 @@
 //Pathfinding Stuff"
 #pragma once
 #include "../forward/world.fwd.h"
+#include "../forward/blueprint.fwd.h"
 #include "../forward/item.fwd.h"
 #include "../forward/population.fwd.h"
 #include "../forward/bot.fwd.h"
@@ -16,13 +17,13 @@ using namespace std::placeholders;
 typedef bool (Task::*Handle)(World&, Population&, Audio&, State&);
 
 enum TaskHandle{
-  TASK_DUMMY, TASK_NULL, TASK_LOOK, TASK_LISTEN, TASK_THINK, TASK_WAIT, TASK_MOVE, TASK_WALK, TASK_IDLE, TASK_FOLLOW, TASK_SEEK, TASK_COLLECT,
-  TASK_TAKE, TASK_CONVERT, TASK_DECIDE, TASK_REQUEST, TASK_INTERRUPT,
+  TASK_DUMMY, TASK_NULL, TASK_LOOK, TASK_LISTEN, TASK_THINK, TASK_WAIT, TASK_MOVE, TASK_WALK, TASK_IDLE, TASK_FOLLOW, TASK_SEEK, TASK_DESTROY,
+  TASK_PLACE, TASK_BUILD, TASK_TAKE, TASK_CONVERT, TASK_DECIDE, TASK_REQUEST, TASK_INTERRUPT,
   TASK_TELL, TASK_ASK, TASK_RESPOND, TASK_CONVERSE
 };
 
 std::string TaskName[25] = {
-  "DUMMY", "NULL", "LOOK", "LISTEN", "THINK", "WAIT", "MOVE", "WALK", "IDLE", "FOLLOW", "SEEK", "COLLECT", "TAKE",
+  "DUMMY", "NULL", "LOOK", "LISTEN", "THINK", "WAIT", "MOVE", "WALK", "IDLE", "FOLLOW", "SEEK", "DESTROY", "PLACE", "BUILD", "TAKE",
   "CONVERT", "DECIDE", "REQUEST", "INTERRUPT", "TELL", "ASK", "RESPOND", "CONVERSE"
 };
 
@@ -48,7 +49,6 @@ class Task{
     Task(std::string taskName, int taskBotID, Handle taskHandle);
     Task(std::string taskName, int taskBotID, int animationID, glm::vec3 animationTranslate, Handle taskHandle);
 
-
     //Task Handling Tasks (Special Functions)
     bool perform(World &world, Population &population, Audio &audio);
     bool handleQueue(World &world, Population &population, Audio &audio);
@@ -69,7 +69,9 @@ class Task{
 
     //Item Management Tasks
     bool seek(World &world, Population &population, Audio &audio, State &_args);
-    bool collect(World &world, Population &population, Audio &audio, State &_args);
+    bool destroy(World &world, Population &population, Audio &audio, State &_args);
+    bool place(World &world, Population &population, Audio &audio, State &_args);
+    bool build(World &world, Population &population, Audio &audio, State &_args);
     bool take(World &world, Population &population, Audio &audio, State &_args);
     bool convert(World &world, Population &population, Audio &audio, State &_args);
 
@@ -90,6 +92,6 @@ class Task{
 
 Handle TaskHandles[25] = {
   &Task::Dummy, &Task::null, &Task::look, &Task::listen, &Task::think, &Task::wait, &Task::move, &Task::walk,
-  &Task::idle, &Task::follow, &Task::seek, &Task::collect, &Task::take,
-  &Task::convert, &Task::decide, &Task::request, &Task::interrupt, &Task::tell, &Task::respond, &Task::converse
+  &Task::idle, &Task::follow, &Task::seek, &Task::destroy, &Task::place, &Task::build, &Task::take,
+  &Task::convert, &Task::decide, &Task::request, &Task::interrupt, &Task::tell, &Task::ask, &Task::respond, &Task::converse
 };

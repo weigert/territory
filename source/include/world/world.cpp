@@ -62,51 +62,40 @@ void World::generateBlank(){
 
 void World::generateFlat(){
   //Flat Surface
-  std::cout<<"Generating Flat Surface"<<std::endl;
-  for(int i = 0; i < dim.x*chunkSize; i++){
-    for(int j = 0; j < dim.z*chunkSize; j++){
-      //Add to the editBuffer
-      addEditBuffer(glm::vec3(i,0,j), BLOCK_GRASS);
-    }
-  }
-
-  //Evaluate the editBuffer
-  evaluateEditBuffer();
+  blueprint.flatSurface(dim.x*chunkSize, dim.z*chunkSize);
+  evaluateBlueprint(blueprint);
 
   //Rocks
   std::cout<<"Adding Rocks"<<std::endl;
-  for(int i = 0; i < 100; i++){
+  for(int i = 0; i < 1000; i++){
     int rock[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
-    addEditBuffer(glm::vec3(rock[0], 1, rock[1]), BLOCK_STONE);
+    blueprint.addEditBuffer(glm::vec3(rock[0], 1, rock[1]), BLOCK_CLAY, false);
   }
 
   //Evaluate the editBuffer
-  evaluateEditBuffer();
+  evaluateBlueprint(blueprint);
 
   //Trees
   std::cout<<"Adding Trees"<<std::endl;
-  for(int i = 0; i < 1000; i++){
-    int tree[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
+  Blueprint _tree;
 
-    //Add the shit to the editbuffer
-    addEditBuffer(glm::vec3(tree[0], 1, tree[1]), BLOCK_WOOD);
-    addEditBuffer(glm::vec3(tree[0], 2, tree[1]), BLOCK_WOOD);
-    addEditBuffer(glm::vec3(tree[0], 3, tree[1]), BLOCK_WOOD);
-    addEditBuffer(glm::vec3(tree[0], 4, tree[1]), BLOCK_WOOD);
-    addEditBuffer(glm::vec3(tree[0], 5, tree[1]), BLOCK_WOOD);
-    addEditBuffer(glm::vec3(tree[0], 6, tree[1]), BLOCK_WOOD);
-    addEditBuffer(glm::vec3(tree[0], 7, tree[1]), BLOCK_WOOD);
-    addEditBuffer(glm::vec3(tree[0], 8, tree[1]), BLOCK_WOOD);
-    addEditBuffer(glm::vec3(tree[0], 9, tree[1]), BLOCK_LEAVES);
-    addEditBuffer(glm::vec3(tree[0]+1, 8, tree[1]), BLOCK_LEAVES);
-    addEditBuffer(glm::vec3(tree[0]-1, 8, tree[1]), BLOCK_LEAVES);
-    addEditBuffer(glm::vec3(tree[0], 8, tree[1]+1), BLOCK_LEAVES);
-    addEditBuffer(glm::vec3(tree[0], 8, tree[1]-1), BLOCK_LEAVES);
+  for(int i = 0; i < 2000; i++){
+    _tree.editBuffer.clear();
+    _tree.cactus(); //Construct a tree blueprint (height = 9
+    //Append the Translated Blueprint to the full blueprint.
+    int tree[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
+    blueprint.merge(_tree.translate(glm::vec3(tree[0], 1, tree[1])));
   }
 
   //Evaluate the Buffer
-  evaluateEditBuffer();
+  evaluateBlueprint(blueprint);
 
+  //Add a simple hut
+  std::cout<<"Adding House"<<std::endl;
+  Blueprint _hut;
+  _hut.hut();
+  blueprint.merge(_hut.translate(glm::vec3(75, 1, 75)));
+  evaluateBlueprint(blueprint);
 }
 
 void World::generatePerlin(){
@@ -116,12 +105,25 @@ void World::generatePerlin(){
   perlin.SetFrequency(6);
   perlin.SetPersistence(0.5);
 
+  /*
+  //Adding Water to world.
+  std::cout<<"Flooding World."<<std::endl;
+  for(int i = 0; i < dim.x*chunkSize; i++){
+    for(int j = 0; j < 16; j++){
+      for(int k = 0; k < dim.z*chunkSize; k++){
+        //Add water up to a specific height
+        blueprint.addEditBuffer(glm::vec3(i, j, k), BLOCK_WATER, false);
+      }
+    }
+  }
+  //Flood
+  evaluateBlueprint(blueprint);
+  */
+
   //Loop over the world-size
-  std::cout<<"Generating Perlin Surface"<<std::endl;
+  std::cout<<"Adding Ground."<<std::endl;
   for(int i = 0; i < dim.x*chunkSize; i++){
     for(int k = 0; k < dim.z*chunkSize; k++){
-
-      //Generate the Heightvalue
 
       //Normalize the Block's x,z coordinates
       float x = (float)(i) / (float)(chunkSize*dim.x);
@@ -133,14 +135,14 @@ void World::generatePerlin(){
       //Now loop over the height and set the blocks
       for(int j = 0; j < (int)height-1; j++){
         //Add the block to the editBuffer
-        addEditBuffer(glm::vec3(i, j, k), BLOCK_DIRT);
+        blueprint.addEditBuffer(glm::vec3(i, j, k), BLOCK_DIRT, false);
       }
-      addEditBuffer(glm::vec3(i, (int)height-1, k), BLOCK_GRASS);
+      blueprint.addEditBuffer(glm::vec3(i, (int)height-1, k), BLOCK_GRASS, false);
     }
   }
 
   //Evaluate the Guy
-  evaluateEditBuffer();
+  evaluateBlueprint(blueprint);
 
   //Rocks
   std::cout<<"Adding Rocks"<<std::endl;
@@ -153,11 +155,11 @@ void World::generatePerlin(){
     float height = perlin.GetValue(x, SEED, z)/5+0.25;
     height *= (dim.y*chunkSize);
 
-    addEditBuffer(glm::vec3(rock[0], (int)height, rock[1]), BLOCK_STONE);
+    blueprint.addEditBuffer(glm::vec3(rock[0], (int)height, rock[1]), BLOCK_STONE, false);
   }
 
   //Evaluate the Guy
-  evaluateEditBuffer();
+  evaluateBlueprint(blueprint);
 
   //Pumpkings
   std::cout<<"Adding Pumpkins"<<std::endl;
@@ -170,15 +172,21 @@ void World::generatePerlin(){
     float height = perlin.GetValue(x, SEED, z)/5+0.25;
     height *= (dim.y*chunkSize);
 
-    addEditBuffer(glm::vec3(rock[0], (int)height, rock[1]), BLOCK_PUMPKIN);
+    blueprint.addEditBuffer(glm::vec3(rock[0], (int)height, rock[1]), BLOCK_PUMPKIN, false);
   }
 
-
-  //Add Trees
+  //Trees
   std::cout<<"Adding Trees"<<std::endl;
-  for(int i = 0; i < 5000; i++){
+  Blueprint _tree;
+
+  for(int i = 0; i < 2500; i++){
+    //Generate a random size tree model.
+    int treeheight = rand()%6+8;
+    _tree.editBuffer.clear();
+    _tree.tree(treeheight); //Construct a tree blueprint (height = 9)
+
+    //Append the Translated Blueprint to the full blueprint.
     int tree[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
-    int treeheight = rand()%6+6;
 
     float x = (float)(tree[0]) / (float)(chunkSize*dim.x);
     float z = (float)(tree[1]) / (float)(chunkSize*dim.z);
@@ -186,19 +194,11 @@ void World::generatePerlin(){
     float height = perlin.GetValue(x, SEED, z)/5+0.25;
     height *= (dim.y*chunkSize);
 
-    for(int j = 0; j <= treeheight; j++){
-      //Add the shit to the editbuffer
-      addEditBuffer(glm::vec3(tree[0], (int)height+j, tree[1]), BLOCK_WOOD);
-    }
-
-    addEditBuffer(glm::vec3(tree[0], (int)height+treeheight+1, tree[1]), BLOCK_LEAVES);
-    addEditBuffer(glm::vec3(tree[0]+1, (int)height+treeheight, tree[1]), BLOCK_LEAVES);
-    addEditBuffer(glm::vec3(tree[0]-1, (int)height+treeheight, tree[1]), BLOCK_LEAVES);
-    addEditBuffer(glm::vec3(tree[0], (int)height+treeheight, tree[1]+1), BLOCK_LEAVES);
-    addEditBuffer(glm::vec3(tree[0], (int)height+treeheight, tree[1]-1), BLOCK_LEAVES);
+    blueprint.merge(_tree.translate(glm::vec3(tree[0], (int)height, tree[1])));
   }
-  //Evaluate the Guy
-  evaluateEditBuffer();
+
+  //Evaluate the Buffer
+  evaluateBlueprint(blueprint);
 }
 
 void World::generateTectonic(){
@@ -222,9 +222,9 @@ void World::generateTectonic(){
           //Set the Grass and Dirt
           for(int j = 0; j < (int)height-1; j++){
             //Add the block to the editBuffer
-            addEditBuffer(glm::vec3(i*chunkSize+l, j, k*chunkSize+m), BLOCK_DIRT);
+            blueprint.addEditBuffer(glm::vec3(i*chunkSize+l, j, k*chunkSize+m), BLOCK_DIRT, false);
           }
-          addEditBuffer(glm::vec3(i*chunkSize+l, (int)height-1, k*chunkSize+m), BLOCK_GRASS);
+          blueprint.addEditBuffer(glm::vec3(i*chunkSize+l, (int)height-1, k*chunkSize+m), BLOCK_GRASS, false);
         }
       }
     }
@@ -232,54 +232,23 @@ void World::generateTectonic(){
 
   //Evaluate the Guy
   std::cout<<"Evaluating EditBuffer"<<std::endl;
-  evaluateEditBuffer();
+  evaluateBlueprint(blueprint);
 }
 
 /*
 ===================================================
-          OPTIMIZING UTILITY FUNCTIONS
+          BLUEPRINT HANDLING FUNCTIONS
 ===================================================
 */
 
-bool World::addEditBuffer(glm::vec3 _pos, BlockType _type){
-  //Check validity
-  if(glm::any(glm::lessThan(_pos, glm::vec3(0))) || glm::any(glm::greaterThanEqual(_pos, glm::vec3(chunkSize)*dim))){
-    //Invalid Position
-    return false;
-  }
-
-  //Add a new bufferObject
-  editBuffer.push_back(bufferObject());
-  editBuffer.back().pos = _pos;
-  editBuffer.back().cpos = glm::floor(_pos/glm::vec3(chunkSize));
-  editBuffer.back().type = _type;
-
-  //Push it on
-  return true;
-}
-
-//Sorting Operator for bufferObjects
-bool operator>(const bufferObject& a, const bufferObject& b) {
-  if(a.cpos.x > b.cpos.x) return true;
-  if(a.cpos.x < b.cpos.x) return false;
-
-  if(a.cpos.y > b.cpos.y) return true;
-  if(a.cpos.y < b.cpos.y) return false;
-
-  if(a.cpos.z > b.cpos.z) return true;
-  if(a.cpos.z < b.cpos.z) return false;
-
-  return false;
-}
-
-bool World::evaluateEditBuffer(){
+bool World::evaluateBlueprint(Blueprint &_blueprint){
   //Check if the editBuffer isn't empty!
-  if(editBuffer.empty()){
+  if(_blueprint.editBuffer.empty()){
     return false;
   }
 
   //Sort the editBuffer
-  std::sort(editBuffer.begin(), editBuffer.end(), std::greater<bufferObject>());
+  std::sort(_blueprint.editBuffer.begin(), _blueprint.editBuffer.end(), std::greater<bufferObject>());
 
   //Open the File
   boost::filesystem::path data_dir(boost::filesystem::current_path());
@@ -308,10 +277,10 @@ bool World::evaluateEditBuffer(){
     ia >> _chunk;
 
     //Overwrite relevant portions
-    while(!editBuffer.empty() && glm::all(glm::equal(_chunk.pos, editBuffer.back().cpos))){
+    while(!_blueprint.editBuffer.empty() && glm::all(glm::equal(_chunk.pos, _blueprint.editBuffer.back().cpos))){
       //Change the Guy
-      _chunk.setPosition(glm::mod(editBuffer.back().pos, glm::vec3(chunkSize)), editBuffer.back().type);
-      editBuffer.pop_back();
+      _chunk.setPosition(glm::mod(_blueprint.editBuffer.back().pos, glm::vec3(chunkSize)), _blueprint.editBuffer.back().type);
+      _blueprint.editBuffer.pop_back();
     }
 
     //Write the chunk back
@@ -428,7 +397,7 @@ Inventory World::pickup(glm::vec3 pos){
 
 void World::bufferChunks(View view){
   //Load / Reload all Visible Chunks
-  evaluateEditBuffer();
+  evaluateBlueprint(blueprint);
 
   //Chunks that should be loaded
   glm::vec3 a = glm::floor(view.viewPos/glm::vec3(chunkSize))-view.renderDistance;
@@ -462,7 +431,7 @@ void World::bufferChunks(View view){
 
     //Make sure that the chunk that we determined will not be removed is also not reloaded
     for(unsigned int j = 0; j < load.size(); j++){
-      if(load[j].x == chunks[i].pos.x && load[j].y == chunks[i].pos.y && load[j].z == chunks[i].pos.z){
+      if(glm::all(glm::equal(load[j], chunks[i].pos))){
         //Remove the element from load, as it is already inside this guy
         load.erase(load.begin()+j);
       }

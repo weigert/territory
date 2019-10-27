@@ -10,6 +10,7 @@ void Model::setup(){
   glGenVertexArrays(1, &vao);
   glBindVertexArray(vao);
   glGenBuffers(3, vbo);
+  glGenBuffers(1, &ibo);
 
   //Positions Buffer
   glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
@@ -28,6 +29,10 @@ void Model::setup(){
   glBufferData(GL_ARRAY_BUFFER, normals.size()*sizeof(GLfloat), &normals[0], GL_STATIC_DRAW);
   glEnableVertexAttribArray(2);
   glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+  //Index Buffer
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size()*sizeof(GLuint), &indices[0], GL_STATIC_DRAW);
 }
 
 void Model::update(){
@@ -49,6 +54,10 @@ void Model::update(){
   glBufferData(GL_ARRAY_BUFFER, normals.size()*sizeof(GLfloat), &normals[0], GL_STATIC_DRAW);
   glEnableVertexAttribArray(2);
   glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+  //Index Buffer
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size()*sizeof(GLuint), &indices[0], GL_STATIC_DRAW);
 }
 
 void Model::cleanup(){
@@ -77,122 +86,10 @@ void Model::rotate(const glm::vec3 &axis, float angle){
 void Model::render(){
   //Render the Object, using the shader it has!
   glBindVertexArray(vao);
-  glDrawArrays(GL_TRIANGLES, 0, positions.size()/3);
-}
-
-void Model::fromChunkNaive(Chunk chunk){
-  //Clear the Containers
-  positions.clear();
-  colors.clear();
-  normals.clear();
-
-  //Loop over all elements inside the chunk
-  for(int i = 0; i < chunk.size; i++){
-    for(int j = 0; j < chunk.size; j++){
-      for(int k = 0; k < chunk.size; k++){
-
-        //Get the current block type
-        BlockType _type = (BlockType)chunk.data[chunk.getIndex(glm::vec3(i,j,k))];
-        int width = chunk.size;
-
-        //Make sure it isn't air
-        if(_type != 0){
-          //Number of Faces we added
-          int faces = 0;
-
-          //Only exposed surfaces!
-          if(k+1 == width || chunk.getPosition(glm::vec3(i,j,k+1)) == 0){
-            for(int l = 0; l < 6; l++){
-              positions.push_back((front[l*3]+i));
-              positions.push_back((front[l*3+1]+j));
-              positions.push_back((front[l*3+2]+k));
-            }
-
-            //Draw the Front Face
-            faces++;
-          }
-
-          if(j+1 == width || chunk.getPosition(glm::vec3(i,j+1,k)) == 0){
-            //Draw the Back Face
-            for(int l = 0; l < 6; l++){
-              positions.push_back((top[l*3]+i));
-              positions.push_back((top[l*3+1]+j));
-              positions.push_back((top[l*3+2]+k));
-            }
-
-            faces++;
-          }
-
-          if(i+1 == width || chunk.getPosition(glm::vec3(i+1,j,k)) == 0){
-            //Draw the Top Face
-            for(int l = 0; l < 6; l++){
-              positions.push_back((right[l*3]+i));
-              positions.push_back((right[l*3+1]+j));
-              positions.push_back((right[l*3+2]+k));
-            }
-
-            faces++;
-          }
-          if(k-1 < 0 || chunk.getPosition(glm::vec3(i,j,k-1)) == 0){
-            for(int l = 0; l < 6; l++){
-              positions.push_back((back[l*3]+i));
-              positions.push_back((back[l*3+1]+j));
-              positions.push_back((back[l*3+2]+k));
-            }
-
-            //Draw the Bottom Face
-            faces++;
-          }
-          /*
-          if(chunk.data.getPosition(i,j-1,k, LOD) == 0){
-            //Draw the Left Face
-            for(int l = 0; l < 6; l++){
-              positions.push_back(bottom[l*3]+i);
-              positions.push_back(bottom[l*3+1]+j);
-              positions.push_back(bottom[l*3+2]+k);
-            }
-            faces++;
-          }*/
-          if(i-1 < 0 || chunk.getPosition(glm::vec3(i-1,j,k)) == 0){
-            //Draw the Right Face
-            for(int l = 0; l < 6; l++){
-              positions.push_back((left[l*3]+i));
-              positions.push_back((left[l*3+1]+j));
-              positions.push_back((left[l*3+2]+k));
-            }
-            faces++;
-          }
-
-          //We need to get a color
-          glm::vec4 color = chunk.getColorByID(chunk.getPosition(glm::vec3(i,j,k)));
-
-          for(int m = 0; m < 6*faces; m++){
-            colors.push_back(color.x);
-            colors.push_back(color.y);
-            colors.push_back(color.z);
-            colors.push_back(color.w);
-          }
-        }
-      }
-    }
-  }
-
-  //Compute all Surface Normals
-  //For every surface we compute the surface normal
-  for(unsigned int m = 0; m < positions.size()/9; m++){
-    glm::vec3 v1 = glm::vec3(positions[m*9], positions[m*9+1], positions[m*9+2]);
-    glm::vec3 v2 = glm::vec3(positions[m*9+3], positions[m*9+4], positions[m*9+5]);
-    glm::vec3 v3 = glm::vec3(positions[m*9+6], positions[m*9+7], positions[m*9+8]);
-    glm::vec3 edge1 = v3-v1;
-    glm::vec3 edge2 = v2-v1;
-    glm::vec3 normal = glm::normalize(glm::cross(edge1, edge2));
-    //We add the x,y,z value 3 times (once for each for every vertex)
-    for(int n = 0; n < 3; n++){
-      normals.push_back(normal.x);
-      normals.push_back(normal.y);
-      normals.push_back(normal.z);
-    }
-  }
+  //Bind the Index Buffer
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+  glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+  //glDrawArrays(GL_TRIANGLES, 0, positions.size()/3);
 }
 
 void Model::fromChunkGreedy(Chunk chunk){
@@ -289,6 +186,13 @@ void Model::fromChunkGreedy(Chunk chunk){
           int dv[3] = {0}; dv[w] = width;
 
           if(n < 0){
+            //Add Indices
+            indices.push_back(positions.size()/3+0);
+            indices.push_back(positions.size()/3+1);
+            indices.push_back(positions.size()/3+2);
+            indices.push_back(positions.size()/3+2);
+            indices.push_back(positions.size()/3+3);
+            indices.push_back(positions.size()/3+0);
             //Some need to go clock-wise, others need to go counterclockwise.
             positions.push_back(x[0]-0.5);
             positions.push_back(x[1]-0.5);
@@ -302,23 +206,24 @@ void Model::fromChunkGreedy(Chunk chunk){
             positions.push_back(x[1]+du[1]+dv[1]-0.5);
             positions.push_back(x[2]+du[2]+dv[2]-0.5);
             //Vertex 4
-            positions.push_back(x[0]+du[0]+dv[0]-0.5);
-            positions.push_back(x[1]+du[1]+dv[1]-0.5);
-            positions.push_back(x[2]+du[2]+dv[2]-0.5);
-            //Vertex 5
             positions.push_back(x[0]+dv[0]-0.5);
             positions.push_back(x[1]+dv[1]-0.5);
             positions.push_back(x[2]+dv[2]-0.5);
-            //Vertex 6
-            positions.push_back(x[0]-0.5);
-            positions.push_back(x[1]-0.5);
-            positions.push_back(x[2]-0.5);
           }
           else{
+            //Add Indices
+            indices.push_back(positions.size()/3+0);
+            indices.push_back(positions.size()/3+1);
+            indices.push_back(positions.size()/3+2);
+            indices.push_back(positions.size()/3+1);
+            indices.push_back(positions.size()/3+0);
+            indices.push_back(positions.size()/3+3);
+
+            //Vertex 0
             positions.push_back(x[0]-0.5+y[0]);
             positions.push_back(x[1]-0.5+y[1]);
             positions.push_back(x[2]-0.5+y[2]);
-            //Vertex 3
+            //Vertex 1
             positions.push_back(x[0]+du[0]+dv[0]-0.5+y[0]);
             positions.push_back(x[1]+du[1]+dv[1]-0.5+y[1]);
             positions.push_back(x[2]+du[2]+dv[2]-0.5+y[2]);
@@ -326,15 +231,7 @@ void Model::fromChunkGreedy(Chunk chunk){
             positions.push_back(x[0]+du[0]-0.5+y[0]);
             positions.push_back(x[1]+du[1]-0.5+y[1]);
             positions.push_back(x[2]+du[2]-0.5+y[2]);
-            //Vertex 4
-            positions.push_back(x[0]+du[0]+dv[0]-0.5+y[0]);
-            positions.push_back(x[1]+du[1]+dv[1]-0.5+y[1]);
-            positions.push_back(x[2]+du[2]+dv[2]-0.5+y[2]);
-            //Vertex 6
-            positions.push_back(x[0]-0.5+y[0]);
-            positions.push_back(x[1]-0.5+y[1]);
-            positions.push_back(x[2]-0.5+y[2]);
-            //Vertex 5
+            //Vertex 3
             positions.push_back(x[0]+dv[0]-0.5+y[0]);
             positions.push_back(x[1]+dv[1]-0.5+y[1]);
             positions.push_back(x[2]+dv[2]-0.5+y[2]);
@@ -343,7 +240,7 @@ void Model::fromChunkGreedy(Chunk chunk){
           //Add Colors and Normals to all vertices.
           glm::vec4 color = chunk.getColorByID(current);
 
-          for(int m = 0; m < 6; m++){
+          for(int m = 0; m < 4; m++){
             //Add Colors
             colors.push_back(color.x);
             colors.push_back(color.y);
@@ -355,7 +252,6 @@ void Model::fromChunkGreedy(Chunk chunk){
             normals.push_back(q[1]);
             normals.push_back(q[2]);
           }
-
           //Next Quad
         }
       }

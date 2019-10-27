@@ -59,13 +59,15 @@ enum BlockType{
   BLOCK_LEAVES = 8,
   BLOCK_WOOD = 9,
   BLOCK_PUMPKIN = 10,
+  BLOCK_CACTUS = 11,
+  BLOCK_PLANKS = 12,
+  BLOCK_GLASS = 13
 };
 
 enum SoundByte{
   SOUND_NONE = 0,
   SOUND_HIT = 1
 };
-
 
 //Dear IMgui Dependencies
 #include "include/imgui/imgui.h"
@@ -110,6 +112,7 @@ Logger _log;
 #include "include/astar/astar.h"
 
 //World Classes
+#include "include/world/blueprint.cpp"
 #include "include/world/octree.cpp"
 #include "include/world/chunk.cpp"
 #include "include/world/world.cpp"

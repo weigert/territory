@@ -134,6 +134,7 @@ void Interface::drawState(State state){
   ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "%d", (int)state.block); ImGui::SameLine();
   ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "%d", (int)state.reachable); ImGui::SameLine();
   ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "%d", (int)state.time); ImGui::SameLine();
+  ImGui::TextColored(ImVec4(0.75f, 0.6f, 1.0f, 1.0f), "%d", (int)state.target); ImGui::SameLine();
   ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%d", (int)state.range.x); ImGui::SameLine();
   ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%d", (int)state.range.y); ImGui::SameLine();
   ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%d", (int)state.range.z);
@@ -235,13 +236,18 @@ void Interface::render(View &view, World &world, Population &population, Player 
             population.bots[a].inventory.push_back(item);
             ImGui::CloseCurrentPopup();
           }
+          ImGui::SameLine();
+          if (ImGui::Button("Cancel")){
+            ImGui::CloseCurrentPopup();
+          }
           ImGui::EndPopup();
       }
 
+      ImGui::SetNextWindowSize(ImVec2(250, 275));
       if (ImGui::BeginPopupModal("TaskAdder", NULL)){
           //Construct a Task
           static int _taskHandle = TASK_NULL;
-          const char* handles[] = { "Dummy", "Null", "Look", "Listen", "Think", "Wait", "Move", "Walk", "Idle", "Follow", "Seek", "Collect", "Take", "Convert", "Decide", "Request" };
+          const char* handles[] = { "Dummy", "Null", "Look", "Listen", "Think", "Wait", "Move", "Walk", "Idle", "Follow", "Seek", "Destroy", "Place", "Build", "Take", "Convert", "Decide", "Request", "Interrupt", "Tell", "Ask", "Respond", "Converse" };
           ImGui::Combo("Task", &_taskHandle, handles, IM_ARRAYSIZE(handles), 4);
 
           //Do this guy here
@@ -251,6 +257,9 @@ void Interface::render(View &view, World &world, Population &population, Player 
           static int _block = 0.0f;
           ImGui::DragInt("Block", &_block, 1, 0, 10);
 
+          static int _target = 0.0f;
+          ImGui::DragInt("Bot", &_target, 1, 0, population.bots.size()-1);
+
           //Start the Menu
           if (ImGui::Button("Submit")){
             //Add the item to the inventory.
@@ -259,6 +268,7 @@ void Interface::render(View &view, World &world, Population &population, Player 
             //Construct a State
             State state;
             state.task = _task->name;
+            state.target = _target;
             state.time = _time;
             state.pos = view.select;
             state.block = (BlockType)_block;

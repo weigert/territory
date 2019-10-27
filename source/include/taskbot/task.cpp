@@ -1,6 +1,7 @@
 #include "bot.h"
 #include "population.h"
 #include "../world/world.h"
+#include "../world/blueprint.h"
 #include "state.h"
 #include "../game/item.h"
 #include "../render/audio.h"
@@ -153,7 +154,7 @@ bool Task::walk(World &world, Population &population, Audio &audio, State &_args
   }
 
   //Do the Stuff
-  if(population.bots[botID].path.empty()){
+  if(initFlag && population.bots[botID].path.empty()){
     //Calculate a Path Here.
     _log.debug("Calculating Path.");
     population.bots[botID].path = calculatePath(botID, _args.pos, population, world, _args.range);
@@ -175,8 +176,6 @@ bool Task::walk(World &world, Population &population, Audio &audio, State &_args
       }
 
       return true;
-
-
     }
   }
 
@@ -211,16 +210,23 @@ bool Task::idle(World &world, Population &population, Audio &audio, State &_args
     //Add the Tasks for Idle
     queue.push_back(wait);
     queue.push_back(walk); //Walk will be executed first
-
-    //Update the First Flag
-    initFlag = false;
   }
 
   return handleQueue(world, population, audio);
 }
 
 bool Task::follow(World &world, Population &population, Audio &audio, State &_args){
-  return true;
+  //Find the position of the bot you want to go to, walk there.
+  if(queue.empty()){
+    Task walk("Walk to bot's position.", botID, &Task::walk);
+    walk.args.pos = population.bots[_args.target].pos;
+    walk.args.range = population.bots[botID].range;
+    queue.push_back(walk);
+  }
+
+  //Just do this (To end the follow guy, you have to be interrupted!).
+  handleQueue(world, population, audio);
+  return false;
 }
 
 /*
@@ -229,7 +235,7 @@ bool Task::follow(World &world, Population &population, Audio &audio, State &_ar
 ================================================================================
 */
 
-bool Task::collect(World &world, Population &population, Audio &audio, State &_args){
+bool Task::destroy(World &world, Population &population, Audio &audio, State &_args){
   //If the bot is out of range range
   if(!helper::inRange(population.bots[botID].pos, _args.pos, population.bots[botID].range)){
     return true;
@@ -243,7 +249,9 @@ bool Task::collect(World &world, Population &population, Audio &audio, State &_a
     return true;
   }
 
-  //Item is within range, check for appropriate tools for collection
+  /*
+
+  //Item is within range, check for appropriate tools for destroyion
   bool find = true;
   for(unsigned int i = 0; i < _args.inventory.size(); i++){
     find = false;
@@ -265,6 +273,7 @@ bool Task::collect(World &world, Population &population, Audio &audio, State &_a
     _log.debug("Bot doesn't have required items.");
     return true;
   }
+  */
 
   //Inventory of Drops at the specific position
   Inventory _inventory;
@@ -273,24 +282,41 @@ bool Task::collect(World &world, Population &population, Audio &audio, State &_a
   //Loop over all possible blocks
   glm::vec3 _pseudopos = _args.pos;
 
-  while(_type != BLOCK_AIR){
+  if(_type == BLOCK_WOOD || _type == BLOCK_CACTUS){
+    while(_type != BLOCK_AIR){
+      //Destroy the Block
+      world.setBlock(_pseudopos, BLOCK_AIR);
+      world.blueprint.addEditBuffer(_pseudopos, BLOCK_AIR, false);
+
+      //Construct the Item
+      if(_item.fromTable(_type)){
+        _item.pos = _args.pos;
+        _item.setupSprite();  //Needs to be because it is placed in the world.
+        _inventory.push_back(_item);  //Add the Item to the Drop-Table
+      }
+      //Move up
+      _pseudopos += glm::vec3(0, 1, 0);
+      _type = world.getBlock(_pseudopos);
+    }
+  }
+  else{
     //Destroy the Block
-    world.setBlock(_pseudopos, BLOCK_AIR);
-    world.addEditBuffer(_pseudopos, BLOCK_AIR);
+    world.setBlock(_args.pos, BLOCK_AIR);
+    world.blueprint.addEditBuffer(_pseudopos, BLOCK_AIR, false);
 
     //Construct the Item
-    _item.fromTable(_type);
-    _item.pos = _args.pos;
-    _item.setupSprite();  //Needs to be because it is placed in the world.
-    _inventory.push_back(_item);  //Add the Item to the Drop-Table
-    _pseudopos += glm::vec3(0, 1, 0);
-    _type = world.getBlock(_pseudopos);
+    if(_item.fromTable(_type)){
+      _item.pos = _args.pos;
+      _item.setupSprite();  //Needs to be because it is placed in the world.
+      _inventory.push_back(_item);  //Add the Item to the Drop-Table
+    }
   }
 
-  //Merge the Inventory into a new inventory (i.e. condense the new items into stacks)
-  Inventory _new;
-  mergeInventory(_new, _inventory);
-  world.drops.insert(world.drops.begin(), _inventory.begin(), _inventory.end());
+  if(!_inventory.empty()){
+    Inventory _new;
+    mergeInventory(_new, _inventory);
+    world.drops.insert(world.drops.begin(), _inventory.begin(), _inventory.end());
+  }
 
   //Look to update
   Task inspect("Inspect", botID, &Task::look);
@@ -300,8 +326,84 @@ bool Task::collect(World &world, Population &population, Audio &audio, State &_a
   return true;
 }
 
-bool Task::take(World &world, Population &population, Audio &audio, State &_args){
+bool Task::place(World &world, Population &population, Audio &audio, State &_args){
+  //Find the item at a specific position
+  /*
+  if(world.getBlock(_args.pos) != BLOCK_AIR){
+    _log.debug("Space isn't empty.");
+    return true;
+  }
+  */
 
+  //Set the Block to whatever it is we are placing
+  world.setBlock(_args.pos, _args.block);
+  world.blueprint.addEditBuffer(_args.pos, _args.block, false);
+
+  return true;
+}
+
+bool Task::build(World &world, Population &population, Audio &audio, State &_args){
+  //Multiple Placement Tasks after designing an appropriate blueprint!
+  if(initFlag){
+    //Define some blueprint...
+    Blueprint _house;
+    _house.hut();       //Choose which guy to build
+    _house = _house.translate(_args.pos + glm::vec3(0, 1, 0)); //Translate into worldspace and sort
+    std::sort(_house.editBuffer.begin(), _house.editBuffer.end(),
+            [](const bufferObject& a, const bufferObject& b) {
+              if(a.pos.y < b.pos.y) return true;
+              if(a.pos.y > b.pos.y) return false;
+
+              //Rest doesn't matter.
+              return false;
+            });
+
+    //Building Tasks
+    Task walk("Walk to construction site.", botID, &Task::walk);
+    Task destroy("Destroy occupying block.", botID, &Task::destroy);
+    Task place("Construct Building.", botID, &Task::place);
+
+    //Generate a series of walking and building tasks.
+    while(!_house.editBuffer.empty()){
+      //Walk to the position...
+      walk.args.pos = _house.editBuffer.back().pos;
+      walk.args.range = population.bots[botID].range;
+      destroy.args.pos = _house.editBuffer.back().pos;
+      place.args.pos =  _house.editBuffer.back().pos;
+      place.args.block = _house.editBuffer.back().type;
+
+      BlockType _cur = world.getBlock(_house.editBuffer.back().pos);
+
+      //The required block is already present
+      if(_house.editBuffer.back().type == _cur){
+        _house.editBuffer.pop_back();
+        continue;
+      }
+
+      //Check if a block needs to be destroyed...
+      if(_house.editBuffer.back().type == BLOCK_AIR){
+        queue.push_back(destroy);
+        queue.push_back(walk);
+        _house.editBuffer.pop_back();
+        continue;
+      }
+
+      //Otherwise, we need to simply straight up replace the block.
+      queue.push_back(place);
+      queue.push_back(walk);
+      _house.editBuffer.pop_back();
+    }
+  }
+
+  if(handleQueue(world, population, audio)){
+    //Save the Construction!
+    world.evaluateBlueprint(world.blueprint);
+    return true;
+  }
+  return false;
+}
+
+bool Task::take(World &world, Population &population, Audio &audio, State &_args){
   if(!helper::inRange(population.bots[botID].pos, _args.pos, population.bots[botID].range)){
     _log.debug("Too far away.");
     return true;
@@ -481,8 +583,6 @@ bool Task::listen(World &world, Population &population, Audio &audio, State &_ar
 
     population.bots[botID].shorterm.pop_back();
   }
-
-  //Pick a random memory and set it to the argument
   return true;
 }
 
@@ -494,6 +594,13 @@ bool Task::listen(World &world, Population &population, Audio &audio, State &_ar
 
 bool Task::decide(World &world, Population &population, Audio &audio, State &_args){
   //Check if we have mandates to go
+  if(initFlag){
+    //Listen!
+    Task listen("Listen to surroundings.", botID, &Task::listen);
+    listen.perform(world, population, audio);
+    initFlag = false;
+  }
+
   /*
   if(population.bots[botID].mandates.empty()){
     //Set the Current Task to Something Abitrary
@@ -509,10 +616,12 @@ bool Task::decide(World &world, Population &population, Audio &audio, State &_ar
   */
   //Take whatever mandate is available
 
+/*
   Task *masterTask = new Task("Testing Dummy Task", botID, &Task::Dummy);
   masterTask->sound = SOUND_HIT;
 
   population.bots[botID].current = masterTask;
+*/
 
   return false;
 }
@@ -532,7 +641,7 @@ bool Task::request(World &world, Population &population, Audio &audio, State &_a
 
 bool Task::interrupt(World &world, Population &population, Audio &audio, State &_args){
   //Attempt to set an interrupt on a different bot
-  if(population.bots[_args.target].tryInterrupt(_args)){ //!!!!Note this uses botID
+  if(population.bots[botID].tryInterrupt(_args)){ //!!!!Note this uses botID
     return true;
   }
   return false;
@@ -578,20 +687,18 @@ bool Task::Dummy(World &world, Population &population, Audio &audio, State &_arg
     seek.args.range = population.bots[botID].range;
 
     //Use the outputs from the previous task for these tasks.
-    Task collect("Collect Pumpkin", botID, &Task::collect);
-    collect.sound = SOUND_HIT;
-    collect.pass = true;
-    collect.animation = 3;                         //Set the Task's Animation
+    Task destroy("Collect Pumpkin", botID, &Task::destroy);
+    destroy.sound = SOUND_HIT;
+    destroy.pass = true;
+    destroy.animation = 3;                         //Set the Task's Animation
 
     Task take("Take Pumpkin", botID, &Task::take);
     take.pass = true;
 
     //Add them to the queue
     queue.push_back(take);
-    queue.push_back(collect);
+    queue.push_back(destroy);
     queue.push_back(seek);
-
-    initFlag = false;
   }
 
   return handleQueue(world, population, audio);

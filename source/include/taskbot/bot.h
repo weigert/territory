@@ -13,7 +13,7 @@ class Bot{
     //Meta Data
     glm::vec3 home = glm::vec3(0);
     glm::vec3 pos = glm::vec3(0);
-    glm::vec3 range = glm::vec3(1);
+    glm::vec3 range = glm::vec3(1, 2, 1);
     glm::vec3 viewDistance = glm::vec3(1);
 
     int ID;

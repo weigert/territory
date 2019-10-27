@@ -8,7 +8,6 @@
 - A few very simple world generators, including a flat one and a perlin heightmap one.
 
 **To-Do:**
-- Multithread chunk saving and loading
 - Add realism to the height map generation
 - Add run-length-encoding for the flat array in the world's virtual memory of currently visible chunks
 
@@ -280,6 +279,19 @@ Vegetation Cycle:
 
 
 ## Vegetation Cycle
+- Plants should be able to cycle through a number of growth stages.
+- Plants should be harvestable and plantable on certain soil.
+
+Open Questions:
+- Are plants blocks?
+
+Plants could be simply blocked by some placeholder block, and then actually stored
+in a separate container for drawing and updating.
+
+Or plants are directly stored as blocks, rendered with a different kind of model
+and then somehow I need to track their updates in the world.
+
+What if I want plants that grow over multiple blocks? Not sure.
 
 #Rock Cycle
 

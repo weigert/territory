@@ -7,12 +7,12 @@ class Chunk{
 public:
   //Position information and size information
   glm::vec3 pos;
-  int size;
+  bool refreshModel = false;
+    int size;
   BiomeType biome;
 
   //Data Storage Member
   int data[16*16*16] = {0};
-  bool refreshModel = false;
 
   //Get the Flat-Array Index
   int getIndex(glm::vec3 _p);
@@ -67,6 +67,15 @@ glm::vec4 Chunk::getColorByID(BlockType _type){
       break;
     case BLOCK_PUMPKIN:
       color = glm::vec4(1.0f, 0.5f, 0.0f, 1.0f);
+      break;
+    case BLOCK_CACTUS:
+      color = glm::vec4(0.0f, 0.44f, 0.3f, 1.0f);
+      break;
+    case BLOCK_PLANKS:
+      color = glm::vec4(0.75f, 0.6f, 0.28f, 1.0f);
+      break;
+    case BLOCK_GLASS:
+      color = glm::vec4(0.8f, 0.9f, 0.95f, 0.2f);
       break;
     default:
       color = glm::vec4(1.0f, 1.0f, 1.0f, 0.5f);

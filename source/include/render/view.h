@@ -64,8 +64,9 @@ class View{
     SDL_GLContext gContext;
     ImGuiIO io;
     unsigned int SCREEN_WIDTH = 1200, SCREEN_HEIGHT = 800;
-    const unsigned int SHADOW_WIDTH = 2000, SHADOW_HEIGHT = 2000;
+    const unsigned int SHADOW_WIDTH = 1000, SHADOW_HEIGHT = 1000;
     bool fullscreen = false;
+    bool vsync = true;
 
     //GUI Handler
     Interface* interface;
@@ -120,7 +121,7 @@ class View{
     glm::vec3 hoverColorBlock = glm::vec3(1.0f, 0.0, 0.0f);
 
     //View Projector (bunch of camera settings here tbh)
-    glm::mat4 camera = glm::lookAt(glm::vec3(10,12,10), glm::vec3(0,2,0), glm::vec3(0,1,0));
+    glm::mat4 camera = glm::lookAt(glm::vec3(10,10,10), glm::vec3(0,0,0), glm::vec3(0,1,0));
     glm::mat4 projection = glm::ortho(-(float)SCREEN_WIDTH*zoom, (float)SCREEN_WIDTH*zoom, -(float)SCREEN_HEIGHT*zoom, (float)SCREEN_HEIGHT*zoom, -200.0f, 200.0f);
     //Light Variables
     int lookstate = 1;
