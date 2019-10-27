@@ -42,7 +42,7 @@ class Item{
     //Members
     //randomize this item
     //needs to be generated from a specific block type.
-    void fromTable(BlockType _block);
+    bool fromTable(BlockType _block);
 };
 
 //Comparison Operators

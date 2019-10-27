@@ -105,6 +105,7 @@ void Blueprint::tree(int height){
   addEditBuffer(glm::vec3(-1, height, 0), BLOCK_LEAVES, true);
   addEditBuffer(glm::vec3(0, height, -1), BLOCK_LEAVES, true);
 
+/*
   addEditBuffer(glm::vec3(1, height-1, 0), BLOCK_LEAVES, true);
   addEditBuffer(glm::vec3(0, height-1, 1), BLOCK_LEAVES, true);
   addEditBuffer(glm::vec3(-1, height-1, 0), BLOCK_LEAVES, true);
@@ -119,31 +120,46 @@ void Blueprint::tree(int height){
   addEditBuffer(glm::vec3(0, height-1, 2), BLOCK_LEAVES, true);
   addEditBuffer(glm::vec3(-2, height-1, 0), BLOCK_LEAVES, true);
   addEditBuffer(glm::vec3(0, height-1, -2), BLOCK_LEAVES, true);
+  */
 }
 
 void Blueprint::hut(){
+  //Add Floor
+  for(int i = 0; i < 5; i++){
+    for(int k = 0; k < 5; k++){
+      addEditBuffer(glm::vec3(i-2, -1, k-2), BLOCK_STONE, true);
+    }
+  }
+
   //Create a hut!
   for(int i = 0; i < 5; i++){
     for(int j = 0; j < 5; j++){
       for(int k = 0; k < 5; k++){
-        if(i == 0 || i == 4 || j == 4 || k == 0 || k == 4 ){
-          addEditBuffer(glm::vec3(i, j, k), BLOCK_WOOD, true);
+        //Ignore the Door!
+        if(i == 2 && k == 0 && (j == 0 || j == 1 || j == 2)){
+          addEditBuffer(glm::vec3(i-2, j, k-2), BLOCK_AIR, true);
           continue;
         }
-        //Fill the Volume!
-        addEditBuffer(glm::vec3(i, j, k), BLOCK_AIR, true);
+        //Ignore the Window
+        if(i == 0 && k == 2 && j == 2){
+          addEditBuffer(glm::vec3(i-2, j, k-2), BLOCK_AIR, true);
+          continue;
+        }
+        //The rest is otherwise planks if on the edge
+        if(i == 0 || i == 4 || j == 4 || k == 0 || k == 4 ){
+          addEditBuffer(glm::vec3(i-2, j, k-2), BLOCK_PLANKS, true);
+          continue;
+        }
+        //And otherwise straight up air.
+        addEditBuffer(glm::vec3(i-2, j, k-2), BLOCK_AIR, true);
       }
     }
   }
 
-  //Add an entrance
-  addEditBuffer(glm::vec3(2, 0, 0), BLOCK_AIR, true);
-  addEditBuffer(glm::vec3(2, 1, 0), BLOCK_AIR, true);
-  addEditBuffer(glm::vec3(2, 2, 0), BLOCK_AIR, true);
-
   //Add some stairs on the side
-  addEditBuffer(glm::vec3(5, 0, 1), BLOCK_STONE, true);
-  addEditBuffer(glm::vec3(5, 1, 2), BLOCK_STONE, true);
-  addEditBuffer(glm::vec3(5, 2, 3), BLOCK_STONE, true);
-  addEditBuffer(glm::vec3(5, 3, 4), BLOCK_STONE, true);
+  addEditBuffer(glm::vec3(3, -1, -2), BLOCK_STONE, true);
+  addEditBuffer(glm::vec3(3, 0, -1), BLOCK_STONE, true);
+  addEditBuffer(glm::vec3(3, 1, 0), BLOCK_STONE, true);
+  addEditBuffer(glm::vec3(3, 2, 1), BLOCK_STONE, true);
+  addEditBuffer(glm::vec3(3, 3, 2), BLOCK_STONE, true);
 }

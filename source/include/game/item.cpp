@@ -15,27 +15,32 @@ void Item::setupSprite(){
   sprite.resetModel();
 }
 
-void Item::fromTable(BlockType _block){
+bool Item::fromTable(BlockType _block){
   if(_block == BLOCK_WOOD){
     name = "Wooden Logs";
     _type = LOGS;
     quantity = 1;
+    return true;
   }
   if(_block == BLOCK_STONE){
     name = "Stone Rocks";
     _type = ROCKS;
     quantity = 1;
+    return true;
   }
   if(_block == BLOCK_PUMPKIN){
     name = "Pumpkin";
     _type = PUMPKIN;
     quantity = 1;
+    return true;
   }
   if(_block == BLOCK_LEAVES){
     name = "Leaves";
     _type = PUMPKIN;
     quantity = 1;
+    return true;
   }
+  return false;
 }
 
 //Merge the Inventories

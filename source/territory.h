@@ -60,14 +60,14 @@ enum BlockType{
   BLOCK_WOOD = 9,
   BLOCK_PUMPKIN = 10,
   BLOCK_CACTUS = 11,
-  BLOCK_PLANKS = 12
+  BLOCK_PLANKS = 12,
+  BLOCK_GLASS = 13
 };
 
 enum SoundByte{
   SOUND_NONE = 0,
   SOUND_HIT = 1
 };
-
 
 //Dear IMgui Dependencies
 #include "include/imgui/imgui.h"

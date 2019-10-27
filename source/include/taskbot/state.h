@@ -13,12 +13,12 @@ class State{
     std::string task = "Null";
 
     //Target Bot
-    int target = 0;
     //int owner; //Owner of this Memory
     //int starter; //Originator of this Memory
     BlockType block = BLOCK_AIR;
     bool reachable = true;
     int time = 0;
+    int target = 0;
 
     //States need to contain an inventory!
     Inventory inventory;
@@ -30,6 +30,7 @@ class State{
     void operator=(const State& rhs) {
       //Set all properties
       pos = rhs.pos;
+      target = rhs.target;
       task = rhs.task;
       block = rhs.block;
       reachable = rhs.reachable;
@@ -57,6 +58,9 @@ bool operator==(State lhs, const State& rhs) {
   if(lhs.time != rhs.time){
     return false;
   }
+  if(lhs.target != rhs.target){
+    return false;
+  }
   if(lhs.range != rhs.range){
     return false;
   }
@@ -79,6 +83,9 @@ bool operator||(State lhs, const State& rhs) {
     return true;
   }
   if(lhs.time == rhs.time){
+    return true;
+  }
+  if(lhs.target == rhs.target){
     return true;
   }
   if(lhs.range == rhs.range){

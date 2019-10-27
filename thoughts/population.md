@@ -13,6 +13,7 @@
 - Add items for interaction, as well as storage of tasks and memories inside items
 
 
+
 ##Additional World-Content
 Need to expand the content my bots can interact with...
 
@@ -100,9 +101,6 @@ Task::join      - Join a group in the hierarchy
 Task::promote   - Move up in the hierarchy
 Task::leave     - Leave a group
 
-##Movement Tasks
-Task::follow  - Move to a point a certain distance away from an individual (is also equal to avoid)
-
 ##Fighting Tasks
 Task::hit     - Do a damage roll to adjacent bot
 Task::attack  - Repeatedly follow and hit adjacent Bot (optionally following at distance)
@@ -152,6 +150,13 @@ Task::retrieve - Get a certain quantity of a certain object?
 -> Trapping / Fur Hunting
 -> Farming
 -> Smithing
+
+
+-> Make a construction task,
+where a blueprint is created, and somehow a construct cost estimate is generated.
+Then, the required resources somehow need to be found.
+If they are, then you can queue up a bunch of "place" tasks, which will be done in order by walking
+nearby and then placing the object.
 
 
 ## More Systems:

@@ -71,13 +71,12 @@ I need a rendering option for dropped and placed items.
 
 
 ## Buildings and the Resource Chain
+Constructed from plans, are then built accordingly requiring resources.
+Resources are specified by a resource list, contained in the plan.
+This plan somehow needs to be able to be generated from a specification.
+Then it can be constructed. Buildings are multiblock structures.
 
-  Constructed from plans, are then built accordingly requiring resources.
-  Resources are specified by a resource list, contained in the plan.
-  This plan somehow needs to be able to be generated from a specification.
-  Then it can be constructed. Buildings are multiblock structures.
-
-  Houses, Commercial, Ships, Special Structures, etc.
+Houses, Commercial, Ships, Special Structures, etc.
 
 ## Final
 I could tell them to simply collect resources, and we would have a complex civ-controller sim.

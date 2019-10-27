@@ -28,7 +28,7 @@ void World::generate(){
 
   //Generate Height
   std::cout<<"Filling World"<<std::endl;
-  generateFlat();
+  generatePerlin();
 }
 
 void World::generateBlank(){
@@ -105,8 +105,23 @@ void World::generatePerlin(){
   perlin.SetFrequency(6);
   perlin.SetPersistence(0.5);
 
+  /*
+  //Adding Water to world.
+  std::cout<<"Flooding World."<<std::endl;
+  for(int i = 0; i < dim.x*chunkSize; i++){
+    for(int j = 0; j < 16; j++){
+      for(int k = 0; k < dim.z*chunkSize; k++){
+        //Add water up to a specific height
+        blueprint.addEditBuffer(glm::vec3(i, j, k), BLOCK_WATER, false);
+      }
+    }
+  }
+  //Flood
+  evaluateBlueprint(blueprint);
+  */
+
   //Loop over the world-size
-  std::cout<<"Generating Perlin Surface"<<std::endl;
+  std::cout<<"Adding Ground."<<std::endl;
   for(int i = 0; i < dim.x*chunkSize; i++){
     for(int k = 0; k < dim.z*chunkSize; k++){
 
@@ -164,7 +179,7 @@ void World::generatePerlin(){
   std::cout<<"Adding Trees"<<std::endl;
   Blueprint _tree;
 
-  for(int i = 0; i < 2000; i++){
+  for(int i = 0; i < 2500; i++){
     //Generate a random size tree model.
     int treeheight = rand()%6+8;
     _tree.editBuffer.clear();
