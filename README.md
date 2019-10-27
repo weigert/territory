@@ -1,6 +1,20 @@
 # territory
 3D rendered proc-gen world test
 
+## Compiling
+
+Use the make file to compile the binary.
+
+    make all
+    
+### Dependencies
+- gcc
+- SDL2 (core, image, mixer, ttf)
+- OpenGL3
+- GLEW
+- Boost (Serialization, System, Filesystem)
+- DearImgui
+
 ## Usage
     ./territory [world_name]
 If the world name doesn't exist, it will generate a world. If it does, it will load the world. Tested on Ubuntu 18
