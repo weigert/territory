@@ -431,7 +431,7 @@ void World::bufferChunks(View view){
 
     //Make sure that the chunk that we determined will not be removed is also not reloaded
     for(unsigned int j = 0; j < load.size(); j++){
-      if(load[j].x == chunks[i].pos.x && load[j].y == chunks[i].pos.y && load[j].z == chunks[i].pos.z){
+      if(glm::all(glm::equal(load[j], chunks[i].pos))){
         //Remove the element from load, as it is already inside this guy
         load.erase(load.begin()+j);
       }

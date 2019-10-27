@@ -66,7 +66,7 @@ class View{
     unsigned int SCREEN_WIDTH = 1200, SCREEN_HEIGHT = 800;
     const unsigned int SHADOW_WIDTH = 1000, SHADOW_HEIGHT = 1000;
     bool fullscreen = false;
-    bool vsync = false;
+    bool vsync = true;
 
     //GUI Handler
     Interface* interface;

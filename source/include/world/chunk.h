@@ -7,12 +7,12 @@ class Chunk{
 public:
   //Position information and size information
   glm::vec3 pos;
-  int size;
+  bool refreshModel = false;
+    int size;
   BiomeType biome;
 
   //Data Storage Member
   int data[16*16*16] = {0};
-  bool refreshModel = false;
 
   //Get the Flat-Array Index
   int getIndex(glm::vec3 _p);
