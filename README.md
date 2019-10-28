@@ -7,6 +7,8 @@ Use the make file to compile the binary.
 
     make all
     
+Tested on Ubuntu 18 LTS. I have been informed that on Ubuntu 19, the install folder for libnoise is different and needs to be fixed in the 'territory.h' header file.
+    
 ### Dependencies
 - gcc
 - SDL2 (core, image, mixer, ttf)
@@ -18,7 +20,7 @@ Use the make file to compile the binary.
 
 ## Usage
     ./territory [world_name]
-If the world name doesn't exist, it will generate a world. If it does, it will load the world. Tested on Ubuntu 18LTS.
+If the world name doesn't exist, it will generate a world. If it does, it will load the world.
 
 If you want to use the perlin+forest world generator, edit the function World::generate() to use generatePerlin() instead of generateFlat(), recompile and generate a new world (e.g. by choosing a new world name, or deleting the one you were using).
 
