@@ -40,6 +40,12 @@ bool Item::fromTable(BlockType _block){
     quantity = 1;
     return true;
   }
+  if(_block == BLOCK_CLAY){
+    name = "Clay";
+    _type = ROCKS;
+    quantity = 1;
+    return true;
+  }
   return false;
 }
 

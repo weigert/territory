@@ -1,6 +1,5 @@
 #include "../taskbot/population.h"
 #include "../world/world.h"
-#include "../game/player.h"
 #include "../render/sprite.h"
 #include "../taskbot/bot.h"
 #include "../taskbot/state.h"
@@ -157,7 +156,7 @@ void Interface::drawTask(Task *task){
   }
 }
 
-void Interface::render(View &view, World &world, Population &population, Player &player){
+void Interface::render(View &view, World &world, Population &population){
   ImGui::Begin("Territory Controller");
 
   //Begin the Menu Bar

@@ -1,5 +1,4 @@
 #pragma once
-#include "../forward/mandate.fwd.h"
 #include "../forward/memory.fwd.h"
 #include "../forward/world.fwd.h"
 #include "../forward/task.fwd.h"
@@ -10,6 +9,8 @@
 
 class Bot{
   public:
+    Bot(int _ID);
+
     //Meta Data
     glm::vec3 home = glm::vec3(0);
     glm::vec3 pos = glm::vec3(0);
@@ -19,19 +20,12 @@ class Bot{
     int ID;
     unsigned int memorySize;
     unsigned int shortermSize;
-    int forage;
-    bool trail;
-    bool fly;
     std::string species;
     bool dead = false;
 
     //Bot has a sprite
     Sprite sprite;
     void setupSprite();
-
-    //Raw Constructor
-    Bot(int _ID);
-    Bot(std::string s, bool t, bool f,int forag, int mem, int id, glm::vec3 _pos, glm::vec3 _view, glm::vec3 _home);
 
     //Inventory and Attributes
     Inventory inventory;
@@ -54,3 +48,14 @@ class Bot{
     void updateMemory(Memory &query, bool all, Memory &memory);
     void addMemory(World world, glm::vec3 _pos);
 };
+
+//Constructors
+Bot::Bot(int _ID){
+  viewDistance = glm::vec3(2);
+  memorySize = 25;
+  shortermSize = 5;
+  species = "Human";
+  ID = _ID;
+  pos = glm::vec3(0);
+  home = glm::vec3(0);
+}

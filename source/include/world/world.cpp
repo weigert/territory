@@ -2,12 +2,10 @@
 //Dependencies
 #include "chunk.h"
 #include "octree.h"
-#include "../game/player.h"
 #include "../game/item.h"
 #include "../render/shader.h"
 #include "../render/billboard.h"
 #include "../render/view.h"
-#include "geology.h"
 #include "world.h"
 
 /*
@@ -28,7 +26,7 @@ void World::generate(){
 
   //Generate Height
   std::cout<<"Filling World"<<std::endl;
-  generatePerlin();
+  generateFlat();
 }
 
 void World::generateBlank(){
@@ -66,7 +64,7 @@ void World::generateFlat(){
   evaluateBlueprint(blueprint);
 
   //Rocks
-  std::cout<<"Adding Rocks"<<std::endl;
+  std::cout<<"Adding Clay Boulders"<<std::endl;
   for(int i = 0; i < 1000; i++){
     int rock[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
     blueprint.addEditBuffer(glm::vec3(rock[0], 1, rock[1]), BLOCK_CLAY, false);
@@ -76,7 +74,7 @@ void World::generateFlat(){
   evaluateBlueprint(blueprint);
 
   //Trees
-  std::cout<<"Adding Trees"<<std::endl;
+  std::cout<<"Adding Cacti"<<std::endl;
   Blueprint _tree;
 
   for(int i = 0; i < 2000; i++){
@@ -88,13 +86,6 @@ void World::generateFlat(){
   }
 
   //Evaluate the Buffer
-  evaluateBlueprint(blueprint);
-
-  //Add a simple hut
-  std::cout<<"Adding House"<<std::endl;
-  Blueprint _hut;
-  _hut.hut();
-  blueprint.merge(_hut.translate(glm::vec3(75, 1, 75)));
   evaluateBlueprint(blueprint);
 }
 
@@ -198,40 +189,6 @@ void World::generatePerlin(){
   }
 
   //Evaluate the Buffer
-  evaluateBlueprint(blueprint);
-}
-
-void World::generateTectonic(){
-  //Generate a geology
-  std::cout<<"Generating Geology"<<std::endl;
-  Geology geology;
-  geology.initialize();
-	geology.generate();
-
-  //Get the Tectonic Surface
-  std::cout<<"Adding to EditBuffer"<<std::endl;
-  for(int i = 0; i < dim.x; i++){
-    for(int k = 0; k < dim.z; k++){
-      //Loop over the height and set the blocks
-      float height = geology.height[helper::getIndex(glm::vec2(i, k), glm::vec2(dim.x, dim.z))];
-      height *= chunkSize*dim.y*0.9;
-
-      //Add the individual Chunks
-      for(int l = 0; l < chunkSize; l++){
-        for(int m = 0; m < chunkSize; m++){
-          //Set the Grass and Dirt
-          for(int j = 0; j < (int)height-1; j++){
-            //Add the block to the editBuffer
-            blueprint.addEditBuffer(glm::vec3(i*chunkSize+l, j, k*chunkSize+m), BLOCK_DIRT, false);
-          }
-          blueprint.addEditBuffer(glm::vec3(i*chunkSize+l, (int)height-1, k*chunkSize+m), BLOCK_GRASS, false);
-        }
-      }
-    }
-  }
-
-  //Evaluate the Guy
-  std::cout<<"Evaluating EditBuffer"<<std::endl;
   evaluateBlueprint(blueprint);
 }
 

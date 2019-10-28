@@ -6,7 +6,6 @@
 #include "../forward/world.fwd.h"
 //Dependency Forward Declaration
 #include "../forward/view.fwd.h"
-#include "../forward/geology.fwd.h"
 #include "../forward/shader.fwd.h"
 #include "../forward/billboard.fwd.h"
 #include "../forward/chunk.fwd.h"
@@ -46,7 +45,6 @@ public:
   //Generate Function / Chunk Handlers
   void generate();
   void generateBlank();
-  void generateTectonic();
   void generateFlat();
   void generatePerlin();
 

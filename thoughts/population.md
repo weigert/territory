@@ -12,8 +12,6 @@
 - Implement a group structure with land-ownership rights
 - Add items for interaction, as well as storage of tasks and memories inside items
 
-
-
 ##Additional World-Content
 Need to expand the content my bots can interact with...
 
