@@ -48,6 +48,8 @@ class Task{
     Task(std::string taskName, int taskBotID, TaskHandle _handle);
     Task(std::string taskName, int taskBotID, Handle taskHandle);
     Task(std::string taskName, int taskBotID, int animationID, glm::vec3 animationTranslate, Handle taskHandle);
+    void set(std::string taskName, int taskBotID, Handle _handle);
+    void set(std::string taskName, int taskBotID, TaskHandle _handle);
 
     //Task Handling Tasks (Special Functions)
     bool perform(World &world, Population &population, Audio &audio);

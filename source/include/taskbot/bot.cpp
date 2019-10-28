@@ -25,15 +25,13 @@ void Bot::executeTask(World &world, Population &population, Audio &audio){
   //Check for interrupt!
   if(interrupt){
     //Reevaluate Mandates, so we can respond
-    Task *decide = new Task("Handle Interrupt", ID, &Task::decide);
-    current = decide;
+    current->set("Decide on Action", ID, &Task::decide);
     interrupt = false;
   }
   else{
     //Execute Current Task, upon success overwrite.
     if((current->perform)(world, population, audio)){
-      Task *decide = new Task("Decide on Action", ID, &Task::decide);
-      current = decide;
+      current->set("Decide on Action", ID, &Task::decide);
     }
   }
 }
