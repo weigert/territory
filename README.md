@@ -14,6 +14,7 @@ Use the make file to compile the binary.
 - GLEW
 - Boost (Serialization, System, Filesystem)
 - DearImgui
+- libnoise
 
 ## Usage
     ./territory [world_name]
