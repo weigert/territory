@@ -17,3 +17,4 @@ DONE:
 - Setup Basic Shadow Mapping and Normal Mapping / Ambient Lighting, etc.
 - Chunks should construct a VBO, so that we render chunks, not individual cubes.
 - Pick the block color based on the ID value in the chunk data.
+- and more...

@@ -117,9 +117,6 @@ Logger _log;
 #include "include/world/chunk.cpp"
 #include "include/world/world.cpp"
 
-using namespace cimg_library;
-#include "include/world/geology.cpp"
-
 //View Classes
 #include "include/render/interface.cpp"
 #include "include/render/billboard.cpp"
@@ -132,12 +129,10 @@ using namespace cimg_library;
 //Game Classes
 #include "include/game/event.cpp"
 #include "include/game/item.cpp"
-#include "include/game/player.cpp"
 
 //NPC Classes
 #include "include/taskbot/state.cpp"
 #include "include/taskbot/memory.cpp"
 #include "include/taskbot/bot.cpp"
-#include "include/taskbot/mandate.cpp"
 #include "include/taskbot/population.cpp"
 #include "include/taskbot/task.cpp"

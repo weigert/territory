@@ -7,7 +7,6 @@
 #include "interface.h"
 #include "../taskbot/population.h"
 #include "../taskbot/bot.h"
-#include "../game/player.h"
 #include "../game/item.h"
 //Load our Own Type!
 #include "view.h"
@@ -198,7 +197,7 @@ void View::update(){
   */
 }
 
-void View::render(World &world, Player &player, Population &population){
+void View::render(World &world, Population &population){
 
   /* SHADOW MAPPING */
   glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
@@ -357,14 +356,14 @@ void View::render(World &world, Player &player, Population &population){
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
   //Add the GUI
-  renderGUI(world, player, population);
+  renderGUI(world, population);
 
   //Swap the Window
   SDL_GL_SwapWindow(gWindow);
 }
 
 //User Interface
-void View::renderGUI(World &world, Player &player, Population &population){
+void View::renderGUI(World &world, Population &population){
   //ImGUI Drawing Context
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplSDL2_NewFrame(gWindow);
@@ -374,7 +373,7 @@ void View::renderGUI(World &world, Player &player, Population &population){
 
   //Draw to ImGui
   if(showmenu){
-    interface->render(*this, world, population, player);
+    interface->render(*this, world, population);
     //ImGui::ShowDemoWindow();
   }
 

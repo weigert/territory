@@ -30,13 +30,11 @@ int main( int argc, char* args[] ) {
 		return 0;
 	}
 
-	//Add a Population
-	Player player;
-
 	//Generate the World and Chunks
 	world.bufferChunks( view );
 	view.loadChunkModels( world );
 
+	//Add Population
 	Population population( world );
 
 	//Game Loop
@@ -51,7 +49,7 @@ int main( int argc, char* args[] ) {
 	while(!quit){
 		//Handle User Input
 		events.input(&e, quit, paused);
-		events.update(world, player, population, view, audio);
+		events.update(world, population, view, audio);
 		ImGui_ImplSDL2_ProcessEvent(&e);
 
 		//Update the Population
@@ -62,7 +60,7 @@ int main( int argc, char* args[] ) {
 
 		//Render the View
 		view.updateChunkModels( world );
-		view.render(world, player, population);
+		view.render(world, population);
 
 		view.calcFPS();
 	}

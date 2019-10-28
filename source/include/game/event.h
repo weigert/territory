@@ -27,9 +27,9 @@ public:
   void input(SDL_Event *e, bool &quit, bool &paused);
 
   //Handle the existing stack every tick
-  void update(World &world, Player &player, Population &population, View &view, Audio &audio);
+  void update(World &world, Population &population, View &view, Audio &audio);
 
   //Handle Individual Types of Events
-  void handlePlayerMove(World &world, Player &player, View &view, int a);
+  void handlePlayerMove(World &world, View &view, int a);
   void handleCameraMove(World &world, View &view);
 };

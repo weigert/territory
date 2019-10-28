@@ -3,7 +3,6 @@
 #include "../world/world.h"
 #include "../render/view.h"
 #include "../render/audio.h"
-#include "player.h"
 
 #include "event.h"
 
@@ -50,7 +49,7 @@ void eventHandler::input(SDL_Event *e, bool &quit, bool &paused){
   }
 }
 
-void eventHandler::update(World &world, Player &player, Population &population, View &view, Audio &audio){
+void eventHandler::update(World &world, Population &population, View &view, Audio &audio){
   //Do this thingy to get the current mouse position that is being thing'd
   if(click){
     glm::vec2 pos = glm::vec2(mouse->button.x, mouse->button.y);
@@ -103,22 +102,22 @@ void eventHandler::update(World &world, Player &player, Population &population, 
   if(!inputs.empty()){
     //Handle the Player Move
     if(inputs.front()->key.keysym.sym == SDLK_w){
-      handlePlayerMove(world, player, view, 0);
+      handlePlayerMove(world, view, 0);
     }
     else if(inputs.front()->key.keysym.sym == SDLK_a){
-      handlePlayerMove(world, player, view, 1);
+      handlePlayerMove(world, view, 1);
     }
     else if(inputs.front()->key.keysym.sym == SDLK_s){
-      handlePlayerMove(world, player, view, 2);
+      handlePlayerMove(world, view, 2);
     }
     else if(inputs.front()->key.keysym.sym == SDLK_d){
-      handlePlayerMove(world, player, view, 3);
+      handlePlayerMove(world, view, 3);
     }
     else if(inputs.front()->key.keysym.sym == SDLK_SPACE){
-      handlePlayerMove(world, player, view, 4);
+      handlePlayerMove(world, view, 4);
     }
     else if(inputs.front()->key.keysym.sym == SDLK_c){
-      handlePlayerMove(world, player, view, 5);
+      handlePlayerMove(world, view, 5);
     }
     else if(inputs.front()->key.keysym.sym == SDLK_ESCAPE){
       view.showmenu = !view.showmenu; //Toggle Menu Visibility
@@ -186,7 +185,7 @@ void eventHandler::update(World &world, Player &player, Population &population, 
   }
 }
 
-void eventHandler::handlePlayerMove(World &world, Player &player, View &view, int a){
+void eventHandler::handlePlayerMove(World &world, View &view, int a){
   //Movement Vector
   glm::vec3 m;
 

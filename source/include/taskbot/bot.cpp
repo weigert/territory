@@ -1,5 +1,4 @@
 //Dependencies
-#include "mandate.h"
 #include "../world/world.h"
 #include "task.h"
 #include "memory.h"
@@ -9,42 +8,17 @@
 //Link to class
 #include "bot.h"
 
-
-//Constructor
-Bot::Bot(int _ID){
-  viewDistance = glm::vec3(2);
-  memorySize = 25;
-  shortermSize = 5;
-  trail = false;
-  fly = false;
-  species = "Human";
-  ID = _ID;
-  pos = glm::vec3(0);
-  home = glm::vec3(0);
-}
-
-Bot::Bot(std::string s, bool t, bool f, int forag, int mem, int id, glm::vec3 _pos, glm::vec3 _view, glm::vec3 _home){
-  viewDistance = _view;
-  forage = forag;
-  memorySize = mem;
-  shortermSize = 5;
-  trail = t;
-  fly = f;
-  species = s;
-  ID = id;
-  pos = _pos;
-  home = _home;
-}
-
+//Test for Interrupt
 bool Bot::tryInterrupt(State _state){
+
+  /*
+  Currently always returns true - in the future status effects or other world conditions
+  might lower the probability that in interruption is successful.
+  */
+
   interrupt = true;
   return true;
 }
-
-/*
-Bots make sounds, but so do other things.
-So we should actually have a storage vector of sound effects, and process them by the audio guy as they come.
-*/
 
 //Per Tick Executor Task
 void Bot::executeTask(World &world, Population &population, Audio &audio){

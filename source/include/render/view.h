@@ -8,7 +8,6 @@
 #include "../forward/model.fwd.h"
 #include "../forward/population.fwd.h"
 #include "../forward/bot.fwd.h"
-#include "../forward/player.fwd.h"
 #include "../forward/interface.fwd.h"
 #include "../forward/item.fwd.h"
 
@@ -77,7 +76,7 @@ class View{
     glm::vec3 hover = glm::vec3(0);
 
     //Viewposition
-    glm::vec3 viewPos = glm::vec3(90, 14, 90);
+    glm::vec3 viewPos = glm::vec3(102, 23, 96);
     glm::vec3 renderDistance = glm::vec3(2, 2, 2);
 
     //LOD Handling
@@ -109,8 +108,8 @@ class View{
 
     //Render the entire drawing pipeline
     void update();
-    void render(World &world, Player &player, Population &population);
-    void renderGUI(World &world, Player &player, Population &population);
+    void render(World &world, Population &population);
+    void renderGUI(World &world, Population &population);
 
     //Render Parameters
     int blur = 0; //Degree of Blur

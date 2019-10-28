@@ -15,7 +15,7 @@ class Interface{
 public:
   int curID;
   //Render the Interface Elements
-  void render(View &view, World &world, Population &population, Player &player);
+  void render(View &view, World &world, Population &population);
 
   //Extra Stuff
   void drawBot(Bot &bot);

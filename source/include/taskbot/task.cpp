@@ -105,8 +105,21 @@ bool Task::example(World &world, Population &population, Audio &audio, State &_a
   //Check
   if(initFlag){
     Task null("Example", botID, &Task::null);   //Construct the Task "null"
-    null.animation = 0;                         //Set the Task's Animation
-    queue.push_back(null);                      //Add it to the Queue
+    null.animation = 0;                         //Set the Task's Metadata
+    null.sound = SOUND_NONE;
+    //...
+
+    Task null2("Other Example", botID, &Task::null);
+    null2.animation = 0;
+    null2.sound = SOUND_NONE;
+    null2.pass = true;
+    //...
+
+    //Add more tasks...
+
+    //Add to queue in reverse order...
+    queue.push_back(null2);
+    queue.push_back(null);
   }
 
   //Handle the Queue appropriately.
@@ -154,7 +167,7 @@ bool Task::walk(World &world, Population &population, Audio &audio, State &_args
   }
 
   //Do the Stuff
-  if(initFlag && population.bots[botID].path.empty()){
+  if(initFlag || population.bots[botID].path.empty()){
     //Calculate a Path Here.
     _log.debug("Calculating Path.");
     population.bots[botID].path = calculatePath(botID, _args.pos, population, world, _args.range);
@@ -207,8 +220,12 @@ bool Task::idle(World &world, Population &population, Audio &audio, State &_args
     Task wait("Wait", botID, &Task::wait);
     wait.args.time = _args.time;
 
+    Task look("Look", botID, &Task::look);
+    look.args.range = population.bots[botID].viewDistance;
+
     //Add the Tasks for Idle
     queue.push_back(wait);
+    queue.push_back(look);
     queue.push_back(walk); //Walk will be executed first
   }
 
@@ -601,27 +618,9 @@ bool Task::decide(World &world, Population &population, Audio &audio, State &_ar
     initFlag = false;
   }
 
-  /*
-  if(population.bots[botID].mandates.empty()){
-    //Set the Current Task to Something Abitrary
-    Task *masterTask = new Task("Human Task", botID, &Task::Dummy);
-    population.bots[botID].current = masterTask;
-  }
-  else{
-    //Determine a viable task from the list of tasks to perform
-    population.bots[botID].current = population.bots[botID].mandates.back();
-    population.bots[botID].mandates.pop_back();
-    //For now, we are just taking the back element
-  }
-  */
-  //Take whatever mandate is available
-
-/*
-  Task *masterTask = new Task("Testing Dummy Task", botID, &Task::Dummy);
-  masterTask->sound = SOUND_HIT;
-
+  //Use the follow task
+  Task *masterTask = new Task("Harvest Cactus.", botID, &Task::Dummy);
   population.bots[botID].current = masterTask;
-*/
 
   return false;
 }
@@ -682,17 +681,17 @@ bool Task::converse(World &world, Population &population, Audio &audio, State &_
 //Special Functions
 bool Task::Dummy(World &world, Population &population, Audio &audio, State &_args){
   if(initFlag){
-    Task seek("Seek Pumpkin", botID, &Task::seek);
-    seek.args.block = BLOCK_PUMPKIN;
+    Task seek("Seek Clay", botID, &Task::seek);
+    seek.args.block = BLOCK_CACTUS;
     seek.args.range = population.bots[botID].range;
 
     //Use the outputs from the previous task for these tasks.
-    Task destroy("Collect Pumpkin", botID, &Task::destroy);
+    Task destroy("Destroy Cactus", botID, &Task::destroy);
     destroy.sound = SOUND_HIT;
     destroy.pass = true;
     destroy.animation = 3;                         //Set the Task's Animation
 
-    Task take("Take Pumpkin", botID, &Task::take);
+    Task take("Take Cactus", botID, &Task::take);
     take.pass = true;
 
     //Add them to the queue

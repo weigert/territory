@@ -93,30 +93,3 @@ bool operator||(State lhs, const State& rhs) {
   }
   return false;
 }
-
-//Compare States, return a vector of keys?
-State operator-(State lhs, const State& rhs) {
-  //Construct new State
-  State newState;
-  //Continuous Values
-  newState.pos = lhs.pos - rhs.pos;
-  newState.time = lhs.time - rhs.time;
-  newState.range = lhs.range - rhs.range;
-
-  //Discrete Values
-  newState.task = (lhs.task == rhs.task)?rhs.task:"";
-  newState.block = (lhs.block == rhs.block)?rhs.block:BLOCK_AIR;
-  newState.reachable = (lhs.reachable == rhs.reachable)?rhs.reachable:1-rhs.reachable;
-
-  //Return the State
-  return newState;
-}
-
-//Compare States, return a vector of keys?
-State operator+(State lhs, const State& rhs) {
-  State newState;
-  //Continuous Values
-  newState.pos = lhs.pos - rhs.pos;
-
-  return newState;
-}
