@@ -17,7 +17,9 @@ Use the make file to compile the binary.
 
 ## Usage
     ./territory [world_name]
-If the world name doesn't exist, it will generate a world. If it does, it will load the world. Tested on Ubuntu 18
+If the world name doesn't exist, it will generate a world. If it does, it will load the world. Tested on Ubuntu 18LTS.
+
+If you want to use the perlin+forest world generator, edit the function World::generate() to use generatePerlin() instead of generateFlat(), recompile and generate a new world (e.g. by choosing a new world name, or deleting the one you were using).
 
 ### Controls
 Mouse and Keyboard Inputs:
@@ -26,7 +28,7 @@ Mouse and Keyboard Inputs:
 	- P: Toggle Pause (**PAUSED BY DEFAULT - BOTS ARE VERY FAST**)
 	- M: Play Music
 	- Change Camera Position: WASD
-	- Move Camera Up / Down: Space / LShift
+	- Move Camera Up / Down: Space / C
 	- Change View Angle: Scroll Left / Right
 	- Zoom: Scroll Up / Down
 	- Right-Click: Select Block (and give task at that location using the panel)
