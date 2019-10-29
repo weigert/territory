@@ -36,6 +36,17 @@ Task::Task(std::string taskName, int taskBotID, int animationID, glm::vec3 anima
   translate = animationTranslate;
 }
 
+void Task::set(std::string taskName, int taskBotID, Handle _handle){
+  botID = taskBotID;
+  handle = _handle;
+}
+
+void Task::set(std::string taskName, int taskBotID, TaskHandle _handle){
+  botID = taskBotID;
+  handle = TaskHandles[_handle];
+}
+
+
 /*
 =========================================================
                     TASK HANDLING TASKS
@@ -503,7 +514,7 @@ bool Task::seek(World &world, Population &population, Audio &audio, State &_args
       //Pick a random location and walk there...
       _log.debug("No relevant location found in memory. Walking to random location nearby.");
       Task walk("Stroll", botID, &Task::walk);
-      walk.args.pos = world.getTop(glm::vec2(population.bots[botID].pos.x, population.bots[botID].pos.z) + glm::vec2(rand()%21-10, rand()%21-10));
+      walk.args.pos = world.getTop(glm::vec2(population.bots[botID].pos.x, population.bots[botID].pos.z) + glm::vec2(rand()%11-5, rand()%11-5));
       walk.args.range = population.bots[botID].range;
       _args.pos = walk.args.pos;
 
@@ -619,8 +630,7 @@ bool Task::decide(World &world, Population &population, Audio &audio, State &_ar
   }
 
   //Use the follow task
-  Task *masterTask = new Task("Harvest Cactus.", botID, &Task::Dummy);
-  population.bots[botID].current = masterTask;
+  population.bots[botID].current->set("Harvest Cactus.", botID, &Task::idle);
 
   return false;
 }
