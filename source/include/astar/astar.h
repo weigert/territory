@@ -138,7 +138,7 @@ bool MapSearchNode::GetSuccessors(World &world, AStarSearch<MapSearchNode> *asta
 	}
 
 
-	if( (GetMap(world, x, y, z+1 ) < 9)
+	if( (GetMap(world, x, y, z+1 ) < 9) 
 		&& !((parent_x == x) && (parent_y == y+1) && (parent_z == z))
 		)
 	{

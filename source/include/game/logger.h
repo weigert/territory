@@ -11,5 +11,5 @@ class Logger{
     //Special Types of Outputs
     void debug(std::string _deb);
     void progress(std::string _msg, int cur, int max);  //Progress Bar
-    bool _debug = true;
+    bool _debug = false;
 };

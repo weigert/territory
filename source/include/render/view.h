@@ -65,7 +65,7 @@ class View{
     unsigned int SCREEN_WIDTH = 1200, SCREEN_HEIGHT = 800;
     const unsigned int SHADOW_WIDTH = 1000, SHADOW_HEIGHT = 1000;
     bool fullscreen = false;
-    bool vsync = true;
+    bool vsync = false;
 
     //GUI Handler
     Interface* interface;
@@ -76,12 +76,12 @@ class View{
     glm::vec3 hover = glm::vec3(0);
 
     //Viewposition
-    glm::vec3 viewPos = glm::vec3(102, 1, 96);
+    glm::vec3 viewPos = glm::vec3(100, 1, 100);
     glm::vec3 renderDistance = glm::vec3(2, 2, 2);
 
     //LOD Handling
     int LOD = 4;
-    float zoom = 0.01;
+    float zoom = 0.03;
     float zoomInc = 0.001;
     bool updateLOD = false;
     glm::vec2 focus = glm::vec2(0.1, 0.9);

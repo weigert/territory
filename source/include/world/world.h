@@ -27,8 +27,9 @@ public:
   std::stack<int> updateModels;
   int SEED = 100;
   int chunkSize = 16;
+  int sealevel = 16;
   int tickLength = 1;
-  glm::vec3 dim = glm::vec3(20, 5, 20);
+  glm::vec3 dim = glm::vec3(10, 3, 10);
 
   //Items placed / on the ground
   Inventory placed;
@@ -46,6 +47,7 @@ public:
   void generate();
   void generateBlank();
   void generateFlat();
+  void generateBuildings();
   void generatePerlin();
 
   //Helpers for Blueprint

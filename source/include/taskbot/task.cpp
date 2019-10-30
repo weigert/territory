@@ -160,6 +160,7 @@ bool Task::wait(World &world, Population &population, Audio &audio, State &_args
 }
 
 bool Task::move(World &world, Population &population, Audio &audio, State &_args){
+  //Hard set Position
   population.bots[botID].pos = _args.pos;
   return true;
 }
@@ -279,7 +280,7 @@ bool Task::destroy(World &world, Population &population, Audio &audio, State &_a
 
   /*
 
-  //Item is within range, check for appropriate tools for destroyion
+  //Item is within range, check for appropriate tools for destroying
   bool find = true;
   for(unsigned int i = 0; i < _args.inventory.size(); i++){
     find = false;
@@ -375,7 +376,7 @@ bool Task::build(World &world, Population &population, Audio &audio, State &_arg
   if(initFlag){
     //Define some blueprint...
     Blueprint _house;
-    _house.hut();       //Choose which guy to build
+    _house.building(4);       //Choose which guy to build
     _house = _house.translate(_args.pos + glm::vec3(0, 1, 0)); //Translate into worldspace and sort
     std::sort(_house.editBuffer.begin(), _house.editBuffer.end(),
             [](const bufferObject& a, const bufferObject& b) {
@@ -395,7 +396,7 @@ bool Task::build(World &world, Population &population, Audio &audio, State &_arg
     while(!_house.editBuffer.empty()){
       //Walk to the position...
       walk.args.pos = _house.editBuffer.back().pos;
-      walk.args.range = population.bots[botID].range;
+      walk.args.range = population.bots[botID].range+glm::vec3(0, 5, 0);  //High vertical capabilities
       destroy.args.pos = _house.editBuffer.back().pos;
       place.args.pos =  _house.editBuffer.back().pos;
       place.args.block = _house.editBuffer.back().type;
@@ -423,12 +424,7 @@ bool Task::build(World &world, Population &population, Audio &audio, State &_arg
     }
   }
 
-  if(handleQueue(world, population, audio)){
-    //Save the Construction!
-    world.evaluateBlueprint(world.blueprint);
-    return true;
-  }
-  return false;
+  return handleQueue(world, population, audio);
 }
 
 bool Task::take(World &world, Population &population, Audio &audio, State &_args){
