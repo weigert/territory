@@ -153,6 +153,133 @@ namespace helper{
 
 /*
 ================================================================================
+                      VOLUME FUNCTIONS (FOR BUILDINGS)
+================================================================================
+*/
+
+struct Volume{
+  //Bounding Box Corners
+  glm::vec3 a;
+  glm::vec3 b;
+
+  void translate(glm::vec3 shift);
+  int getVol();
+};
+
+//Get the Total Volume
+int Volume::getVol(){
+  return abs((b.x-a.x)*(b.y-a.y)*(b.z-a.z));
+}
+
+//Move the Corners of the Bounding Box
+void Volume::translate(glm::vec3 shift){
+  a += shift;
+  b += shift;
+}
+
+Volume boundingBox(Volume v1, Volume v2){
+  //New Bounding Volume
+  Volume bb;
+
+  //Determine the Lower Corner
+  bb.a.x = (v1.a.x < v2.a.x)?v1.a.x:v2.a.x;
+  bb.a.y = (v1.a.y < v2.a.y)?v1.a.y:v2.a.y;
+  bb.a.z = (v1.a.z < v2.a.z)?v1.a.z:v2.a.z;
+
+  //Determine the Upper Corner
+  bb.b.x = (v1.b.x > v2.b.x)?v1.b.x:v2.b.x;
+  bb.b.y = (v1.b.y > v2.b.y)?v1.b.y:v2.b.y;
+  bb.b.z = (v1.b.z > v2.b.z)?v1.b.z:v2.b.z;
+
+  return bb;
+}
+
+//Compute the Volume Overlap in 3 Directions
+glm::vec3 overlapVolumes(Volume v1, Volume v2){
+  //Compute Bounding Box for the two volumes
+  Volume bb = boundingBox(v1, v2);
+
+  //Compute the Overlap
+  glm::vec3 ext1 = glm::abs(v1.b - v1.a);  //Extent of v1 in 3 directions
+  glm::vec3 ext2 = glm::abs(v2.b - v2.a);  //Extent of v2 in 3 directions
+  glm::vec3 extbb = glm::abs(bb.b - bb.a); //Extent of the bounding box
+
+  //Overlap is given
+  return ext1 + ext2 - extbb;
+}
+
+//Some cost function to evaluate
+int volumeCostFunction(std::vector<Volume> rooms){
+  //Metric
+  int metric[6] = {
+    0, //Positive Intersection Volume
+    0, //Negative Intersection Volume
+    0, //Surface Area Touching Vertically
+    0, //Surface Area Touching Horizontally
+    0, //Amount of Area Touching Floor
+    0};//Amount of Volume Below the Floor
+
+  int weight[6] = {2, 4, -5, -5, -5, 5};
+
+  //Compute the Energy of a configuration of rooms
+  for(unsigned int i = 0; i < rooms.size(); i++){
+
+    //Comparison Metrics to Other Rooms
+    for(unsigned int j = 0; j < rooms.size(); j++){
+      //If it's the same room, ignore.
+      if(i == j) continue;
+
+      //Compute the Overlap between two volumes.
+      glm::vec3 overlap = overlapVolumes(rooms[i], rooms[j]);
+
+      //Positive Intersection Volume (if any of them are 0, it's 0)
+      glm::vec3 posOverlap = glm::clamp(overlap, glm::vec3(0), overlap);
+      metric[0] += glm::abs(posOverlap.x*posOverlap.y*posOverlap.z); //Ignore Negative Values
+
+      //Negative Intersection Volume
+      glm::vec3 negOverlap = glm::clamp(overlap, overlap, glm::vec3(0));
+      metric[1] += glm::abs(negOverlap.x*negOverlap.y*negOverlap.z); //Ignore Negative Values
+
+      //Top Surface Contact
+      if(overlap.y == 0){
+        metric[2] += overlap.x*overlap.z;
+      }
+      //Side Surface Contact (X)
+      if(overlap.x == 0){
+        //This can still be 0, if it is corners touching, i.e. overlap.z = 0
+        metric[3] += overlap.z*overlap.y;
+      }
+      //Side Surface Contact (Z)
+      if(overlap.z == 0){
+        //This can still be 0, if it is corners touching, i.e. overlap.x = 0
+        metric[4] += overlap.x*overlap.y;
+      }
+    }
+
+    //We need to know if any rooms are touching the floor.
+    if(rooms[i].a.y == 0){
+      //If the rooms is larger, than it is more important that it touches the floor.
+      metric[4] += rooms[i].a.x*rooms[i].a.z;
+    }
+
+    //Check if we have volume below the floor!
+    if(rooms[i].a.y < 0){
+      //Check if the whole volume is below the surface
+      if(rooms[i].b.y < 0){
+        metric[5] += rooms[i].getVol();
+      }
+      else{
+        metric[5] += abs(rooms[i].a.y)*(rooms[i].b.z-rooms[i].a.z)*(rooms[i].b.x-rooms[i].a.x);
+      }
+    }
+  }
+
+  //Return Metric * Weights
+  return metric[0]*weight[0] + metric[1]*weight[1] + metric[2]*weight[2] + metric[3]*weight[3] + metric[4]*weight[4] + metric[5]*weight[5];
+}
+
+/*
+================================================================================
                       IOSTREAM OPERATORS FOR GLM
 ================================================================================
 */

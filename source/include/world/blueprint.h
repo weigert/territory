@@ -35,11 +35,12 @@ class Blueprint{
 public:
   //Dimension Parameters
   int chunkSize = 16;
-  glm::vec3 dim = glm::vec3(20, 5, 20);
+  glm::vec3 dim = glm::vec3(10, 3, 10);
 
   //Helpers
   std::vector<bufferObject> editBuffer;
   bool addEditBuffer(glm::vec3 _pos, BlockType _type, bool negative);
+  void removeDuplicates(bool later);
   void merge(Blueprint _other);
   Blueprint translate(glm::vec3 _pos);
 
@@ -50,6 +51,7 @@ public:
   //Blueprint Constructors
   void flatSurface(int x, int z);
   void hut();
+  void building(const int &n);
   void tree(int height);
   void cactus();
 };

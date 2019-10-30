@@ -29,7 +29,7 @@ glm::vec4 Chunk::getColorByID(BlockType _type){
       color = glm::vec4(0.74f, 0.5f, 0.36f, 1.0f);
       break;
     case BLOCK_WATER:
-      color = glm::vec4(0.02f, 0.61f, 0.75f, 1.0f);
+      color = glm::vec4(0.3f, 0.57f, 0.67f, 1.0f);
       break;
     case BLOCK_SAND:
       color = glm::vec4(0.93f, 0.91f, 0.38f, 1.0f);

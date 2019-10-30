@@ -26,7 +26,8 @@ void World::generate(){
 
   //Generate Height
   std::cout<<"Filling World"<<std::endl;
-  generateFlat();
+  //generateBuildings();
+  generatePerlin();
 }
 
 void World::generateBlank(){
@@ -56,6 +57,34 @@ void World::generateBlank(){
       }
     }
   }
+}
+
+void World::generateBuildings(){
+  //Flat Surface
+  blueprint.flatSurface(dim.x*chunkSize, dim.z*chunkSize);
+  evaluateBlueprint(blueprint);
+
+  //Add Generated Buildings
+  Blueprint _building;
+  _building.building(5);
+  blueprint.merge(_building.translate(glm::vec3(100, 1, 100)));
+  evaluateBlueprint(blueprint);
+
+/*
+  //Trees
+  std::cout<<"Adding Trees"<<std::endl;
+  Blueprint _tree;
+
+  for(int i = 0; i < 200; i++){
+    _tree.editBuffer.clear();
+    _tree.tree(10); //Construct a tree blueprint (height = 9
+    //Append the Translated Blueprint to the full blueprint.
+    int tree[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
+    blueprint.merge(_tree.translate(glm::vec3(tree[0], 1, tree[1])));
+  }
+
+  blueprint.removeDuplicates(false);
+  */
 }
 
 void World::generateFlat(){
@@ -96,11 +125,11 @@ void World::generatePerlin(){
   perlin.SetFrequency(6);
   perlin.SetPersistence(0.5);
 
-  /*
+
   //Adding Water to world.
   std::cout<<"Flooding World."<<std::endl;
   for(int i = 0; i < dim.x*chunkSize; i++){
-    for(int j = 0; j < 16; j++){
+    for(int j = 0; j < sealevel; j++){
       for(int k = 0; k < dim.z*chunkSize; k++){
         //Add water up to a specific height
         blueprint.addEditBuffer(glm::vec3(i, j, k), BLOCK_WATER, false);
@@ -109,7 +138,6 @@ void World::generatePerlin(){
   }
   //Flood
   evaluateBlueprint(blueprint);
-  */
 
   //Loop over the world-size
   std::cout<<"Adding Ground."<<std::endl;
@@ -125,10 +153,13 @@ void World::generatePerlin(){
 
       //Now loop over the height and set the blocks
       for(int j = 0; j < (int)height-1; j++){
-        //Add the block to the editBuffer
-        blueprint.addEditBuffer(glm::vec3(i, j, k), BLOCK_DIRT, false);
+        if(j < sealevel-1) blueprint.addEditBuffer(glm::vec3(i, j, k), BLOCK_STONE, false);
+        else if(j <= sealevel) blueprint.addEditBuffer(glm::vec3(i, j, k), BLOCK_SAND, false);
+        else blueprint.addEditBuffer(glm::vec3(i, j, k), BLOCK_DIRT, false);
       }
-      blueprint.addEditBuffer(glm::vec3(i, (int)height-1, k), BLOCK_GRASS, false);
+
+      //Add Grass on top
+      if(height > sealevel+3) blueprint.addEditBuffer(glm::vec3(i, (int)height-1, k), BLOCK_GRASS, false);
     }
   }
 
@@ -137,7 +168,7 @@ void World::generatePerlin(){
 
   //Rocks
   std::cout<<"Adding Rocks"<<std::endl;
-  for(int i = 0; i < 100; i++){
+  for(int i = 0; i < 500; i++){
     int rock[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
     //Normalize the Block's x,z coordinates
     float x = (float)(rock[0]) / (float)(chunkSize*dim.x);
@@ -145,6 +176,8 @@ void World::generatePerlin(){
 
     float height = perlin.GetValue(x, SEED, z)/5+0.25;
     height *= (dim.y*chunkSize);
+
+    if(height < sealevel) continue;
 
     blueprint.addEditBuffer(glm::vec3(rock[0], (int)height, rock[1]), BLOCK_STONE, false);
   }
@@ -162,6 +195,8 @@ void World::generatePerlin(){
 
     float height = perlin.GetValue(x, SEED, z)/5+0.25;
     height *= (dim.y*chunkSize);
+
+    if(height < sealevel) continue;
 
     blueprint.addEditBuffer(glm::vec3(rock[0], (int)height, rock[1]), BLOCK_PUMPKIN, false);
   }
@@ -184,6 +219,8 @@ void World::generatePerlin(){
 
     float height = perlin.GetValue(x, SEED, z)/5+0.25;
     height *= (dim.y*chunkSize);
+
+    if(height < 16) continue;
 
     blueprint.merge(_tree.translate(glm::vec3(tree[0], (int)height, tree[1])));
   }
@@ -267,8 +304,6 @@ int World::moveWeight(BlockType _type){
   switch(_type){
     case BLOCK_AIR:
       return 1;
-    case BLOCK_WATER:
-      return 5;
     default:
       return 10;
   }
@@ -285,7 +320,7 @@ BlockType World::getBlock(glm::vec3 _pos){
       return (BlockType)chunks[i].data[chunks[i].getIndex(p)];
     }
   }
-  return BLOCK_AIR;
+  return BLOCK_VOID;
 }
 
 void World::setBlock(glm::vec3 _pos, BlockType _type){

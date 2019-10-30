@@ -48,20 +48,21 @@ enum BiomeType{
 };
 
 enum BlockType{
-  BLOCK_AIR = 0,
-  BLOCK_GRASS = 1,
-  BLOCK_DIRT = 2,
-  BLOCK_SAND = 3,
-  BLOCK_CLAY = 4,
-  BLOCK_GRAVEL = 5,
-  BLOCK_STONE = 6,
-  BLOCK_WATER = 7,
-  BLOCK_LEAVES = 8,
-  BLOCK_WOOD = 9,
-  BLOCK_PUMPKIN = 10,
-  BLOCK_CACTUS = 11,
-  BLOCK_PLANKS = 12,
-  BLOCK_GLASS = 13
+  BLOCK_AIR,
+  BLOCK_GRASS,
+  BLOCK_DIRT,
+  BLOCK_SAND,
+  BLOCK_CLAY,
+  BLOCK_GRAVEL,
+  BLOCK_STONE,
+  BLOCK_WATER,
+  BLOCK_LEAVES,
+  BLOCK_WOOD,
+  BLOCK_PUMPKIN,
+  BLOCK_CACTUS,
+  BLOCK_PLANKS,
+  BLOCK_GLASS,
+  BLOCK_VOID
 };
 
 enum SoundByte{
@@ -89,6 +90,7 @@ enum SoundByte{
 #include <noise/noise.h>
 #include <vector>
 #include <deque>
+#include <random>
 
 //File / General IO
 #include <iostream>
