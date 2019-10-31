@@ -92,3 +92,6 @@ A description of features and future plans for various elements of the simulatio
 	- Population: Read *thoughts/population.md*
 
 A number of other files describe other systems which are either implemented or are planned.
+
+## License
+This software is available under the [Mozilla Public License](https://www.mozilla.org/en-US/MPL/2.0/). Still, I don't want to clutter the source with header text, so I hope that's ok. Feel free to use and modify the source of this project.
