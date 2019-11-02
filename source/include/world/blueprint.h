@@ -56,8 +56,13 @@ public:
   //Blueprint Constructors
   void flatSurface(int x, int z);
   void hut();
-  void building(const int &n, BuildingStyle style);
-  void buildingFromGraph(graph::Graph<graph::ROOMGRAPH> buildingGraph, BuildingStyle style);
+
+  template <BuildingStyle S>
+  void building(const int &n);
+
+  template<BuildingStyle S>
+  bool buildingFromGraph(graph::Graph<graph::ROOMGRAPH> buildingGraph);
+
   void tree(int height);
   void cactus();
 };

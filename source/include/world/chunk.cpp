@@ -46,6 +46,12 @@ glm::vec4 Chunk::getColorByID(BlockType _type){
     case BLOCK_WOOD:
       color = glm::vec4(0.6f, 0.375f, 0.14f, 1.0f);
       break;
+    case BLOCK_GRAVEL:
+      color = glm::vec4(0.08f, 0.32f, 0.43f, 1.0f);
+      break;
+    case BLOCK_SANDSTONE:
+      color = glm::vec4(0.8f, 0.75f, 0.64f, 1.0f);
+      break;
     case BLOCK_PUMPKIN:
       color = glm::vec4(1.0f, 0.5f, 0.0f, 1.0f);
       break;

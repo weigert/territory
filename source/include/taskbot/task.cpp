@@ -390,7 +390,7 @@ bool Task::build(World &world, Population &population, Audio &audio, State &_arg
   if(initFlag){
     //Define some blueprint...
     Blueprint _house;
-    _house.building(4, RUSTIC);       //Choose which guy to build
+    _house.building<RUSTIC>(4);       //Choose which guy to build
     _house = _house.translate(_args.pos + glm::vec3(0, 1, 0)); //Translate into worldspace and sort
     std::sort(_house.editBuffer.begin(), _house.editBuffer.end(),
             [](const bufferObject& a, const bufferObject& b) {

@@ -35,7 +35,6 @@ namespace graph{
   //Create an Edge Struct
   template <type G> struct Edge{
     Node<G>* to;
-    Edge(Node<G> _to){ to = &_to; }
   };
 
   //Specialize Payloads for types
@@ -50,9 +49,6 @@ namespace graph{
 
   template <> struct Edge<ROADGRAPH>{
     Node<ROADGRAPH>* to;
-    Edge(Node<ROADGRAPH> _to){ to = &_to; }
-
-    //Payload
     int distance;
   };
 
@@ -74,26 +70,37 @@ namespace graph{
       nodes.push_back(_node);
     }
 
-    void addEdge(Node<G> from, Node<G> to){
-      //Add the edge to the node...
-      Edge<G> _edge(to);
+    void addEdge(Node<G> &from, Node<G> &to, bool bidirectional){
+      Edge<G> _edge, _edge2;
+      _edge.to = &to;
       edges[from].push_back(_edge);
+
+      //Bidirection graph!
+      if(bidirectional){
+        _edge2.to = &from;
+        edges[to].push_back(_edge2);
+      }
     }
 
     //Do special stuff....
-    void generate(int n);
-    int cost();
-    void optimize();
+    void generate(int n);     //Graph Initialization Function
+    int cost();               //Templated Cost Function
+    void optimize();          //Perform an Optimization
+    bool sanitycheck();       //Check the Results
   };
 
 /*
 ================================================================================
-                              GRAPH GENERATORS
+                        GRAPH GENERATORS & SANITY CHECK
 ================================================================================
 */
 
 //Graph Generators!
 template <> void Graph<ROOMGRAPH>::generate(int n){
+  //Clear the Graph!
+  nodes.clear();
+  edges.clear();
+
 
   //Add n nodes to graph
   for(int i = 0; i < n + 1; i++){
@@ -110,20 +117,63 @@ template <> void Graph<ROOMGRAPH>::generate(int n){
     int size = 4+rand()%5;
     nodes[i].volume.a = glm::vec3(0);
     nodes[i].volume.b = glm::vec3(size);
-
-    //Better results if volumes are shifted apart a bit first (most of the time!).
-    //nodes[i].volume.translate(glm::vec3(rand()%(2*size+1)-size, 0, rand()%(2*size+1)-size));
   }
+
+  /*
+  If you remove all connections from the graph, it will arrange the rooms randomly.
+  But still aesthetically. Just no linking inside! Also no conditions.
+  */
 
   //Connect the Rooms According to their Type
   for(int i = 0; i < n; i++){
-
-  /*  //If this guy has more than 3
-    if(edges[nodes[i]].size > 3) continue;
-    //Linear!
-    addEdge(nodes[i], nodes[i+1]);
-    */
+  //  addEdge(nodes[i], nodes[i+1], true);
   }
+  //addEdge(nodes[1], nodes[n], true);
+}
+
+template <> bool Graph<ROOMGRAPH>::sanitycheck(){
+  //Check for Volume Intersections between any Nodes
+  for (auto node : nodes){
+    //Check if we have volume intersections or full room detachments.
+    if(node.ID == 0) continue;
+    for (auto neighbor : nodes){
+      if(neighbor.ID == 0) continue;
+      if(node.ID == neighbor.ID) continue;
+      glm::vec3 overlap = overlapSize(node.volume, neighbor.volume);
+
+      //Check if we have any overlapping rooms! (negative is allowed)
+      if(glm::all(glm::greaterThan(overlap, glm::vec3(0)))){
+        //Failed Sanity Check: Overlapping Volumes
+        return false;
+      }
+    }
+  }
+
+  //Check for Detachment from Neighboring Nodes in Graph
+  for (auto [node, _edges] : edges){
+    if(node.ID == 0) continue;
+    for (auto edge : _edges){
+      if(edge.to->ID == 0) continue;
+      //Overlap between this node and all of its neighboring guys...
+      glm::vec3 overlap = overlapSize(nodes[node.ID].volume, nodes[edge.to->ID].volume);
+
+      if(glm::any(glm::lessThan(overlap, glm::vec3(0)))){
+        //Failed Sanity Check: Room Detached from Neighbor
+        return false;
+      }
+
+      //This guarantees that we have overlap between rooms we need to connect
+      if(!(overlap.x == 0 && overlap.y > 3 && overlap.z > 2) &&
+         !(overlap.y == 0 && ((overlap.z > 1 && overlap.x > 3) || (overlap.z > 3 && overlap.x > 1))) &&
+         !(overlap.z == 0 && overlap.x > 2 && overlap.y > 3)){
+           //Failed Sanity Check: Insufficient Overlap
+           return false;
+      }
+    }
+  }
+
+  //Sanity Check Completed!
+  return true;
 }
 
 /*
@@ -137,40 +187,33 @@ template <> int Graph<ROOMGRAPH>::cost(){
   //Metric
   int metric[7] = {0};
   //int weight[7] = {2, 1, -2, -2, -1, 2, 1};
-  int weight[7] = {2, 4, -1, -1, 0, 5, 1};
+  int weight[7] = {2, 4, -2, -2, 0, 5, 1};
 
-  /*
-  for (auto const& [node, edges] : edges){
+  //Check for Surface Contact and Non-Negative Overlap Between Connected Block!
+  for (auto const &[node, _edges] : edges){
     if(node.ID == 0) continue; //Ignore the First Guy
-    for (auto const& edge : edges){
+    for (auto const &edge : _edges){
       //Overlap and Overlap Areas
-      glm::vec3 overlap = overlapVolumes(node.volume, edge.to->volume);
-      glm::vec3 negOverlap = glm::clamp(overlap, overlap, glm::vec3(0));
+      glm::vec3 overlap = overlapSize(node.volume, edge.to->volume);
 
-      ////Compute the Overlap Surfaces
-      if(overlap.y == 0) metric[2] += overlap.x*overlap.z;  //Vertical Surface Overlap
-      if(overlap.x == 0) metric[3] += overlap.z*overlap.y;  //Horizontal Surface Overlap
-      if(overlap.z == 0) metric[3] += overlap.x*overlap.y;  //Horizontal Surface Overlap
+      //Compute the Overlap Surfaces (actually, both need to be positive for there to be overlap!)
+      if(overlap.y == 0 && overlap.x > 0 && overlap.z > 0) metric[2] += overlap.x*overlap.z;  //Vertical Surface Overlap
+      if(overlap.x == 0 && overlap.y > 0 && overlap.z > 0) metric[3] += overlap.z*overlap.y;  //Horizontal Surface Overlap
+      if(overlap.z == 0 && overlap.x > 0 && overlap.y > 0) metric[3] += overlap.x*overlap.y;  //Horizontal Surface Overlap
     }
   }
-  */
 
-  //
+  //Check for Volume Intersection of all Rooms!
   for (auto node : nodes){
     if(node.ID == 0) continue;
     for (auto neighbor : nodes){
       if(neighbor.ID == 0) continue;
       if(node.ID == neighbor.ID) continue;
-      glm::vec3 overlap = overlapVolumes(node.volume, neighbor.volume);
+      glm::vec3 overlap = overlapSize(node.volume, neighbor.volume);
       glm::vec3 posOverlap = glm::clamp(overlap, glm::vec3(0), overlap);
       glm::vec3 negOverlap = glm::clamp(overlap, overlap, glm::vec3(0));
       metric[0] += abs(posOverlap.x*posOverlap.y*posOverlap.z); //Positive Surface Overlap
       metric[1] += abs(negOverlap.x*negOverlap.y*negOverlap.z); //Negative Surface Overlap
-
-      ////Compute the Overlap Surfaces
-      if(overlap.y == 0) metric[2] += overlap.x*overlap.z;  //Vertical Surface Overlap
-      if(overlap.x == 0) metric[3] += overlap.z*overlap.y;  //Horizontal Surface Overlap
-      if(overlap.z == 0) metric[3] += overlap.x*overlap.y;  //Horizontal Surface Overlap
     }
 
     //Surface Area Touching Floor
@@ -218,13 +261,11 @@ template <> void Graph<ROOMGRAPH>::optimize(){
   while(T > 0.1){
     //Probability of Transformation Array
     std::vector<std::array<double, moves.size()>> probabilities;
+    std::array<double, moves.size()> probability;
     int curEnergy = cost();
 
     //Perform all possible transformations and compute the energy...
     for(int i = 1; i < nodes.size(); i++){
-      //Create the Storage Array
-      std::array<double, moves.size()> probability;
-
       //Loop over the possible moveset, compute the probability of that transformation
       for(unsigned int m = 0; m < moves.size(); m++){
         //Translate the Room by the move and compute the energy of the new configuration.
@@ -285,13 +326,11 @@ template <> void Graph<ROOMGRAPH>::optimize(){
     int _roomindex = sampled_index/moves.size();
     int _moveindex = sampled_index%moves.size();
 
-    std::cout<<"R: "<<_roomindex<<"M: "<<_moveindex<<std::endl;
-
     //Perform the Move
     nodes[_roomindex+1].volume.translate(moves[_moveindex]);
 
+    T *= 0.95;
     //Repeat!!!
-    T *= 0.99;
   }
 }
 
