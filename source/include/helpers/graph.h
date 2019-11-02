@@ -126,7 +126,7 @@ template <> void Graph<ROOMGRAPH>::generate(int n){
 
   //Connect the Rooms According to their Type
   for(int i = 0; i < n; i++){
-  //  addEdge(nodes[i], nodes[i+1], true);
+    addEdge(nodes[i], nodes[i+1], true);
   }
   //addEdge(nodes[1], nodes[n], true);
 }

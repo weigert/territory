@@ -66,7 +66,7 @@ void World::generateBuildings(){
 
   //Add Generated Buildings
   Blueprint _building;
-  _building.building<CASTLE>(5);  //Recommended Max-Size: 5 (can handle 6)
+  _building.building<RUSTIC>(5);  //Recommended Max-Size: 5 (can handle 6)
   blueprint.merge(_building.translate(glm::vec3(100, 1, 100)));
   evaluateBlueprint(blueprint);
 }

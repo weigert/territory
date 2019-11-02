@@ -333,7 +333,6 @@ bool Blueprint::buildingFromGraph<RUSTIC>(graph::Graph<graph::ROOMGRAPH> rooms){
           addEditBuffer(glm::vec3(i, node.volume.b.y+height+1, k), roof, true);
           height--;
         }
-
       }
     }
   }
