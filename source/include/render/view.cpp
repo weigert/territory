@@ -231,10 +231,18 @@ void View::render(World &world, Population &population){
   cubeShader.useProgram();    //Use the model's shader
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, shadow.depthTexture);
+
+  //Appearance Stuff
   cubeShader.setInt("shadowMap", 0);
   cubeShader.setVec3("lightCol", lightCol);
   cubeShader.setVec3("lightPos", lightPos);
   cubeShader.setBool("_grain", grain);
+
+  //Stuff for Adding Transparency Windows
+  cubeShader.setBool("transparent", transparent && picked2);  //We need two selections and transparency activated.
+  cubeShader.setVec3("volPosA", select-viewPos);
+  cubeShader.setVec3("volPosB", select2-viewPos);
+
   //Set the other matrices
   cubeShader.setMat4("projection", projection);
   cubeShader.setMat4("camera", camera);
@@ -266,6 +274,16 @@ void View::render(World &world, Population &population){
     glm::vec3 a = select-viewPos;
     picker.model = glm::translate(picker.model, a);
     picker.shaderColorPick.setVec3("un_Color", clickColorBlock);
+    picker.shaderColorPick.setMat4("mvp", projection*camera*picker.model);
+    glBindVertexArray(picker.vao);
+    glDrawArrays(GL_LINE_STRIP, 0, 16);
+  }
+  if(picked2){
+    picker.shaderColorPick.useProgram();
+    picker.model = glm::mat4(1.0f);
+    glm::vec3 a = select2-viewPos;
+    picker.model = glm::translate(picker.model, a);
+    picker.shaderColorPick.setVec3("un_Color", hoverColorBlock);
     picker.shaderColorPick.setMat4("mvp", projection*camera*picker.model);
     glBindVertexArray(picker.vao);
     glDrawArrays(GL_LINE_STRIP, 0, 16);
@@ -385,22 +403,38 @@ void View::renderGUI(World &world, Population &population){
 
 
 glm::vec3 View::intersect(World world, glm::vec2 mouse){
+
+/*
+  //Check the Lookstate
+  if(view.lookstate == 0){
+    view.camera = glm::lookAt(glm::vec3(10,2,10), glm::vec3(0,2,0), glm::vec3(0,1,0));
+  }
+  if(view.lookstate == 1){
+    view.camera = glm::lookAt(glm::vec3(10,12,10), glm::vec3(0,2,0), glm::vec3(0,1,0));
+  }
+  if(view.lookstate == 2){
+    view.camera = glm::lookAt(glm::vec3(4,12,4), glm::vec3(0,2,0), glm::vec3(0,1,0));
+  }
+
+  view.camera = glm::rotate(view.camera, glm::radians(view.rotation), glm::vec3(0,1,0));
+*/
+
   //Rotation Matrix
   glm::mat4 _rotate = glm::rotate(glm::mat4(1.0), glm::radians(-rotation), glm::vec3(0, 1, 0));
-  glm::vec3 _cameraposabs = _rotate*glm::vec4(10.0, 10.0, 10.0, 1.0);
+  glm::vec3 _cameraposabs = _rotate*glm::vec4(cameraPos.x, cameraPos.y, cameraPos.z, 1.0);
   glm::vec3 _camerapos = viewPos + _cameraposabs;
 
   //Get our position offset
   float scalex = 2.0f*(mouse.x/SCREEN_WIDTH)-1.0f;
   float scaley = 2.0f*(mouse.y/SCREEN_HEIGHT)-1.0f;
 
-  glm::vec3 _dir =  glm::normalize(glm::vec3(0, 0, 0)-_cameraposabs);
+  glm::vec3 _dir =  glm::normalize(lookPos-_cameraposabs);
   glm::vec3 _xdir = glm::normalize(glm::vec3(-_dir.z , 0, _dir.x));
   glm::vec3 _ydir = glm::normalize(glm::cross(_dir, _xdir));
   glm::vec3 _startpos = _camerapos + _xdir*scalex*(SCREEN_WIDTH*zoom) + _ydir*scaley*(SCREEN_HEIGHT*zoom);
 
-  glm::vec3 a = glm::round(_startpos - _dir * glm::vec3(20));
-  glm::vec3 b = glm::round(_startpos + _dir * glm::vec3(50));
+  glm::vec3 a = glm::round(_startpos - _dir * glm::vec3(50));
+  glm::vec3 b = glm::round(_startpos + _dir * glm::vec3(100));
 
   //Get the direction
   glm::vec3 dir = glm::abs(b - a);

@@ -91,6 +91,7 @@ enum SoundByte{
 #include <vector>
 #include <deque>
 #include <random>
+#include <map>
 
 //File / General IO
 #include <iostream>
@@ -103,6 +104,8 @@ enum SoundByte{
 
 //Helper Functions
 #include "include/helpers/arraymath.h"
+#include "include/helpers/volume.h"
+#include "include/helpers/graph.h"
 #include "include/helpers/CImg.h"
 
 //Logger

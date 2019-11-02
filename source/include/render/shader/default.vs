@@ -19,9 +19,6 @@ out vec3 ex_WorldPos;
 out vec4 shadowCoord;
 out vec3 ex_FragPos;
 
-//Extra Stuff
-
-
 void main(void) {
 	// Set the position to the one defined in our vertex array
 	gl_Position = projection * camera * model * vec4(in_Position, 1.0f);

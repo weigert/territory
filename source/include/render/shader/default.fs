@@ -10,6 +10,11 @@ in vec4 shadowCoord;
 in vec3 ex_FragPos;
 in vec3 ex_WorldPos;
 
+//Extra Stuff
+uniform bool transparent;
+uniform vec3 volPosA;
+uniform vec3 volPosB;
+
 //Sampler for the ShadowMap
 uniform sampler2D shadowMap;
 
@@ -45,6 +50,13 @@ float rand(vec2 co){
 }
 
 void main(void) {
+  //Check for Transparency Window
+  if(transparent){
+    if( all(greaterThanEqual(ex_FragPos+0.5, min(volPosA, volPosB))) && all(lessThanEqual(ex_FragPos-0.5, max(volPosA, volPosB)))){
+      discard; return;
+    }
+  }
+
   //Lighting
   float lightFactor = clamp( dot(ex_Normal, normalize(lightPos)*2.0), 0.3,  1.0);
   vec4 objColor = ex_Color*vec4(lightCol*lightFactor, 1.0f);

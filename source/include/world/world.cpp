@@ -26,8 +26,8 @@ void World::generate(){
 
   //Generate Height
   std::cout<<"Filling World"<<std::endl;
-  //generateBuildings();
-  generatePerlin();
+  generateBuildings();
+  //generatePerlin();
 }
 
 void World::generateBlank(){
@@ -66,25 +66,9 @@ void World::generateBuildings(){
 
   //Add Generated Buildings
   Blueprint _building;
-  _building.building(5);
+  _building.building(5, RUSTIC);
   blueprint.merge(_building.translate(glm::vec3(100, 1, 100)));
   evaluateBlueprint(blueprint);
-
-/*
-  //Trees
-  std::cout<<"Adding Trees"<<std::endl;
-  Blueprint _tree;
-
-  for(int i = 0; i < 200; i++){
-    _tree.editBuffer.clear();
-    _tree.tree(10); //Construct a tree blueprint (height = 9
-    //Append the Translated Blueprint to the full blueprint.
-    int tree[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
-    blueprint.merge(_tree.translate(glm::vec3(tree[0], 1, tree[1])));
-  }
-
-  blueprint.removeDuplicates(false);
-  */
 }
 
 void World::generateFlat(){
@@ -320,7 +304,7 @@ BlockType World::getBlock(glm::vec3 _pos){
       return (BlockType)chunks[i].data[chunks[i].getIndex(p)];
     }
   }
-  return BLOCK_VOID;
+  return BLOCK_AIR;
 }
 
 void World::setBlock(glm::vec3 _pos, BlockType _type){
