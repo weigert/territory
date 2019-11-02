@@ -11,11 +11,14 @@ Mouse and Keyboard Inputs:
 	- View Control Panel: ESC
 	- P: Toggle Pause (**PAUSED BY DEFAULT - BOTS ARE VERY FAST**)
 	- M: Play Music
-	- Change Camera Position: WASD
-	- Move Camera Up / Down: Space / LShift
-	- Change View Angle: Scroll Left / Right
+	- Change Camera Position (Move): WASD
+	- Move Camera Up / Down: Space / C
+	- Change Horizontal View Angle: Scroll Left / Right
+	- Cycle Vertical View Angle: UP- / DOWN-ARROW (for flat and top-down view)
 	- Zoom: Scroll Up / Down
 	- Right-Click: Select Block (and give task at that location using the panel)
+		- Drag and Release: Select Block Region
+		- V: Toggle See-Through Region (for building debugging)
 
 ### Panel
 In-simulation control panel allows for manipulating the simulation.
