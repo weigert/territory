@@ -9,7 +9,7 @@ void Population::addBot(World world){
   //Add a bot
   Bot bot(bots.size());
   bot.setupSprite();
-  bot.pos = glm::vec3(40, 1, 40);//world.getTop(glm::vec2(40, 40));
+  bot.pos = glm::vec3(75, 1, 75);//world.getTop(glm::vec2(40, 40));
   //This is the only place I want to allocate the task...
   Task *masterTask = new Task("Human Task", bot.ID, &Task::Dummy);
   bot.current = masterTask;

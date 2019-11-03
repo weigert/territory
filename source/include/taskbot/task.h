@@ -8,10 +8,7 @@
 #include "../forward/state.fwd.h"
 #include "../forward/audio.fwd.h"
 
-using namespace std;
-
 std::vector<glm::vec3> calculatePath(int id, glm::vec3 _dest, Population &population, World &world, glm::vec3 range);
-using namespace std::placeholders;
 
 //Add this Typedef for easier reading
 typedef bool (Task::*Handle)(World&, Population&, Audio&, State&);

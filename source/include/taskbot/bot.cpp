@@ -29,8 +29,9 @@ void Bot::executeTask(World &world, Population &population, Audio &audio){
     interrupt = false;
   }
   else{
-    //Execute Current Task, upon success overwrite.
-    if((current->perform)(world, population, audio)){
+    //Execute Current Task (Make sure when decide is called, it doesn't reset to itself)
+    if(current->handle == &Task::decide && (current->perform)(world, population, audio));
+    else if((current->perform)(world, population, audio)){
       current->set("Decide on Action", ID, &Task::decide);
     }
   }
@@ -156,7 +157,7 @@ void Bot::addSound(State _state){
 
 void Bot::setupSprite(){
   //Load the Sprite Thing
-  sprite.loadImage("hunterfull.png");
+  sprite.loadImage("cowboyfull.png");
   sprite.setupBuffer(false);
   sprite.resetModel();
 }

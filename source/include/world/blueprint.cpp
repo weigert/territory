@@ -91,7 +91,7 @@ void Blueprint::flatSurface(int x, int z){
   for(int i = 0; i < x; i++){
     for(int j = 0; j < z; j++){
       //Add to the editBuffer
-      addEditBuffer(glm::vec3(i,0,j), BLOCK_GRASS, false);
+      addEditBuffer(glm::vec3(i,0,j), BLOCK_SAND, false);
     }
   }
 }
@@ -325,11 +325,12 @@ bool Blueprint::buildingFromGraph<RUSTIC>(graph::Graph<graph::ROOMGRAPH> rooms){
 
         while(height >= 0){
           //Place the height in dependency of Z!
-          if(node.ID == 1) roof = BLOCK_GRAVEL;
+      /*    if(node.ID == 1) roof = BLOCK_GRAVEL;
           if(node.ID == 2) roof = BLOCK_PUMPKIN;
           if(node.ID == 3) roof = BLOCK_GRASS;
           if(node.ID == 4) roof = BLOCK_CLAY;
           if(node.ID == 5) roof = BLOCK_WATER;
+      */
           addEditBuffer(glm::vec3(i, node.volume.b.y+height+1, k), roof, true);
           height--;
         }
@@ -360,8 +361,12 @@ bool Blueprint::buildingFromGraph<RUSTIC>(graph::Graph<graph::ROOMGRAPH> rooms){
         intersection.b -= glm::vec3(0, 1, 1);
       }
       else if(overlap.y == 0){
+        /*
+        This needs to be reduced until it is just a sliver.
+        */
         intersection.a += glm::vec3(1, 0, 1);
         intersection.b -= glm::vec3(1, 0, 1);
+
       }
       else if(overlap.z == 0){
         intersection.a += glm::vec3(1, 1, 0);
@@ -379,35 +384,7 @@ bool Blueprint::buildingFromGraph<RUSTIC>(graph::Graph<graph::ROOMGRAPH> rooms){
     }
   }
 
-  /*
-  //Add  Windows
-  for (auto node: rooms.nodes){
-    if(node.ID == 0) continue;
 
-    std::cout<<node.volume.a<<std::endl;
-
-    glm::vec3 test = node.volume.a + glm::vec3(0, 2, 2);
-    glm::vec3 test2 = node.volume.a + glm::vec3(2, 2, 0);
-    glm::vec3 test3 = node.volume.b + glm::vec3(-2, -2, 0);
-    glm::vec3 test4 = node.volume.b + glm::vec3(0, -2, -2);
-
-    bool blocked[4] = {false};
-
-    //Loop over neighbors to find a free surface
-    for (auto neighbor : rooms.nodes){
-      if(neighbor.ID == node.ID) continue;
-      if(inVol(test, neighbor.volume)) blocked[0] = true;
-      if(inVol(test, neighbor.volume)) blocked[1] = true;
-      if(inVol(test, neighbor.volume)) blocked[2] = true;
-      if(inVol(test, neighbor.volume)) blocked[3] = true;
-    }
-
-    if(!blocked[0]) addEditBuffer(test, BLOCK_AIR, true);
-    if(!blocked[1]) addEditBuffer(test2, BLOCK_AIR, true);
-    if(!blocked[2]) addEditBuffer(test3, BLOCK_AIR, true);
-    if(!blocked[3]) addEditBuffer(test4, BLOCK_AIR, true);
-  }
-  */
   //Keep the Windows and Doors
   removeDuplicates(true);
 

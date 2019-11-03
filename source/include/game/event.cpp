@@ -145,16 +145,18 @@ void eventHandler::update(World &world, Population &population, View &view, Audi
   if(!rotate.empty()){
     //We want to perform an event now..
     if(rotate.front()->key.keysym.sym == SDLK_UP){
-      view.lookstate = (view.lookstate + 1)%3;
+      view.lookstate = (view.lookstate + 1)%5;
     }
     else if(rotate.back()->key.keysym.sym == SDLK_DOWN){
-      view.lookstate = (view.lookstate + 2)%3;
+      view.lookstate = (view.lookstate + 5-1)%5;
     }
 
     //Check the Lookstate
-    if(view.lookstate == 0) view.cameraPos = glm::vec3(10, 2, 10);
-    else if(view.lookstate == 1) view.cameraPos = glm::vec3(10, 12, 10);
-    else view.cameraPos = glm::vec3(4, 12, 4);
+    if(view.lookstate == 0) view.cameraPos = glm::vec3(10, 0, 10);
+    else if(view.lookstate == 1) view.cameraPos = glm::vec3(10, 2, 10);
+    else if(view.lookstate == 2) view.cameraPos = glm::vec3(10, 7, 10);
+    else if(view.lookstate == 3) view.cameraPos = glm::vec3(10, 12, 10);
+    else view.cameraPos = glm::vec3(4, 17, 4);
     view.camera = glm::rotate(glm::lookAt(view.cameraPos, view.lookPos, glm::vec3(0,1,0)), glm::radians(view.rotation), glm::vec3(0,1,0));
     rotate.pop_back();
   }

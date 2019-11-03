@@ -37,13 +37,17 @@ Task::Task(std::string taskName, int taskBotID, int animationID, glm::vec3 anima
 }
 
 void Task::set(std::string taskName, int taskBotID, Handle _handle){
-  botID = taskBotID;
-  handle = _handle;
+  this->initFlag = true;
+  this->name = taskName;
+  this->botID = taskBotID;
+  this->handle = _handle;
 }
 
 void Task::set(std::string taskName, int taskBotID, TaskHandle _handle){
-  botID = taskBotID;
-  handle = TaskHandles[_handle];
+  this->initFlag = true;
+  this->name = taskName;
+  this->botID = taskBotID;
+  this->handle = TaskHandles[_handle];
 }
 
 
@@ -283,7 +287,6 @@ bool Task::destroy(World &world, Population &population, Audio &audio, State &_a
       walk.args.range = population.bots[botID].range;  //High vertical capabilities
       queue.push_back(walk);
     }
-    initFlag = false;
   }
 
   //Perform the Queue
@@ -562,7 +565,6 @@ bool Task::seek(World &world, Population &population, Audio &audio, State &_args
       _log.debug("Walking within range of location in memory.");
       queue.push_back(walk);
     }
-    initFlag = false;
   }
 
   return false;
@@ -631,18 +633,13 @@ bool Task::listen(World &world, Population &population, Audio &audio, State &_ar
 */
 
 bool Task::decide(World &world, Population &population, Audio &audio, State &_args){
-  //Check if we have mandates to go
-  if(initFlag){
-    //Listen!
-    Task listen("Listen to surroundings.", botID, &Task::listen);
-    listen.perform(world, population, audio);
-    initFlag = false;
-  }
 
-  //Use the follow task
-  population.bots[botID].current->set("Harvest Cactus.", botID, &Task::idle);
+  //Perform a Listen
+  Task listen("Listen to surroundings.", botID, &Task::listen);
+  listen.perform(world, population, audio);
+  population.bots[botID].current->set("Harvest Cactus", botID, &Task::Dummy);
 
-  return false;
+  return true;
 }
 
 bool Task::request(World &world, Population &population, Audio &audio, State &_args){

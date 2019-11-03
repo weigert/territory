@@ -64,6 +64,14 @@ void World::generateBuildings(){
   blueprint.flatSurface(dim.x*chunkSize, dim.z*chunkSize);
   evaluateBlueprint(blueprint);
 
+  //Add some Cacti
+  Blueprint _cactus;
+  for(int i = 0; i < 500; i++){
+    _cactus.cactus();
+    blueprint.merge(_cactus.translate(glm::vec3(rand()%(int)(dim.x*chunkSize), 1, rand()%(int)(dim.z*chunkSize))));
+  }
+  evaluateBlueprint(blueprint);
+
   //Add Generated Buildings
   Blueprint _building;
   _building.building<RUSTIC>(5);  //Recommended Max-Size: 5 (can handle 6)
