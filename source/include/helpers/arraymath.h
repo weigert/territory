@@ -9,6 +9,16 @@ namespace helper{
     return -1;
   }
 
+  //3D Index
+  int getIndex(glm::vec3 p, glm::vec3 s){
+    if(glm::all(glm::lessThan(p, s)) && glm::all(glm::greaterThanEqual(p, glm::vec3(0)))){
+      return p.x*s.y*s.z+p.y*s.z+p.z;
+    }
+    return -1;
+  }
+
+
+
   void set(float a[], float b[], int size){
     for(int i = 0; i < size; i++){
       a[i] = b[i];
@@ -166,5 +176,11 @@ std::ostream & operator << (std::ostream &out, const glm::vec2 &vec)
 std::ostream & operator << (std::ostream &out, const glm::vec3 &vec)
 {
     out << "X: "<<vec.x<<", Y: "<<vec.y<<", Z: "<<vec.z;
+    return out;
+}
+
+std::ostream & operator << (std::ostream &out, const glm::vec4 &vec)
+{
+    out << "X: "<<vec.x<<", Y: "<<vec.y<<", Z: "<<vec.z<<", W: "<<vec.a;
     return out;
 }

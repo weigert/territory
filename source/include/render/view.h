@@ -96,12 +96,14 @@ class View{
 
     //Rendering Targets
     Billboard shadow; //Shadowmap to render to
+    Billboard reflection; //Shadowmap to render to
     Billboard image;  //Image as projected normally - no changes!
     Billboard temp1;  //Switch between render passes, 1
     Billboard temp2;  //Switch between render passes, 2
 
     //Shaders
     void setupShaders();
+    Shader reflectShader;
     Shader cubeShader;
     Shader depthShader;
     Shader spriteShader;
@@ -118,7 +120,7 @@ class View{
     int blur = 0; //Degree of Blur
     bool fog = true;
     bool grain = false;
-    glm::vec3 fogColor = glm::vec3(1.0f);
+    glm::vec3 fogColor = glm::vec3(0.6, 0.9f, 0.8f);
     glm::vec3 clickColorBlock = glm::vec3(0.0f, 1.0f, 0.0f);
     glm::vec3 hoverColorBlock = glm::vec3(1.0f, 0.0, 0.0f);
 

@@ -105,6 +105,7 @@ enum SoundByte{
 
 //Helper Functions
 #include "include/helpers/arraymath.h"
+#include "include/helpers/color.h"
 #include "include/helpers/volume.h"
 #include "include/helpers/graph.h"
 #include "include/helpers/CImg.h"

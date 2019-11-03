@@ -40,7 +40,7 @@ class Blueprint{
 public:
   //Dimension Parameters
   int chunkSize = 16;
-  glm::vec3 dim = glm::vec3(10, 3, 10);
+  glm::vec3 dim = glm::vec3(20, 5, 20);
 
   //Helpers
   std::vector<bufferObject> editBuffer;

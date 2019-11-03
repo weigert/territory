@@ -63,6 +63,7 @@ bool View::Init(){
 
   //This shoudl now work.
   image.setup(SCREEN_WIDTH, SCREEN_HEIGHT);
+  reflection.setup(SCREEN_WIDTH, SCREEN_HEIGHT);
   shadow.setup2(SHADOW_WIDTH, SHADOW_HEIGHT);
   temp1.setup(SCREEN_WIDTH, SCREEN_HEIGHT);
   temp2.setup(SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -80,6 +81,12 @@ void View::setupShaders(){
   cubeShader.addAttribute(0, "in_Position");
   cubeShader.addAttribute(1, "in_Color");
   cubeShader.addAttribute(2, "in_Normal");
+
+  //Reflection Shader
+  reflectShader.setup("reflect.vs", "reflect.fs");
+  reflectShader.addAttribute(0, "in_Position");
+  reflectShader.addAttribute(1, "in_Color");
+  reflectShader.addAttribute(2, "in_Normal");
 
   //Setup Depthshader
   depthShader.setup("depth.vs", "depth.fs");
@@ -113,6 +120,7 @@ void View::cleanup(){
 
   //Cleanup Shaders
   cubeShader.cleanup();
+  reflectShader.cleanup();
   depthShader.cleanup();
   spriteShader.cleanup();
   billboardShader.cleanup();
@@ -120,6 +128,7 @@ void View::cleanup(){
   blurShader.cleanup();
 
   image.cleanup();
+  reflection.cleanup();
   shadow.cleanup();
   temp1.cleanup();
   temp2.cleanup();
@@ -221,6 +230,37 @@ void View::render(World &world, Population &population){
   }
   glBindVertexArray(0);
 
+  /* REFLECTION */
+  glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+  glBindFramebuffer(GL_FRAMEBUFFER, reflection.fbo);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  reflectShader.useProgram();    //Use the model's shader
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, shadow.depthTexture);
+  reflectShader.setInt("shadowMap", 0);
+  reflectShader.setVec3("lightCol", lightCol);
+  reflectShader.setVec3("lightPos", lightPos);
+
+  //Reflect the Camera around a specific position (and make sure it is flipped  VVVVVV  upside down)
+  glm::vec3 reflectcamerapos = (cameraPos)*glm::vec3(1, -1, 1) + glm::vec3(0, 2*world.sealevel, 0);
+  glm::vec3 reflectlookpos = lookPos*glm::vec3(1, -1, 1) + glm::vec3(0, 2*world.sealevel, 0);
+  glm::mat4 reflectcamera = glm::rotate(glm::lookAt(reflectcamerapos, reflectlookpos, glm::vec3(0,-1,0)), glm::radians(rotation), glm::vec3(0,1,0));
+
+  //Set the other matrices
+  reflectShader.setInt("clip", world.sealevel+viewPos.y);
+  reflectShader.setMat4("projection", projection);
+  reflectShader.setMat4("camera", reflectcamera);
+  reflectShader.setMat4("dbmvp", biasMatrix * depthProjection * depthCamera * glm::mat4(1.0f));
+  reflectShader.setMat4("dmvp", depthProjection * depthCamera * glm::mat4(1.0f));
+
+  //Loop over the Stuff
+  for(unsigned int i = 0; i < models.size(); i++){
+    //View Projection Matrix
+    reflectShader.setMat4("model", glm::translate(models[i].model, glm::vec3(0, 2*viewPos.y, 0)));
+    //Render the Model
+    models[i].render();               //Render Scene
+  }
+
   /* REGULAR IMAGE */
   glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
   glBindFramebuffer(GL_FRAMEBUFFER, image.fbo);
@@ -231,11 +271,16 @@ void View::render(World &world, Population &population){
   cubeShader.useProgram();    //Use the model's shader
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, shadow.depthTexture);
+  glActiveTexture(GL_TEXTURE0+1);
+  glBindTexture(GL_TEXTURE_2D, reflection.texture);
+  cubeShader.setInt("reflection", 1);
+  cubeShader.setInt("clip", world.sealevel-viewPos.y);
 
   //Appearance Stuff
   cubeShader.setInt("shadowMap", 0);
   cubeShader.setVec3("lightCol", lightCol);
   cubeShader.setVec3("lightPos", lightPos);
+  cubeShader.setVec3("lightDir", lookPos-cameraPos);
   cubeShader.setBool("_grain", grain);
 
   //Stuff for Adding Transparency Windows
@@ -328,6 +373,19 @@ void View::render(World &world, Population &population){
   }
 
   /* AFTER-EFFECTS */
+  /*
+  //Render FBO to Monitor
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  billboardShader.useProgram();
+  glActiveTexture(GL_TEXTURE0+0);
+  glBindTexture(GL_TEXTURE_2D, reflection.texture);
+  billboardShader.setInt("imageTexture", 0);
+  glActiveTexture(GL_TEXTURE0+1);
+  glBindTexture(GL_TEXTURE_2D, reflection.depthTexture);
+  billboardShader.setInt("depthTexture", 1);
+  glBindVertexArray(reflection.vao);
+  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+  */
 
   //Render Temp to Screen with a horizontal blur shader
   glBindFramebuffer(GL_FRAMEBUFFER, temp1.fbo);

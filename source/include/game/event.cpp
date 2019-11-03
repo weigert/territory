@@ -81,16 +81,17 @@ void eventHandler::update(World &world, Population &population, View &view, Audi
     view.SCREEN_HEIGHT = windowevent->window.data2;
 
     view.image.cleanup();
+    view.reflection.cleanup();
     view.shadow.cleanup();
     view.temp1.cleanup();
     view.temp2.cleanup();
 
     view.image.setup(view.SCREEN_WIDTH, view.SCREEN_HEIGHT);
+    view.reflection.setup(view.SCREEN_WIDTH, view.SCREEN_HEIGHT);
     view.shadow.setup2(view.SHADOW_WIDTH, view.SHADOW_HEIGHT);
     view.temp1.setup(view.SCREEN_WIDTH, view.SCREEN_HEIGHT);
     view.temp2.setup(view.SCREEN_WIDTH, view.SCREEN_HEIGHT);
     view.projection = glm::ortho(-(float)view.SCREEN_WIDTH*view.zoom, (float)view.SCREEN_WIDTH*view.zoom, -(float)view.SCREEN_HEIGHT*view.zoom, (float)view.SCREEN_HEIGHT*view.zoom, -100.0f, 100.0f);
-
 
     _window = false;
   }

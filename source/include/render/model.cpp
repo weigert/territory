@@ -238,14 +238,13 @@ void Model::fromChunkGreedy(Chunk chunk){
           }
 
           //Add Colors and Normals to all vertices.
-          glm::vec4 color = chunk.getColorByID(current);
+          glm::vec4 _color = color::getColor(current, color::hashrand(helper::getIndex(glm::vec3(x[0], x[1], x[2]), glm::vec3(16))));
 
           for(int m = 0; m < 4; m++){
-            //Add Colors
-            colors.push_back(color.x);
-            colors.push_back(color.y);
-            colors.push_back(color.z);
-            colors.push_back(color.w);
+            colors.push_back(_color.x);
+            colors.push_back(_color.y);
+            colors.push_back(_color.z);
+            colors.push_back(_color.w);
 
             //Add Normals
             normals.push_back(q[0]);

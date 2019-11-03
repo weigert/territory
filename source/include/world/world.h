@@ -29,7 +29,7 @@ public:
   int chunkSize = 16;
   int sealevel = 16;
   int tickLength = 1;
-  glm::vec3 dim = glm::vec3(10, 3, 10);
+  glm::vec3 dim = glm::vec3(20, 5, 20);
 
   //Items placed / on the ground
   Inventory placed;
@@ -49,6 +49,7 @@ public:
   void generateFlat();
   void generateBuildings();
   void generatePerlin();
+  void generateForest();
 
   //Helpers for Blueprint
   Blueprint blueprint;

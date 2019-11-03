@@ -63,5 +63,5 @@ void main(){
     float depthVal = clamp(texture(depthTexture, ex_Tex).r, 0.0, 1.0);
     fragColor = texture(imageTexture, ex_Tex);
     if(_blur!=0) fragColor = depthblur(_blur, float(_blur)/2.0);
-    if(_fog)  fragColor = mix(fragColor, vec4(fogColor, 1.0), ease(depthVal));
+    if(depthVal < 1.0 && _fog) fragColor = mix(fragColor, vec4(fogColor, 1.0), ease(depthVal));
 }

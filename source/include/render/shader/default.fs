@@ -1,6 +1,7 @@
 #version 130
 uniform vec3 lightCol;
 uniform vec3 lightPos;
+uniform vec3 lightDir;
 uniform bool _grain;
 
 in vec4 ex_Color;
@@ -9,6 +10,7 @@ in vec2 ex_Position;
 in vec4 shadowCoord;
 in vec3 ex_FragPos;
 in vec3 ex_WorldPos;
+in vec4 ex_TexPos;
 
 //Extra Stuff
 uniform bool transparent;
@@ -17,6 +19,10 @@ uniform vec3 volPosB;
 
 //Sampler for the ShadowMap
 uniform sampler2D shadowMap;
+
+//Reflection
+uniform sampler2D reflection;
+uniform int clip;
 
 out vec4 fragColor;
 
@@ -61,5 +67,9 @@ void main(void) {
   float lightFactor = clamp( dot(ex_Normal, normalize(lightPos)*2.0), 0.3,  1.0);
   vec4 objColor = ex_Color*vec4(lightCol*lightFactor, 1.0f);
   fragColor = shade()*objColor;
+
+  if(ex_FragPos.y == clip-0.5 && ex_Color == vec4(0.3f, 0.57f, 0.67f, 1.0f)){
+    fragColor = mix(ex_Color, texture(reflection, vec2(1-ex_Position.x, ex_Position.y)), 1-dot(vec3(0,-1,0), normalize(lightDir)));
+  }
   if(_grain) fragColor += 0.1*vec4(rand(ex_WorldPos.xy)*vec3(1.0f), 1.0f);
 }
