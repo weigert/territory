@@ -280,7 +280,7 @@ void View::render(World &world, Population &population){
   cubeShader.setInt("shadowMap", 0);
   cubeShader.setVec3("lightCol", lightCol);
   cubeShader.setVec3("lightPos", lightPos);
-  cubeShader.setVec3("lightDir", lookPos-cameraPos);
+  cubeShader.setVec3("lookDir", lookPos-cameraPos);
   cubeShader.setBool("_grain", grain);
 
   //Stuff for Adding Transparency Windows

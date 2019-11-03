@@ -178,7 +178,7 @@ void World::generateForest(){
   std::cout<<"Adding Trees"<<std::endl;
   Blueprint _tree;
 
-  for(int i = 0; i < 5000; i++){
+  for(int i = 0; i < 10000; i++){
     //Generate a random size tree model.
     int treeheight = rand()%6+8;
     _tree.editBuffer.clear();
