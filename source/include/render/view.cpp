@@ -63,6 +63,7 @@ bool View::Init(){
 
   //This shoudl now work.
   image.setup(SCREEN_WIDTH, SCREEN_HEIGHT);
+  reflection.setup(SCREEN_WIDTH, SCREEN_HEIGHT);
   shadow.setup2(SHADOW_WIDTH, SHADOW_HEIGHT);
   temp1.setup(SCREEN_WIDTH, SCREEN_HEIGHT);
   temp2.setup(SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -80,6 +81,12 @@ void View::setupShaders(){
   cubeShader.addAttribute(0, "in_Position");
   cubeShader.addAttribute(1, "in_Color");
   cubeShader.addAttribute(2, "in_Normal");
+
+  //Reflection Shader
+  reflectShader.setup("reflect.vs", "reflect.fs");
+  reflectShader.addAttribute(0, "in_Position");
+  reflectShader.addAttribute(1, "in_Color");
+  reflectShader.addAttribute(2, "in_Normal");
 
   //Setup Depthshader
   depthShader.setup("depth.vs", "depth.fs");
@@ -113,6 +120,7 @@ void View::cleanup(){
 
   //Cleanup Shaders
   cubeShader.cleanup();
+  reflectShader.cleanup();
   depthShader.cleanup();
   spriteShader.cleanup();
   billboardShader.cleanup();
@@ -120,6 +128,7 @@ void View::cleanup(){
   blurShader.cleanup();
 
   image.cleanup();
+  reflection.cleanup();
   shadow.cleanup();
   temp1.cleanup();
   temp2.cleanup();
@@ -190,14 +199,20 @@ void View::updateChunkModels(World &world){
 ================================================================================
 */
 
-void View::update(){
-  /*
-  lightPos += glm::vec3(-0.01f, 0.0f, -0.01f);
-  depthCamera = glm::lookAt(lightPos, glm::vec3(0,0,0), glm::vec3(0,1,0));
-  */
-}
-
 void View::render(World &world, Population &population){
+
+  /* Set Current Parameters based on the time! */
+  float t = (double)world.time/(60.0*24.0);
+  float g = (t-t*t);
+  skyCol = color::bezier(t, color::skycolors);
+
+  //Move the Light Across the Sky
+  lightPos = glm::vec3(-10.0f, g*20.0f+10.0f, -5.0f+t*10.0f);
+  glm::mat4 depthCamera = glm::lookAt(lightPos, glm::vec3(0,0,0), glm::vec3(0,1,0));
+
+  //Set the Fog-Color
+  fogColor = glm::vec4(4*g, 4*g, 4*g, 1.0);
+  lightStrength = 6*g+0.1;
 
   /* SHADOW MAPPING */
   glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
@@ -221,6 +236,33 @@ void View::render(World &world, Population &population){
   }
   glBindVertexArray(0);
 
+  /* REFLECTION */
+  glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+  glBindFramebuffer(GL_FRAMEBUFFER, reflection.fbo);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  reflectShader.useProgram();    //Use the model's shader
+  reflectShader.setVec3("lightCol", lightCol);
+  reflectShader.setVec3("lightPos", lightPos);
+  reflectShader.setFloat("lightStrength", lightStrength);
+
+  //Reflect the Camera around a specific position (and make sure it is flipped  VVVVVV  upside down)
+  glm::vec3 reflectcamerapos = (cameraPos)*glm::vec3(1, -1, 1) + glm::vec3(0, 2*world.sealevel, 0);
+  glm::vec3 reflectlookpos = lookPos*glm::vec3(1, -1, 1) + glm::vec3(0, 2*world.sealevel, 0);
+  glm::mat4 reflectcamera = glm::rotate(glm::lookAt(reflectcamerapos, reflectlookpos, glm::vec3(0,-1,0)), glm::radians(rotation), glm::vec3(0,1,0));
+
+  //Set the other matrices
+  reflectShader.setInt("clip", world.sealevel+viewPos.y);
+  reflectShader.setMat4("projection", projection);
+  reflectShader.setMat4("camera", reflectcamera);
+
+  //Loop over the Stuff
+  for(unsigned int i = 0; i < models.size(); i++){
+    //View Projection Matrix
+    reflectShader.setMat4("model", glm::translate(models[i].model, glm::vec3(0, 2*viewPos.y, 0)));
+    //Render the Model
+    models[i].render();               //Render Scene
+  }
+
   /* REGULAR IMAGE */
   glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
   glBindFramebuffer(GL_FRAMEBUFFER, image.fbo);
@@ -231,10 +273,24 @@ void View::render(World &world, Population &population){
   cubeShader.useProgram();    //Use the model's shader
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, shadow.depthTexture);
+  glActiveTexture(GL_TEXTURE0+1);
+  glBindTexture(GL_TEXTURE_2D, reflection.texture);
+  cubeShader.setInt("reflection", 1);
+  cubeShader.setInt("clip", world.sealevel-viewPos.y);
+
+  //Appearance Stuff
   cubeShader.setInt("shadowMap", 0);
   cubeShader.setVec3("lightCol", lightCol);
   cubeShader.setVec3("lightPos", lightPos);
+  cubeShader.setVec3("lookDir", lookPos-cameraPos);
+  cubeShader.setFloat("lightStrength", lightStrength);
   cubeShader.setBool("_grain", grain);
+
+  //Stuff for Adding Transparency Windows
+  cubeShader.setBool("transparent", transparent && picked2);  //We need two selections and transparency activated.
+  cubeShader.setVec3("volPosA", select-viewPos);
+  cubeShader.setVec3("volPosB", select2-viewPos);
+
   //Set the other matrices
   cubeShader.setMat4("projection", projection);
   cubeShader.setMat4("camera", camera);
@@ -249,24 +305,22 @@ void View::render(World &world, Population &population){
     models[i].render();               //Render Scene
   }
 
-
-  /* View Position Cube */
-  /*
-  picker.shaderColorPick.useProgram();
-  picker.model = glm::mat4(1.0f);
-  picker.shaderColorPick.setVec3("un_Color", hoverColorBlock);
-  picker.shaderColorPick.setMat4("mvp", projection*camera*picker.model);
-  glBindVertexArray(picker.vao);
-  glDrawArrays(GL_LINE_STRIP, 0, 16);
-*/
   /* Picker Cube! */
   if(picked){
     picker.shaderColorPick.useProgram();
-    picker.model = glm::mat4(1.0f);
-    glm::vec3 a = select-viewPos;
-    picker.model = glm::translate(picker.model, a);
-    picker.shaderColorPick.setVec3("un_Color", clickColorBlock);
-    picker.shaderColorPick.setMat4("mvp", projection*camera*picker.model);
+    if(picked2){
+      //Get the Volume Selection Better
+      glm::vec3 a = select2-viewPos-(select2-select)/glm::vec3(2.0);
+      glm::mat4 trans = glm::translate(glm::mat4(1.0), a);
+      picker.model = glm::scale(trans, glm::abs(select2-select)+glm::vec3(1.0));
+      picker.shaderColorPick.setVec3("un_Color", hoverColorBlock);
+      picker.shaderColorPick.setMat4("mvp", projection*camera*picker.model);
+    }
+    else{
+      picker.model = glm::translate(glm::mat4(1.0f), select-viewPos);
+      picker.shaderColorPick.setVec3("un_Color", clickColorBlock);
+      picker.shaderColorPick.setMat4("mvp", projection*camera*picker.model);
+    }
     glBindVertexArray(picker.vao);
     glDrawArrays(GL_LINE_STRIP, 0, 16);
   }
@@ -320,8 +374,6 @@ void View::render(World &world, Population &population){
     //Draw the drops!
     world.drops[i].sprite.render();
   }
-
-  /* AFTER-EFFECTS */
 
   //Render Temp to Screen with a horizontal blur shader
   glBindFramebuffer(GL_FRAMEBUFFER, temp1.fbo);
@@ -387,20 +439,20 @@ void View::renderGUI(World &world, Population &population){
 glm::vec3 View::intersect(World world, glm::vec2 mouse){
   //Rotation Matrix
   glm::mat4 _rotate = glm::rotate(glm::mat4(1.0), glm::radians(-rotation), glm::vec3(0, 1, 0));
-  glm::vec3 _cameraposabs = _rotate*glm::vec4(10.0, 10.0, 10.0, 1.0);
+  glm::vec3 _cameraposabs = _rotate*glm::vec4(cameraPos.x, cameraPos.y, cameraPos.z, 1.0);
   glm::vec3 _camerapos = viewPos + _cameraposabs;
 
   //Get our position offset
   float scalex = 2.0f*(mouse.x/SCREEN_WIDTH)-1.0f;
   float scaley = 2.0f*(mouse.y/SCREEN_HEIGHT)-1.0f;
 
-  glm::vec3 _dir =  glm::normalize(glm::vec3(0, 0, 0)-_cameraposabs);
+  glm::vec3 _dir =  glm::normalize(lookPos-_cameraposabs);
   glm::vec3 _xdir = glm::normalize(glm::vec3(-_dir.z , 0, _dir.x));
   glm::vec3 _ydir = glm::normalize(glm::cross(_dir, _xdir));
   glm::vec3 _startpos = _camerapos + _xdir*scalex*(SCREEN_WIDTH*zoom) + _ydir*scaley*(SCREEN_HEIGHT*zoom);
 
-  glm::vec3 a = glm::round(_startpos - _dir * glm::vec3(20));
-  glm::vec3 b = glm::round(_startpos + _dir * glm::vec3(50));
+  glm::vec3 a = glm::round(_startpos - _dir * glm::vec3(50));
+  glm::vec3 b = glm::round(_startpos + _dir * glm::vec3(100));
 
   //Get the direction
   glm::vec3 dir = glm::abs(b - a);

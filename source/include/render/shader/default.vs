@@ -18,7 +18,7 @@ out vec2 ex_Position;
 out vec3 ex_WorldPos;
 out vec4 shadowCoord;
 out vec3 ex_FragPos;
-
+out vec4 ex_TexPos;
 //Extra Stuff
 
 
@@ -38,6 +38,8 @@ void main(void) {
 
 	//In WorldSpace
 	ex_WorldPos = vec3(camera*model*vec4(in_Position, 1.0f));
+
+	ex_TexPos = projection * camera * model * vec4(in_Position, 1.0f);
 
 	//Distance to Center
 	ex_Position = ((gl_Position.xyz / gl_Position.w).xy * 0.5 + 0.5 );

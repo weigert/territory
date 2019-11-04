@@ -37,13 +37,17 @@ Task::Task(std::string taskName, int taskBotID, int animationID, glm::vec3 anima
 }
 
 void Task::set(std::string taskName, int taskBotID, Handle _handle){
-  botID = taskBotID;
-  handle = _handle;
+  this->initFlag = true;
+  this->name = taskName;
+  this->botID = taskBotID;
+  this->handle = _handle;
 }
 
 void Task::set(std::string taskName, int taskBotID, TaskHandle _handle){
-  botID = taskBotID;
-  handle = TaskHandles[_handle];
+  this->initFlag = true;
+  this->name = taskName;
+  this->botID = taskBotID;
+  this->handle = TaskHandles[_handle];
 }
 
 
@@ -265,17 +269,30 @@ bool Task::follow(World &world, Population &population, Audio &audio, State &_ar
 */
 
 bool Task::destroy(World &world, Population &population, Audio &audio, State &_args){
-  //If the bot is out of range range
-  if(!helper::inRange(population.bots[botID].pos, _args.pos, population.bots[botID].range)){
-    return true;
-  }
 
-  //Found the item, drop it
+  //Check for Non-Destroy Task
   BlockType _type = world.getBlock(_args.pos);
 
   if(_type == BLOCK_AIR){
     _log.debug("Block is air");
     return true;
+  }
+
+  if(initFlag){
+    //Check if we are at the position...
+    if(!helper::inRange(population.bots[botID].pos, _args.pos, population.bots[botID].range)){
+      //Add a walk task...
+      Task walk("Walk to destruction site.", botID, &Task::walk);
+      walk.args.pos = _args.pos;
+      walk.args.range = population.bots[botID].range;  //High vertical capabilities
+      queue.push_back(walk);
+    }
+  }
+
+  //Perform the Queue
+  if(!handleQueue(world, population, audio)){
+    //We are not yet at the location.
+    return false;
   }
 
   /*
@@ -376,7 +393,7 @@ bool Task::build(World &world, Population &population, Audio &audio, State &_arg
   if(initFlag){
     //Define some blueprint...
     Blueprint _house;
-    _house.building(4);       //Choose which guy to build
+    _house.building<RUSTIC>(4);       //Choose which guy to build
     _house = _house.translate(_args.pos + glm::vec3(0, 1, 0)); //Translate into worldspace and sort
     std::sort(_house.editBuffer.begin(), _house.editBuffer.end(),
             [](const bufferObject& a, const bufferObject& b) {
@@ -548,7 +565,6 @@ bool Task::seek(World &world, Population &population, Audio &audio, State &_args
       _log.debug("Walking within range of location in memory.");
       queue.push_back(walk);
     }
-    initFlag = false;
   }
 
   return false;
@@ -617,18 +633,13 @@ bool Task::listen(World &world, Population &population, Audio &audio, State &_ar
 */
 
 bool Task::decide(World &world, Population &population, Audio &audio, State &_args){
-  //Check if we have mandates to go
-  if(initFlag){
-    //Listen!
-    Task listen("Listen to surroundings.", botID, &Task::listen);
-    listen.perform(world, population, audio);
-    initFlag = false;
-  }
 
-  //Use the follow task
-  population.bots[botID].current->set("Harvest Cactus.", botID, &Task::idle);
+  //Perform a Listen
+  Task listen("Listen to surroundings.", botID, &Task::listen);
+  listen.perform(world, population, audio);
+  population.bots[botID].current->set("Harvest Cactus", botID, &Task::Dummy);
 
-  return false;
+  return true;
 }
 
 bool Task::request(World &world, Population &population, Audio &audio, State &_args){

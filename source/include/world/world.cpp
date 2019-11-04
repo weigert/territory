@@ -26,8 +26,9 @@ void World::generate(){
 
   //Generate Height
   std::cout<<"Filling World"<<std::endl;
-  //generateBuildings();
-  generatePerlin();
+  //generateBuildings();  //Building Example
+  //generatePerlin();     //Lake Example
+  generateForest();       //Forest Example
 }
 
 void World::generateBlank(){
@@ -64,27 +65,19 @@ void World::generateBuildings(){
   blueprint.flatSurface(dim.x*chunkSize, dim.z*chunkSize);
   evaluateBlueprint(blueprint);
 
-  //Add Generated Buildings
-  Blueprint _building;
-  _building.building(5);
-  blueprint.merge(_building.translate(glm::vec3(100, 1, 100)));
+  //Add some Cacti
+  Blueprint _cactus;
+  for(int i = 0; i < 500; i++){
+    _cactus.cactus();
+    blueprint.merge(_cactus.translate(glm::vec3(rand()%(int)(dim.x*chunkSize), 1, rand()%(int)(dim.z*chunkSize))));
+  }
   evaluateBlueprint(blueprint);
 
-/*
-  //Trees
-  std::cout<<"Adding Trees"<<std::endl;
-  Blueprint _tree;
-
-  for(int i = 0; i < 200; i++){
-    _tree.editBuffer.clear();
-    _tree.tree(10); //Construct a tree blueprint (height = 9
-    //Append the Translated Blueprint to the full blueprint.
-    int tree[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
-    blueprint.merge(_tree.translate(glm::vec3(tree[0], 1, tree[1])));
-  }
-
-  blueprint.removeDuplicates(false);
-  */
+  //Add Generated Buildings
+  Blueprint _building;
+  _building.building<RUSTIC>(5);  //Recommended Max-Size: 5 (can handle 6)
+  blueprint.merge(_building.translate(glm::vec3(100, 1, 100)));
+  evaluateBlueprint(blueprint);
 }
 
 void World::generateFlat(){
@@ -118,13 +111,102 @@ void World::generateFlat(){
   evaluateBlueprint(blueprint);
 }
 
-void World::generatePerlin(){
+void World::generateForest(){
   //Perlin Noise Generator
   noise::module::Perlin perlin;
   perlin.SetOctaveCount(10);
   perlin.SetFrequency(6);
   perlin.SetPersistence(0.5);
 
+  //Loop over the world-size
+  std::cout<<"Adding Ground."<<std::endl;
+  for(int i = 0; i < dim.x*chunkSize; i++){
+    for(int k = 0; k < dim.z*chunkSize; k++){
+
+      //Normalize the Block's x,z coordinates
+      float x = (float)(i) / (float)(chunkSize*dim.x);
+      float z = (float)(k) / (float)(chunkSize*dim.z);
+
+      float height = perlin.GetValue(x, SEED, z)/5+0.25;
+      height *= (dim.y*chunkSize);
+
+      //Now loop over the height and set the blocks
+      for(int j = 0; j < (int)height-1; j++){
+        blueprint.addEditBuffer(glm::vec3(i, j, k), BLOCK_DIRT, false);
+      }
+
+      //Add Grass on top
+      blueprint.addEditBuffer(glm::vec3(i, (int)height-1, k), BLOCK_GRASS, false);
+    }
+  }
+
+  //Rocks
+  std::cout<<"Adding Rocks"<<std::endl;
+  for(int i = 0; i < 500; i++){
+    int rock[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
+    //Normalize the Block's x,z coordinates
+    float x = (float)(rock[0]) / (float)(chunkSize*dim.x);
+    float z = (float)(rock[1]) / (float)(chunkSize*dim.z);
+
+    float height = perlin.GetValue(x, SEED, z)/5+0.25;
+    height *= (dim.y*chunkSize);
+
+    if(height < sealevel) continue;
+
+    blueprint.addEditBuffer(glm::vec3(rock[0], (int)height, rock[1]), BLOCK_STONE, false);
+  }
+
+  evaluateBlueprint(blueprint);
+
+  //Pumpkings
+  std::cout<<"Adding Pumpkins"<<std::endl;
+  for(int i = 0; i < 1000; i++){
+    int rock[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
+    //Normalize the Block's x,z coordinates
+    float x = (float)(rock[0]) / (float)(chunkSize*dim.x);
+    float z = (float)(rock[1]) / (float)(chunkSize*dim.z);
+
+    float height = perlin.GetValue(x, SEED, z)/5+0.25;
+    height *= (dim.y*chunkSize);
+
+    if(height < sealevel) continue;
+
+    blueprint.addEditBuffer(glm::vec3(rock[0], (int)height, rock[1]), BLOCK_PUMPKIN, false);
+  }
+
+
+  //Trees
+  std::cout<<"Adding Trees"<<std::endl;
+  Blueprint _tree;
+
+  for(int i = 0; i < 10000; i++){
+    //Generate a random size tree model.
+    int treeheight = rand()%6+8;
+    _tree.editBuffer.clear();
+    _tree.tree(treeheight); //Construct a tree blueprint (height = 9)
+
+    //Append the Translated Blueprint to the full blueprint.
+    int tree[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
+
+    float x = (float)(tree[0]) / (float)(chunkSize*dim.x);
+    float z = (float)(tree[1]) / (float)(chunkSize*dim.z);
+
+    float height = perlin.GetValue(x, SEED, z)/5+0.25;
+    height *= (dim.y*chunkSize);
+
+    blueprint.merge(_tree.translate(glm::vec3(tree[0], (int)height, tree[1])));
+  }
+
+  //Evaluate the Buffer
+  evaluateBlueprint(blueprint);
+}
+
+void World::generatePerlin(){
+  //Perlin Noise Generator
+  noise::module::Perlin perlin;
+  perlin.SetOctaveCount(10);
+  perlin.SetFrequency(6);
+  perlin.SetPersistence(0.5);
 
   //Adding Water to world.
   std::cout<<"Flooding World."<<std::endl;
@@ -136,7 +218,6 @@ void World::generatePerlin(){
       }
     }
   }
-  //Flood
   evaluateBlueprint(blueprint);
 
   //Loop over the world-size
@@ -320,7 +401,7 @@ BlockType World::getBlock(glm::vec3 _pos){
       return (BlockType)chunks[i].data[chunks[i].getIndex(p)];
     }
   }
-  return BLOCK_VOID;
+  return BLOCK_AIR;
 }
 
 void World::setBlock(glm::vec3 _pos, BlockType _type){
@@ -388,6 +469,7 @@ Inventory World::pickup(glm::vec3 pos){
 */
 
 void World::bufferChunks(View view){
+  lock = true;
   //Load / Reload all Visible Chunks
   evaluateBlueprint(blueprint);
 
@@ -479,6 +561,7 @@ void World::bufferChunks(View view){
     }
     in.close();
   }
+  lock = false;
 }
 
 bool World::loadWorld(){

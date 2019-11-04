@@ -38,6 +38,10 @@ void eventHandler::input(SDL_Event *e, bool &quit, bool &paused){
       mouse = e;
       click = true;
     }
+    else if( e->type == SDL_MOUSEBUTTONUP){
+      mouse = e;
+      click = true;
+    }
     else if( e->type == SDL_MOUSEMOTION){
       mouse = e;
       move = true;
@@ -56,9 +60,14 @@ void eventHandler::update(World &world, Population &population, View &view, Audi
     if(mouse->button.button == SDL_BUTTON_LEFT){
       view.focus = glm::vec2(1.0)-pos/glm::vec2(view.SCREEN_WIDTH, view.SCREEN_HEIGHT); //Set current focus
     }
-    else if(mouse->button.button == SDL_BUTTON_RIGHT){
+    else if(mouse->type == SDL_MOUSEBUTTONDOWN && mouse->button.button == SDL_BUTTON_RIGHT){
       view.select = view.intersect(world, glm::vec2(mouse->button.x, mouse->button.y));
       view.picked = true;
+      view.picked2 = false;
+    }
+    else if(mouse->type == SDL_MOUSEBUTTONUP && mouse->button.button == SDL_BUTTON_RIGHT){
+      view.select2 = view.intersect(world, glm::vec2(mouse->button.x, mouse->button.y));
+      if(!glm::all(glm::equal(view.select, view.select2))) view.picked2 = true;
     }
     click = false;
   }
@@ -72,16 +81,17 @@ void eventHandler::update(World &world, Population &population, View &view, Audi
     view.SCREEN_HEIGHT = windowevent->window.data2;
 
     view.image.cleanup();
+    view.reflection.cleanup();
     view.shadow.cleanup();
     view.temp1.cleanup();
     view.temp2.cleanup();
 
     view.image.setup(view.SCREEN_WIDTH, view.SCREEN_HEIGHT);
+    view.reflection.setup(view.SCREEN_WIDTH, view.SCREEN_HEIGHT);
     view.shadow.setup2(view.SHADOW_WIDTH, view.SHADOW_HEIGHT);
     view.temp1.setup(view.SCREEN_WIDTH, view.SCREEN_HEIGHT);
     view.temp2.setup(view.SCREEN_WIDTH, view.SCREEN_HEIGHT);
     view.projection = glm::ortho(-(float)view.SCREEN_WIDTH*view.zoom, (float)view.SCREEN_WIDTH*view.zoom, -(float)view.SCREEN_HEIGHT*view.zoom, (float)view.SCREEN_HEIGHT*view.zoom, -100.0f, 100.0f);
-
 
     _window = false;
   }
@@ -122,6 +132,9 @@ void eventHandler::update(World &world, Population &population, View &view, Audi
     else if(inputs.front()->key.keysym.sym == SDLK_ESCAPE){
       view.showmenu = !view.showmenu; //Toggle Menu Visibility
     }
+    else if(inputs.front()->key.keysym.sym == SDLK_v){
+      view.transparent = !view.transparent; //Toggle Menu Visibility
+    }
     else if(inputs.front()->key.keysym.sym == SDLK_m){
       //Play some music
       Mix_PlayChannel( -1, audio.med, 1 );
@@ -133,24 +146,19 @@ void eventHandler::update(World &world, Population &population, View &view, Audi
   if(!rotate.empty()){
     //We want to perform an event now..
     if(rotate.front()->key.keysym.sym == SDLK_UP){
-      view.lookstate = (view.lookstate + 1)%3;
+      view.lookstate = (view.lookstate + 1)%5;
     }
     else if(rotate.back()->key.keysym.sym == SDLK_DOWN){
-      view.lookstate = (view.lookstate + 2)%3;
+      view.lookstate = (view.lookstate + 5-1)%5;
     }
 
     //Check the Lookstate
-    if(view.lookstate == 0){
-      view.camera = glm::lookAt(glm::vec3(10,2,10), glm::vec3(0,2,0), glm::vec3(0,1,0));
-    }
-    if(view.lookstate == 1){
-      view.camera = glm::lookAt(glm::vec3(10,12,10), glm::vec3(0,2,0), glm::vec3(0,1,0));
-    }
-    if(view.lookstate == 2){
-      view.camera = glm::lookAt(glm::vec3(4,12,4), glm::vec3(0,2,0), glm::vec3(0,1,0));
-    }
-
-    view.camera = glm::rotate(view.camera, glm::radians(view.rotation), glm::vec3(0,1,0));
+    if(view.lookstate == 0) view.cameraPos = glm::vec3(10, 0, 10);
+    else if(view.lookstate == 1) view.cameraPos = glm::vec3(10, 2, 10);
+    else if(view.lookstate == 2) view.cameraPos = glm::vec3(10, 7, 10);
+    else if(view.lookstate == 3) view.cameraPos = glm::vec3(10, 12, 10);
+    else view.cameraPos = glm::vec3(4, 17, 4);
+    view.camera = glm::rotate(glm::lookAt(view.cameraPos, view.lookPos, glm::vec3(0,1,0)), glm::radians(view.rotation), glm::vec3(0,1,0));
     rotate.pop_back();
   }
 
@@ -182,12 +190,28 @@ void eventHandler::update(World &world, Population &population, View &view, Audi
       //view.sprite.model = glm::rotate(view.sprite.model, glm::radians(1.5f), axis);
       scroll.pop_back();
     }
+    if(view.rotation < 0.0){
+      view.rotation = 360.0 + view.rotation;
+    }
+    if(view.rotation > 360.0){
+      view.rotation = view.rotation - 360.0;
+    }
   }
 }
 
 void eventHandler::handlePlayerMove(World &world, View &view, int a){
   //Movement Vector
   glm::vec3 m;
+
+  //Make sure we rotate correctly!
+  if(a < 4){
+    //Rotational Position
+    int g = floor(abs(view.rotation/90));
+
+    //Rotate the Guy
+    if(g%2) a = (a+g+2)%4;
+    else a = (a+g)%4;
+  }
 
   //Get the type of movement
   switch(a){

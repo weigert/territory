@@ -10,6 +10,11 @@ enum BlueprintType{
   //etc...
 };
 
+enum BuildingStyle{
+  RUSTIC,
+  CASTLE
+};
+
 //EditBuffer Struct
 struct bufferObject {
   glm::vec3 pos;
@@ -35,7 +40,7 @@ class Blueprint{
 public:
   //Dimension Parameters
   int chunkSize = 16;
-  glm::vec3 dim = glm::vec3(10, 3, 10);
+  glm::vec3 dim = glm::vec3(20, 5, 20);
 
   //Helpers
   std::vector<bufferObject> editBuffer;
@@ -51,7 +56,13 @@ public:
   //Blueprint Constructors
   void flatSurface(int x, int z);
   void hut();
+
+  template <BuildingStyle S>
   void building(const int &n);
+
+  template<BuildingStyle S>
+  bool buildingFromGraph(graph::Graph<graph::ROOMGRAPH> buildingGraph);
+
   void tree(int height);
   void cactus();
 };

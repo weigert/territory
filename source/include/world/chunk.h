@@ -18,5 +18,4 @@ public:
   int getIndex(glm::vec3 _p);
   void setPosition(glm::vec3 _p, BlockType _type);
   BlockType getPosition(glm::vec3 _p);
-  glm::vec4 getColorByID(BlockType _type);
 };

@@ -179,9 +179,9 @@ void Interface::render(View &view, World &world, Population &population){
       ImGui::LabelText(world.saveFile.c_str(), "World: ");
 
       //Set the Simulation Rate
-      static int b = 10;
-      ImGui::SliderInt("Speed", &b, 0, 10);
-      world.tickLength = 2*(10-b)+1;
+      static int b = world.tickLength.count();
+      ImGui::SliderInt("Tick Length [ms]", &b, 1, 1000);
+      world.tickLength = std::chrono::milliseconds(b);
 
       if(view.picked){
         ImGui::Text("Selected: ");
