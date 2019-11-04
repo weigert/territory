@@ -1,9 +1,28 @@
 # territory
 3D rendered proc-gen world test
 
+## Compiling
+
+Use the make file to compile the binary.
+
+    make all
+    
+Tested on Ubuntu 18 LTS. I have been informed that on Ubuntu 19, the install folder for libnoise is different and needs to be fixed in the 'territory.h' header file.
+    
+### Dependencies
+- gcc
+- SDL2 (core, image, mixer, ttf)
+- OpenGL3
+- GLEW
+- Boost (Serialization, System, Filesystem)
+- DearImgui
+- libnoise
+
 ## Usage
     ./territory [world_name]
-If the world name doesn't exist, it will generate a world. If it does, it will load the world. Tested on Ubuntu 18
+If the world name doesn't exist, it will generate a world. If it does, it will load the world.
+
+If you want to use the perlin+forest world generator, edit the function World::generate() to use generatePerlin() instead of generateFlat(), recompile and generate a new world (e.g. by choosing a new world name, or deleting the one you were using).
 
 ### Controls
 Mouse and Keyboard Inputs:
@@ -76,3 +95,14 @@ A description of features and future plans for various elements of the simulatio
 	- Population: Read *thoughts/population.md*
 
 A number of other files describe other systems which are either implemented or are planned.
+
+## License
+This software is available under the [Mozilla Public License](https://www.mozilla.org/en-US/MPL/2.0/). Still, I don't want to clutter the source with header text, so I hope that's ok. Feel free to use and modify the source of this project.
+
+## Articles
+For the interested, there are some writeups on the various elements of this project on my blog, explaining the systems and the thought process behind their design:
+
+- [Original Task-Bot Concept](http://weigert.vsos.ethz.ch/2019/03/08/modular-memory-driven-task-bots/)
+- [Voxel Engine](http://weigert.vsos.ethz.ch/2019/10/27/homebrew-voxel-engine/)
+- [Task-Bots in the Voxel Engine](http://weigert.vsos.ethz.ch/2019/10/28/task-bots-now-in-full-3d/)
+- [Markov Chains for Procedural Buildings](http://weigert.vsos.ethz.ch/2019/10/30/markov-chains-for-procedural-buildings/)
