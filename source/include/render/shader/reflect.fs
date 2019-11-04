@@ -1,56 +1,24 @@
 #version 130
 uniform vec3 lightCol;
 uniform vec3 lightPos;
+uniform float lightStrength;
 
 in vec4 ex_Color;
 in vec3 ex_Normal;
-in vec2 ex_Position;
-in vec4 shadowCoord;
 in vec3 ex_FragPos;
-in vec3 ex_WorldPos;
 
-uniform mat4 model;
-uniform mat4 camera;
 uniform int clip;
 
 //Sampler for the ShadowMap
-uniform sampler2D shadowMap;
 out vec4 fragColor;
 
-vec4 shade()
-{
-    float shadow = 0.0;
-    shadow /= 9.0;
-    //Make sure shadow is inside the shadowCoord Box, otherwise don't draw shadows!
-    if(greaterThanEqual(shadowCoord.xy, vec2(0.0f)) == bvec2(true) && lessThanEqual(shadowCoord.xy, vec2(1.0f)) == bvec2(true)){
-      // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
-      float currentDepth = shadowCoord.z;
-      float bias = max(0.05 * (1.0 - dot(ex_Normal, lightPos)), 0.005);
-      vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
-      int a = 2;
-      for(int x = -a; x <= a; ++x)
-      {
-          for(int y = -a; y <= a; ++y)
-          {
-              float pcfDepth = texture(shadowMap, shadowCoord.xy + vec2(x, y) * texelSize).r;
-              shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
-          }
-      }
-      shadow/=((2*a+1)*(2*a+1)*2.0);
-    }
-
-    return vec4(vec3(1-shadow), 1.0f);
-}
-
-/*
-  Clipping Plane
-*/
 
 void main(void) {
    if (ex_FragPos.y < clip-0.5) discard;
 
-  //Lighting
-  float lightFactor = clamp(dot(ex_Normal, normalize(lightPos)*2.0), 0.3, 1.0);
-  vec4 objColor = ex_Color*vec4(lightCol*lightFactor, 1.0f);
-  fragColor = objColor;
+   //Lighting
+   float diffuse = clamp(dot(ex_Normal, normalize(lightPos)), 0.1,  0.7);
+   float ambient = 0.1;
+
+   fragColor = ex_Color*vec4(lightCol*lightStrength*(diffuse + ambient), 1.0f);
 }

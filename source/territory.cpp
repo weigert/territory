@@ -38,12 +38,18 @@ int main( int argc, char* args[] ) {
 	Population population( world );
 
 	//Game Loop
-	bool quit = false;
 	bool paused = true;
+
+	//Constant Tick-Length Timer for World Updates
+	timer::Timer<std::chrono::milliseconds> worldUpdateTimer;
+	worldUpdateTimer.set_interval(&world.tickLength, [&](){
+		//Perform the World Update (i.e. simply increase the time!)
+		world.time = (world.time+1)%(60*24);
+	});
+
+	//Event, Input, Render and Audio Handling
+	bool quit = false;
 	SDL_Event e;
-
-
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	//Main Game Loop
 	while(!quit){
@@ -52,19 +58,21 @@ int main( int argc, char* args[] ) {
 		events.update(world, population, view, audio);
 		ImGui_ImplSDL2_ProcessEvent(&e);
 
-		//Update the Population
-		if(SDL_GetTicks()%world.tickLength == 0 && !paused){
-			population.update(world, view, audio);
-		}
+		//Process the Audio
 		audio.process();
+
+	//	timer::benchmark<std::chrono::microseconds>([&](){
+		if(!paused) population.update(world, view, audio);
+	//	});
 
 		//Render the View
 		view.updateChunkModels( world );
 		view.render(world, population);
-
 		view.calcFPS();
 	}
 
+	//End the Program Correctly
+	worldUpdateTimer.stop();
 	view.cleanup();
 
 	return 0;

@@ -26,8 +26,9 @@ void World::generate(){
 
   //Generate Height
   std::cout<<"Filling World"<<std::endl;
-  //generateBuildings();
-  generateForest();
+  //generateBuildings();  //Building Example
+  //generatePerlin();     //Lake Example
+  generateForest();       //Forest Example
 }
 
 void World::generateBlank(){
@@ -468,6 +469,7 @@ Inventory World::pickup(glm::vec3 pos){
 */
 
 void World::bufferChunks(View view){
+  lock = true;
   //Load / Reload all Visible Chunks
   evaluateBlueprint(blueprint);
 
@@ -559,6 +561,7 @@ void World::bufferChunks(View view){
     }
     in.close();
   }
+  lock = false;
 }
 
 bool World::loadWorld(){

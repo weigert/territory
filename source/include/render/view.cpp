@@ -199,14 +199,20 @@ void View::updateChunkModels(World &world){
 ================================================================================
 */
 
-void View::update(){
-  /*
-  lightPos += glm::vec3(-0.01f, 0.0f, -0.01f);
-  depthCamera = glm::lookAt(lightPos, glm::vec3(0,0,0), glm::vec3(0,1,0));
-  */
-}
-
 void View::render(World &world, Population &population){
+
+  /* Set Current Parameters based on the time! */
+  float t = (double)world.time/(60.0*24.0);
+  float g = (t-t*t);
+  skyCol = color::bezier(t, color::skycolors);
+
+  //Move the Light Across the Sky
+  lightPos = glm::vec3(-10.0f, g*20.0f+10.0f, -5.0f+t*10.0f);
+  glm::mat4 depthCamera = glm::lookAt(lightPos, glm::vec3(0,0,0), glm::vec3(0,1,0));
+
+  //Set the Fog-Color
+  fogColor = glm::vec4(4*g, 4*g, 4*g, 1.0);
+  lightStrength = 6*g+0.1;
 
   /* SHADOW MAPPING */
   glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
@@ -235,11 +241,9 @@ void View::render(World &world, Population &population){
   glBindFramebuffer(GL_FRAMEBUFFER, reflection.fbo);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   reflectShader.useProgram();    //Use the model's shader
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, shadow.depthTexture);
-  reflectShader.setInt("shadowMap", 0);
   reflectShader.setVec3("lightCol", lightCol);
   reflectShader.setVec3("lightPos", lightPos);
+  reflectShader.setFloat("lightStrength", lightStrength);
 
   //Reflect the Camera around a specific position (and make sure it is flipped  VVVVVV  upside down)
   glm::vec3 reflectcamerapos = (cameraPos)*glm::vec3(1, -1, 1) + glm::vec3(0, 2*world.sealevel, 0);
@@ -250,8 +254,6 @@ void View::render(World &world, Population &population){
   reflectShader.setInt("clip", world.sealevel+viewPos.y);
   reflectShader.setMat4("projection", projection);
   reflectShader.setMat4("camera", reflectcamera);
-  reflectShader.setMat4("dbmvp", biasMatrix * depthProjection * depthCamera * glm::mat4(1.0f));
-  reflectShader.setMat4("dmvp", depthProjection * depthCamera * glm::mat4(1.0f));
 
   //Loop over the Stuff
   for(unsigned int i = 0; i < models.size(); i++){
@@ -281,6 +283,7 @@ void View::render(World &world, Population &population){
   cubeShader.setVec3("lightCol", lightCol);
   cubeShader.setVec3("lightPos", lightPos);
   cubeShader.setVec3("lookDir", lookPos-cameraPos);
+  cubeShader.setFloat("lightStrength", lightStrength);
   cubeShader.setBool("_grain", grain);
 
   //Stuff for Adding Transparency Windows
@@ -371,21 +374,6 @@ void View::render(World &world, Population &population){
     //Draw the drops!
     world.drops[i].sprite.render();
   }
-
-  /* AFTER-EFFECTS */
-  /*
-  //Render FBO to Monitor
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  billboardShader.useProgram();
-  glActiveTexture(GL_TEXTURE0+0);
-  glBindTexture(GL_TEXTURE_2D, reflection.texture);
-  billboardShader.setInt("imageTexture", 0);
-  glActiveTexture(GL_TEXTURE0+1);
-  glBindTexture(GL_TEXTURE_2D, reflection.depthTexture);
-  billboardShader.setInt("depthTexture", 1);
-  glBindVertexArray(reflection.vao);
-  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-  */
 
   //Render Temp to Screen with a horizontal blur shader
   glBindFramebuffer(GL_FRAMEBUFFER, temp1.fbo);

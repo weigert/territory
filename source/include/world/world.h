@@ -28,8 +28,10 @@ public:
   int SEED = 100;
   int chunkSize = 16;
   int sealevel = 16;
-  int tickLength = 1;
+  std::chrono::milliseconds tickLength = std::chrono::milliseconds(1000);
   glm::vec3 dim = glm::vec3(20, 5, 20);
+  bool lock = false;  //Lock the World Data for Chunk Loading
+  volatile int time = 0;  //Is set in a separate timed thread.
 
   //Items placed / on the ground
   Inventory placed;

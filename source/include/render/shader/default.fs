@@ -3,6 +3,7 @@ uniform vec3 lightCol;
 uniform vec3 lightPos;
 uniform vec3 lookDir;
 uniform bool _grain;
+uniform float lightStrength;
 
 in vec4 ex_Color;
 in vec3 ex_Normal;
@@ -64,7 +65,6 @@ void main(void) {
   vec3 reflectDir = reflect(lightPos, ex_Normal);
 
   //Lighting
-  float lightStrength = 1.5;
   float diffuse = clamp(dot(ex_Normal, normalize(lightPos)), 0.1,  0.7);
   float ambient = 0.1;
   float specular = pow(max(dot(normalize(lookDir), normalize(reflectDir)), 0.0), 32);
@@ -77,7 +77,7 @@ void main(void) {
 
   //Reflection
   if(ex_FragPos.y == clip-0.5 && ex_Color == vec4(0.3f, 0.57f, 0.67f, 1.0f)){
-    fragColor = mix(ex_Color, texture(reflection, vec2(1-ex_Position.x, ex_Position.y)), 1-dot(vec3(0,-1,0), normalize(lookDir)));
+    fragColor = mix(fragColor, texture(reflection, vec2(1-ex_Position.x, ex_Position.y)), 1-dot(vec3(0,-1,0), normalize(lookDir)));
   }
 
   //Texture Grain

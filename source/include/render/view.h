@@ -123,21 +123,20 @@ class View{
     glm::vec3 fogColor = glm::vec3(0.6, 0.9f, 0.8f);
     glm::vec3 clickColorBlock = glm::vec3(0.0f, 1.0f, 0.0f);
     glm::vec3 hoverColorBlock = glm::vec3(1.0f, 0.0, 0.0f);
+    glm::vec3 skyCol = glm::vec3(0.6, 0.9f, 0.8f);
+    glm::vec3 lightPos = glm::vec3(-3.0f, 6.0f, -2.0f);
+    glm::vec3 lightCol = glm::vec3(1.0f, 1.0f, 0.9f);
+    float lightStrength = 1.5;
 
-    //View Projector (bunch of camera settings here tbh)
+    //Rotation and View
+    int lookstate = 3;
+    float rotation = 0.0f;
     glm::vec3 cameraPos = glm::vec3(10, 12, 10);
     glm::vec3 lookPos = glm::vec3(0, 2, 0);
     glm::mat4 camera = glm::lookAt(cameraPos, lookPos, glm::vec3(0,1,0));
-    glm::mat4 projection = glm::ortho(-(float)SCREEN_WIDTH*zoom, (float)SCREEN_WIDTH*zoom, -(float)SCREEN_HEIGHT*zoom, (float)SCREEN_HEIGHT*zoom, -200.0f, 200.0f);
-
-    //Light Variables
-    int lookstate = 3;
-    glm::vec3 lightPos = glm::vec3(-3.0f, 6.0f, -2.0f);
-    glm::vec3 lightCol = glm::vec3(1.0f, 1.0f, 0.9f);
-    glm::vec3 skyCol = glm::vec3(0.6, 0.9f, 0.8f);
-    float rotation = 0.0f;
+    glm::mat4 projection = glm::ortho(-(float)SCREEN_WIDTH*zoom, (float)SCREEN_WIDTH*zoom, -(float)SCREEN_HEIGHT*zoom, (float)SCREEN_HEIGHT*zoom, -300.0f, 300.0f);
     glm::mat4 depthModelMatrix = glm::mat4(1.0);
-    glm::mat4 depthProjection = glm::ortho<float>(-80,80,-80,80,-30,100);
+    glm::mat4 depthProjection = glm::ortho<float>(-120,120,-120,120,-50,100);
     glm::mat4 depthCamera = glm::lookAt(lightPos, glm::vec3(0,0,0), glm::vec3(0,1,0));
 
     glm::mat4 biasMatrix = glm::mat4(

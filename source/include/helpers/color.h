@@ -18,11 +18,14 @@ Can we discuss why one thing or the other is faster?
 */
 
 namespace color{
-
   std::vector<glm::vec4> skycolors{
-    glm::vec4(1.00, 0.75, 0.35, 1.0),
-    glm::vec4(0.84, 0.21, 0.21, 1.0),
-    glm::vec4(0.93, 0.91, 0.38, 1.0)
+    glm::vec4(0.1, 0.1, 0.1, 1.0),            //Dark Grey
+  //  glm::vec4(1.00, 0.00, 0.00, 1.0),         //Red
+    glm::vec4(0.00, 1.00, 1.00, 1.0),         //Blue
+    glm::vec4(1.00, 1.00, 1.00, 1.0),         //White
+  //  glm::vec4(0.20, 0.67, 0.90, 1.0),         //Dark Blue
+  //  glm::vec4(0.8, 0.20, 0.80, 1.0),         //Red
+    glm::vec4(0.1, 0.1, 0.1, 1.0)             //Dark Grey
   };
 
   //Get some Sand-Colors for the Bezier Curve

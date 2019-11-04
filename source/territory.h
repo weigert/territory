@@ -93,6 +93,9 @@ enum SoundByte{
 #include <deque>
 #include <random>
 #include <map>
+#include <chrono>
+#include <thread>
+#include <atomic>
 
 //File / General IO
 #include <iostream>
@@ -103,16 +106,16 @@ enum SoundByte{
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 
+//Logger
+#include "include/game/logger.cpp"
+Logger _log;
+
 //Helper Functions
 #include "include/helpers/arraymath.h"
 #include "include/helpers/color.h"
 #include "include/helpers/volume.h"
 #include "include/helpers/graph.h"
-#include "include/helpers/CImg.h"
-
-//Logger
-#include "include/game/logger.cpp"
-Logger _log;
+#include "include/helpers/timer.h"
 
 //Pathfinding Classes
 #include "include/astar/sltastar.h"
