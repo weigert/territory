@@ -394,13 +394,11 @@ int World::moveWeight(BlockType _type){
 BlockType World::getBlock(glm::vec3 _pos){
   //Chunk Position and World Position
   glm::vec3 c = glm::floor(_pos/glm::vec3(chunkSize));
-  int ind = helper::getIndex(c, dim);
   glm::vec3 p = glm::mod(_pos, glm::vec3(chunkSize));
+  int ind = helper::getIndex(c, dim);
 
-  //Block is not loaded.
-  if(chunk_order.find(ind) == chunk_order.end()) return BLOCK_AIR;
-
-  //Get the Guy
+  //Get the Block with Error Handling
+  if(!(glm::all(glm::greaterThanEqual(c, min)) && glm::all(glm::lessThanEqual(c, max)))) return BLOCK_VOID;
   return (BlockType)chunks[chunk_order[ind]].data[chunks[chunk_order[ind]].getIndex(p)];
 }
 
@@ -474,21 +472,21 @@ void World::bufferChunks(View &view){
   evaluateBlueprint(blueprint);
 
   //Chunks that should be loaded
-  glm::vec3 a = glm::floor(view.viewPos/glm::vec3(chunkSize))-view.renderDistance;
-  glm::vec3 b = glm::floor(view.viewPos/glm::vec3(chunkSize))+view.renderDistance;
+  min = glm::floor(view.viewPos/glm::vec3(chunkSize))-view.renderDistance;
+  max = glm::floor(view.viewPos/glm::vec3(chunkSize))+view.renderDistance;
 
   //Can't exceed a certain size
-  a = glm::clamp(a, glm::vec3(0), dim-glm::vec3(1));
-  b = glm::clamp(b, glm::vec3(0), dim-glm::vec3(1));
+  min = glm::clamp(min, glm::vec3(0), dim-glm::vec3(1));
+  max = glm::clamp(max, glm::vec3(0), dim-glm::vec3(1));
 
   //Chunks that need to be removed
   std::stack<int> remove;
   std::vector<glm::vec3> load;
 
   //Construct the Vector of guys we should load
-  for(int i = a.x; i <= b.x; i ++){
-    for(int j = a.y; j <= b.y; j ++){
-      for(int k = a.z; k <= b.z; k ++){
+  for(int i = min.x; i <= max.x; i ++){
+    for(int j = min.y; j <= max.y; j ++){
+      for(int k = min.z; k <= max.z; k ++){
         //Add the vector that we should be loading
         load.push_back(glm::vec3(i, j, k));
       }
@@ -498,7 +496,7 @@ void World::bufferChunks(View &view){
   //Loop over all existing chunks
   for(unsigned int i = 0; i < chunks.size(); i++){
     //Check if any of these chunks are outside of the limits of a / b
-    if(glm::any(glm::lessThan(chunks[i].pos, a)) || glm::any(glm::greaterThan(chunks[i].pos, b))){
+    if(glm::any(glm::lessThan(chunks[i].pos, min)) || glm::any(glm::greaterThan(chunks[i].pos, max))){
       //Add the chunk to the erase pile
       remove.push(i);
       continue;

@@ -31,6 +31,12 @@ public:
   int sealevel = 16;
   std::chrono::milliseconds tickLength = std::chrono::milliseconds(1000);
   glm::vec3 dim = glm::vec3(20, 5, 20);
+
+  //Min and Max Chunk Positions
+  glm::vec3 min = glm::vec3(0);
+  glm::vec3 max = dim;
+
+  //Other Stuff
   bool lock = false;  //Lock the World Data for Chunk Loading
   volatile int time = 540;  //Is set in a separate timed thread.
 

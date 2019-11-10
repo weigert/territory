@@ -172,13 +172,16 @@ bool Task::move(World &world, Population &population, Audio &audio, State &_args
 //Walk - Multiple Steps with Error Handling
 bool Task::walk(World &world, Population &population, Audio &audio, State &_args){
 
-  /*
-    Handle outside-of-visible-bounds bots travelling
-  */
-
   //Check if we're already there (or in range)
   if(helper::inRange(population.bots[botID].pos, _args.pos, _args.range)){
     _log.debug("Arrived at location within range.");
+    return true;
+  }
+
+  //Check if the Position is out ouf bounds...
+  glm::vec3 c = glm::floor(_args.pos/glm::vec3(world.chunkSize));
+  if(!(glm::all(glm::greaterThanEqual(c, world.min)) && glm::all(glm::lessThanEqual(c, world.max)))){
+    _log.debug("Position is outside of loaded range.");
     return true;
   }
 
@@ -502,6 +505,7 @@ bool Task::convert(World &world, Population &population, Audio &audio, State &_a
 }
 
 bool Task::seek(World &world, Population &population, Audio &audio, State &_args){
+
   //Do this guy here
   if(!handleQueue(world, population, audio)){
     return false;
@@ -532,6 +536,7 @@ bool Task::seek(World &world, Population &population, Audio &audio, State &_args
       walk.args.range = population.bots[botID].range;
       _args.pos = walk.args.pos;
 
+      //Random Walk!
       queue.push_back(walk);
     }
     else{
@@ -587,16 +592,14 @@ bool Task::look(World &world, Population &population, Audio &audio, State &_args
     for(int j = population.bots[botID].pos.y-_args.range.y; j <= population.bots[botID].pos.y+_args.range.y; ++j){
       for(int k = population.bots[botID].pos.z-_args.range.z; k <= population.bots[botID].pos.z+_args.range.z; ++k){
 
-        state.pos = glm::vec3(i, j, k);
-        glm::vec3 pos = glm::mod(state.pos, glm::vec3(world.chunkSize));
-        glm::vec3 cpos = glm::floor(state.pos/glm::vec3(world.chunkSize));
-        int m = helper::getIndex(cpos, world.dim);
+        //Get the ChunkPosition
+        glm::vec3 c = glm::floor(glm::vec3(i,j,k)/glm::vec3(world.chunkSize));
+        if(!(glm::all(glm::greaterThanEqual(c, world.min)) && glm::all(glm::lessThanEqual(c, world.max)))) continue;
 
         //Set Properties
+        state.pos = glm::vec3(i, j, k);
         state.task = population.bots[botID].task;
-        state.block = (BlockType)world.chunks[world.chunk_order[m]].data[world.chunks[world.chunk_order[m]].getIndex(pos)];
-
-        //This passes by reference because it is much faster (reference to world, not a new world object!)
+        state.block = world.getBlock(state.pos);
         population.bots[botID].addMemory(world, state);
       }
     }
