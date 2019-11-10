@@ -5,6 +5,7 @@
 #include "../game/item.h"
 #include "../render/shader.h"
 #include "../render/billboard.h"
+#include "../render/model.h"
 #include "../render/view.h"
 #include "world.h"
 
@@ -393,15 +394,14 @@ int World::moveWeight(BlockType _type){
 BlockType World::getBlock(glm::vec3 _pos){
   //Chunk Position and World Position
   glm::vec3 c = glm::floor(_pos/glm::vec3(chunkSize));
+  int ind = helper::getIndex(c, dim);
   glm::vec3 p = glm::mod(_pos, glm::vec3(chunkSize));
 
-  for(unsigned int i = 0; i < chunks.size(); i++){
-    //Compare to Chunk Position
-    if(c == chunks[i].pos){
-      return (BlockType)chunks[i].data[chunks[i].getIndex(p)];
-    }
-  }
-  return BLOCK_AIR;
+  //Block is not loaded.
+  if(chunk_order.find(ind) == chunk_order.end()) return BLOCK_AIR;
+
+  //Get the Guy
+  return (BlockType)chunks[chunk_order[ind]].data[chunks[chunk_order[ind]].getIndex(p)];
 }
 
 void World::setBlock(glm::vec3 _pos, BlockType _type){
@@ -468,7 +468,7 @@ Inventory World::pickup(glm::vec3 pos){
 ===================================================
 */
 
-void World::bufferChunks(View view){
+void World::bufferChunks(View &view){
   lock = true;
   //Load / Reload all Visible Chunks
   evaluateBlueprint(blueprint);
@@ -501,6 +501,7 @@ void World::bufferChunks(View view){
     if(glm::any(glm::lessThan(chunks[i].pos, a)) || glm::any(glm::greaterThan(chunks[i].pos, b))){
       //Add the chunk to the erase pile
       remove.push(i);
+      continue;
     }
 
     //Make sure that the chunk that we determined will not be removed is also not reloaded
@@ -512,11 +513,10 @@ void World::bufferChunks(View view){
     }
   }
 
-  updateModels = remove;
-
-  //Loop over the erase pile, delete the relevant chunks.
+  //Loop over the erase pile, delete the relevant chunks and models.
   while(!remove.empty()){
     chunks.erase(chunks.begin()+remove.top());
+    view.models.erase(view.models.begin()+remove.top());
     remove.pop();
   }
 
@@ -547,7 +547,7 @@ void World::bufferChunks(View view){
 
     while(!load.empty()){
       //Skip Lines
-      while(n < load.back().x*dim.z*dim.y+load.back().y*dim.z+load.back().z){
+      while(n < helper::getIndex(load.back(), dim)){
         in.ignore(1000000,'\n');
         n++;
       }
@@ -561,6 +561,17 @@ void World::bufferChunks(View view){
     }
     in.close();
   }
+
+  //Write the Chunk Order
+  chunk_order.clear();
+  for(int i = 0; i < chunks.size(); i++){
+    //Set the Pointer to the chunk guy
+    chunk_order[helper::getIndex(chunks[i].pos, dim)] = i;
+  }
+
+  //Update the Corresponding Chunk Models
+  view.loadChunkModels(*this);
+
   lock = false;
 }
 

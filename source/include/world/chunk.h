@@ -8,7 +8,7 @@ public:
   //Position information and size information
   glm::vec3 pos;
   bool refreshModel = false;
-    int size;
+  int size;
   BiomeType biome;
 
   //Data Storage Member

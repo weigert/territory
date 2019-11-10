@@ -96,6 +96,7 @@ enum SoundByte{
 #include <chrono>
 #include <thread>
 #include <atomic>
+#include <unordered_map>
 
 //File / General IO
 #include <iostream>
@@ -111,6 +112,7 @@ enum SoundByte{
 Logger _log;
 
 //Helper Functions
+#include "include/helpers/ease.h"
 #include "include/helpers/arraymath.h"
 #include "include/helpers/color.h"
 #include "include/helpers/volume.h"

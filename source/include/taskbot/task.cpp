@@ -208,8 +208,9 @@ bool Task::walk(World &world, Population &population, Audio &audio, State &_args
     }
   }
 
-  /*Check for path stil valid in this next move!*/
 
+
+  /*Check for path stil valid in this next move!*/
 
   if(queue.empty()){
     Task move("Move to Position", botID, &Task::move);
@@ -578,12 +579,25 @@ bool Task::seek(World &world, Population &population, Audio &audio, State &_args
 
 //Look - Scan surroundings and write to memory queue
 bool Task::look(World &world, Population &population, Audio &audio, State &_args){
+  //Look State (don't reinitialize every time...)
+  State state;
+
   //Character Searches on Grid and Adds what it finds.
-  for(int i = population.bots[botID].pos.x-_args.range.x; i <= population.bots[botID].pos.x+_args.range.x; i++){
-    for(int j = population.bots[botID].pos.y-_args.range.y; j <= population.bots[botID].pos.y+_args.range.y; j++){
-      for(int k = population.bots[botID].pos.z-_args.range.z; k <= population.bots[botID].pos.z+_args.range.z; k++){
-        //Form new Memories from Surroundings
-        population.bots[botID].addMemory(world, glm::vec3(i, j, k));
+  for(int i = population.bots[botID].pos.x-_args.range.x; i <= population.bots[botID].pos.x+_args.range.x; ++i){
+    for(int j = population.bots[botID].pos.y-_args.range.y; j <= population.bots[botID].pos.y+_args.range.y; ++j){
+      for(int k = population.bots[botID].pos.z-_args.range.z; k <= population.bots[botID].pos.z+_args.range.z; ++k){
+
+        state.pos = glm::vec3(i, j, k);
+        glm::vec3 pos = glm::mod(state.pos, glm::vec3(world.chunkSize));
+        glm::vec3 cpos = glm::floor(state.pos/glm::vec3(world.chunkSize));
+        int m = helper::getIndex(cpos, world.dim);
+
+        //Set Properties
+        state.task = population.bots[botID].task;
+        state.block = (BlockType)world.chunks[world.chunk_order[m]].data[world.chunks[world.chunk_order[m]].getIndex(pos)];
+
+        //This passes by reference because it is much faster (reference to world, not a new world object!)
+        population.bots[botID].addMemory(world, state);
       }
     }
   }
@@ -698,7 +712,7 @@ bool Task::converse(World &world, Population &population, Audio &audio, State &_
 //Special Functions
 bool Task::Dummy(World &world, Population &population, Audio &audio, State &_args){
   if(initFlag){
-    Task seek("Seek Clay", botID, &Task::seek);
+    Task seek("Seek Cactus", botID, &Task::seek);
     seek.args.block = BLOCK_CACTUS;
     seek.args.range = population.bots[botID].range;
 

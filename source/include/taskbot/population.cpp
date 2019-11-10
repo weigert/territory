@@ -39,7 +39,7 @@ Population::Population(World &world){
   }
 }
 
-void Population::update(World &world, View view, Audio &audio){
+void Population::update(World &world, View &view, Audio &audio){
   for(Bot& bot : bots){
     //No Execution Conditions
     if(bot.dead) continue;

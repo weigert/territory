@@ -154,18 +154,12 @@ void View::cleanup(){
 */
 
 void View::loadChunkModels(World &world){
-  //Update the Models for the Chunks
-
-  while(!world.updateModels.empty()){
-    models.erase(models.begin()+world.updateModels.top());
-    world.updateModels.pop();
-  }
-
   //Loop over all chunks
   for(unsigned int i = 0; i < world.chunks.size(); i++){
     //If we are at capacity, add a new item
     if(i == models.size()){
       Model model;
+      model.cpos = world.chunks[i].pos;
       model.fromChunkGreedy(world.chunks[i]);
       model.setup();
       models.push_back(model);
@@ -203,16 +197,15 @@ void View::render(World &world, Population &population){
 
   /* Set Current Parameters based on the time! */
   float t = (double)world.time/(60.0*24.0);
-  float g = (t-t*t);
-  skyCol = color::bezier(t, color::skycolors);
+  skyCol = color::bezier(ease::cubic(t), color::skycolors);
 
   //Move the Light Across the Sky
-  lightPos = glm::vec3(-10.0f, g*20.0f+10.0f, -5.0f+t*10.0f);
+  lightPos = glm::vec3(-10.0f, ease::quartic(t)*20.0f+10.0f, -10.0f+t*20.0f);
   glm::mat4 depthCamera = glm::lookAt(lightPos, glm::vec3(0,0,0), glm::vec3(0,1,0));
 
   //Set the Fog-Color
-  fogColor = glm::vec4(4*g, 4*g, 4*g, 1.0);
-  lightStrength = 6*g+0.1;
+  fogColor = glm::vec4(ease::quartic(t), ease::quartic(t), ease::quartic(t), 1.0);
+  lightStrength = 1.4*ease::quartic(t)+0.1;
 
   /* SHADOW MAPPING */
   glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
@@ -549,5 +542,10 @@ void View::calcFPS(){
   for(int i = 0; i < plotSize-1; i++){
     arr[i] = arr[i+1];
   }
+  for(int i = 5; i < plotSize-5; i++){
+    ave[i] = floor((arr[i-5]+arr[i-4]+arr[i-3]+arr[i-2]+arr[i-1]+arr[i]+arr[i+1]+arr[i+2]+arr[i+3]+arr[i+4]+arr[i+5])/11.0);
+  }
   arr[plotSize-1] = FPS;
+
+  //This needs to be averaged somehow..
 }

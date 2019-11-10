@@ -46,7 +46,7 @@ class Bot{
     void addSound(State _state);
     std::deque<Memory> recallMemories(Memory &query, bool all);
     void updateMemory(Memory &query, bool all, Memory &memory);
-    void addMemory(World world, glm::vec3 _pos);
+    inline void addMemory(World &world, State &state);
 };
 
 //Constructors

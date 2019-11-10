@@ -29,11 +29,11 @@ void Bot::executeTask(World &world, Population &population, Audio &audio){
     interrupt = false;
   }
   else{
-    //Execute Current Task (Make sure when decide is called, it doesn't reset to itself)
-    if(current->handle == &Task::decide && (current->perform)(world, population, audio));
-    else if((current->perform)(world, population, audio)){
-      current->set("Decide on Action", ID, &Task::decide);
-    }
+      //Execute Current Task (Make sure when decide is called, it doesn't reset to itself)
+      if(current->handle == &Task::decide && (current->perform)(world, population, audio));
+      else if((current->perform)(world, population, audio)){
+        current->set("Decide on Action", ID, &Task::decide);
+      }
   }
 }
 
@@ -95,38 +95,41 @@ std::deque<Memory> Bot::recallMemories(Memory &query, bool all){
   return recalled;
 }
 
-void Bot::addMemory(World world, glm::vec3 _pos){
+inline void Bot::addMemory(World &world, State &state){
   //Memory already exists, so overwrite relevant portions.
   for(unsigned int i = 0; i < memories.size(); i++){
-    //We already have a memory at that location!
-    if(memories[i].state.pos == _pos){
-      //Update the Information at that position
-      memories[i].state.block = world.getBlock(_pos);
-      memories[i].state.task = task;
+    if(memories[i].state.pos != state.pos) continue;
+    //We already have a memory at this location!
 
-      //Check if we should remove this memory.
-      if(memories[i].state.block == BLOCK_AIR){
-        memories.erase(memories.begin()+i);
-      }
+    if(state.block == BLOCK_AIR){
+      //This Memory needs to be removed.
+      memories.erase(memories.begin()+i);
       return;
     }
+
+    //Update the Information at that position
+    memories[i].state.block = state.block;
+    memories[i].state.task = state.task;
+    return;
   }
 
+  //No New Memories for these Blocks
+  if(state.block == BLOCK_AIR) return;
+  if(state.block == BLOCK_STONE) return;
+  if(state.block == BLOCK_DIRT) return;
+  if(state.block == BLOCK_GRASS) return;
+  if(state.block == BLOCK_SAND) return;
+
   Memory memory;
-  memory.state.pos = _pos;
-  memory.state.block = world.getBlock(memory.state.pos);
-  if(memory.state.block == BLOCK_AIR) return;
-  if(memory.state.block == BLOCK_STONE) return;
-  if(memory.state.block == BLOCK_DIRT) return;
-  if(memory.state.block == BLOCK_GRASS) return;
-  memory.state.task = task;
+  Memory oldMemory;
+  memory.state = state;
   memory.state.reachable = true;
 
   //Now shuffle the memories around.
   for(unsigned int i = 1; i < memories.size(); i++){
     //Check If A Memory Exists at the location
     if(memories[i].recallScore > memories[i-1].recallScore){
-      Memory oldMemory = memories[i-1];
+      oldMemory = memories[i-1];
       memories[i-1] = memories[i];
       memories[i] = oldMemory;
     }
