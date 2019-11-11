@@ -7,7 +7,7 @@ class Chunk{
 public:
   //Position information and size information
   glm::vec3 pos;
-  bool refreshModel = false;
+  bool remesh = false;
   int size;
   BiomeType biome;
 

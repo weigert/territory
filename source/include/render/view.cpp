@@ -177,12 +177,29 @@ void View::loadChunkModels(World &world){
 }
 
 void View::updateChunkModels(World &world){
+  //Get the Chunk Position if the remeshBuffer isn't empty!
+  while(!world.remeshBuffer.editBuffer.empty()){
+    //Add the Cubes
+    glm::vec3 c = world.remeshBuffer.editBuffer.back().cpos;
+    glm::vec3 p = glm::mod(world.remeshBuffer.editBuffer.back().pos, glm::vec3(world.chunkSize));
+    int ind = helper::getIndex(c, world.dim);
+
+    //Skip non-loaded remeshBuffer objects
+    if(!(glm::all(glm::greaterThanEqual(c, world.min)) && glm::all(glm::lessThanEqual(c, world.max)))){
+      world.remeshBuffer.editBuffer.pop_back();
+      continue;
+    }
+    //Otherwise we are in bounds, so add that cube to the relevant model.
+    models[world.chunk_order[ind]].addCube(p, world.remeshBuffer.editBuffer.back().type);
+    world.remeshBuffer.editBuffer.pop_back();
+  }
+
   //Loop over all chunks, see if they are updated.
   for(unsigned int i = 0; i < world.chunks.size(); i++){
-    if(world.chunks[i].refreshModel){
+    if(world.chunks[i].remesh){
       models[i].fromChunkGreedy(world.chunks[i]);
       models[i].update();
-      world.chunks[i].refreshModel = false;
+      world.chunks[i].remesh = false;
     }
   }
 }

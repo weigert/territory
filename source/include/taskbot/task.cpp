@@ -282,12 +282,12 @@ bool Task::destroy(World &world, Population &population, Audio &audio, State &_a
   }
 
   if(initFlag){
-    //Check if we are at the position...
-    if(!helper::inRange(population.bots[botID].pos, _args.pos, population.bots[botID].range)){
+    //Check if we need to move to the specified position...
+    if(_args.reachable && !helper::inRange(population.bots[botID].pos, _args.pos, _args.range)){
       //Add a walk task...
       Task walk("Walk to destruction site.", botID, &Task::walk);
       walk.args.pos = _args.pos;
-      walk.args.range = population.bots[botID].range;  //High vertical capabilities
+      walk.args.range = _args.range;  //High vertical capabilities
       queue.push_back(walk);
     }
   }
@@ -334,8 +334,7 @@ bool Task::destroy(World &world, Population &population, Audio &audio, State &_a
   if(_type == BLOCK_WOOD || _type == BLOCK_CACTUS){
     while(_type != BLOCK_AIR){
       //Destroy the Block
-      world.setBlock(_pseudopos, BLOCK_AIR);
-      world.blueprint.addEditBuffer(_pseudopos, BLOCK_AIR, false);
+      world.setBlock(_pseudopos, BLOCK_AIR, true);
 
       //Construct the Item
       if(_item.fromTable(_type)){
@@ -350,7 +349,7 @@ bool Task::destroy(World &world, Population &population, Audio &audio, State &_a
   }
   else{
     //Destroy the Block
-    world.setBlock(_args.pos, BLOCK_AIR);
+    world.setBlock(_args.pos, BLOCK_AIR, true);
     world.blueprint.addEditBuffer(_pseudopos, BLOCK_AIR, false);
 
     //Construct the Item
@@ -376,22 +375,43 @@ bool Task::destroy(World &world, Population &population, Audio &audio, State &_a
 }
 
 bool Task::place(World &world, Population &population, Audio &audio, State &_args){
-  //Find the item at a specific position
-  /*
-  if(world.getBlock(_args.pos) != BLOCK_AIR){
-    _log.debug("Space isn't empty.");
-    return true;
+  //Make sure we are in range.
+  if(initFlag){
+    //Check if we need to move to the specified position or not...
+    if(_args.reachable && !helper::inRange(population.bots[botID].pos, _args.pos, _args.range)){
+      //Add a walk task...
+      Task walk("Walk to construction site.", botID, &Task::walk);
+      walk.args.pos = _args.pos;
+      walk.args.range = _args.range;  //High vertical capabilities
+      queue.push_back(walk);
+    }
   }
-  */
 
-  //Set the Block to whatever it is we are placing
-  world.setBlock(_args.pos, _args.block);
-  world.blueprint.addEditBuffer(_args.pos, _args.block, false);
+  //Walk to the position if requested.
+  if(!handleQueue(world, population, audio)) return false;
 
+  //If we require reachability, but couldn't walk there, then we also can't place.
+  if(_args.reachable && !helper::inRange(population.bots[botID].pos, _args.pos, _args.range)) return true;
+
+  //Set the Block and add to Blueprint
+  world.setBlock(_args.pos, _args.block, false);
   return true;
 }
 
 bool Task::build(World &world, Population &population, Audio &audio, State &_args){
+  /*
+  One major problem is the attempt to path-find to the appropriate location.
+  This can be mitigated by increasing the possible access range.
+
+  I suspect also that the fact the chunks are being constantly remeshed is what is causing this lag.
+
+  Additionally, this needs to be split into convergence steps so the individual tasks don't take forever.
+
+  If states had a blueprint, then blueprints could also be split up and passed around between bots.
+
+
+  */
+
   //Multiple Placement Tasks after designing an appropriate blueprint!
   if(initFlag){
     //Define some blueprint...
@@ -414,12 +434,15 @@ bool Task::build(World &world, Population &population, Audio &audio, State &_arg
 
     //Generate a series of walking and building tasks.
     while(!_house.editBuffer.empty()){
-      //Walk to the position...
-      walk.args.pos = _house.editBuffer.back().pos;
-      walk.args.range = population.bots[botID].range+glm::vec3(0, 5, 0);  //High vertical capabilities
+
+      //Destroy and Place Tasks
       destroy.args.pos = _house.editBuffer.back().pos;
+      destroy.args.range = population.bots[botID].range+glm::vec3(5, 5, 5);
+      destroy.args.reachable = false; //We don't need to walk to the location
       place.args.pos =  _house.editBuffer.back().pos;
       place.args.block = _house.editBuffer.back().type;
+      place.args.range = population.bots[botID].range+glm::vec3(5, 5, 5);
+      place.args.reachable = false; //We don't need to walk to the location
 
       BlockType _cur = world.getBlock(_house.editBuffer.back().pos);
 
@@ -432,18 +455,17 @@ bool Task::build(World &world, Population &population, Audio &audio, State &_arg
       //Check if a block needs to be destroyed...
       if(_house.editBuffer.back().type == BLOCK_AIR){
         queue.push_back(destroy);
-        queue.push_back(walk);
         _house.editBuffer.pop_back();
         continue;
       }
 
       //Otherwise, we need to simply straight up replace the block.
       queue.push_back(place);
-      queue.push_back(walk);
       _house.editBuffer.pop_back();
     }
   }
 
+  //Write the Changes to Disk at the End
   return handleQueue(world, population, audio);
 }
 
@@ -600,7 +622,7 @@ bool Task::look(World &world, Population &population, Audio &audio, State &_args
         state.pos = glm::vec3(i, j, k);
         state.task = population.bots[botID].task;
         state.block = world.getBlock(state.pos);
-        population.bots[botID].addMemory(world, state);
+        population.bots[botID].addMemory(state);
       }
     }
   }

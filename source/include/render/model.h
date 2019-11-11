@@ -27,6 +27,7 @@ public:
   //Model Generation Functions
   void fromChunkNaive(Chunk _chunk);
   void fromChunkGreedy(Chunk _chunk);
+  void addCube(glm::vec3 pos, BlockType type);
   //void fromOctree(Octree _octree, int LOD, glm::vec3 translate);
 
   //Position Handling Functions

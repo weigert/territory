@@ -95,7 +95,7 @@ std::deque<Memory> Bot::recallMemories(Memory &query, bool all){
   return recalled;
 }
 
-inline void Bot::addMemory(World &world, State &state){
+inline void Bot::addMemory(State &state){
   //Memory already exists, so overwrite relevant portions.
   for(unsigned int i = 0; i < memories.size(); i++){
     if(memories[i].state.pos != state.pos) continue;

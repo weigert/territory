@@ -49,7 +49,7 @@ public:
   //Movement Weights
   int moveWeight(BlockType _type);
   BlockType getBlock(glm::vec3 _pos);
-  void setBlock(glm::vec3 _pos, BlockType _type);
+  void setBlock(glm::vec3 _pos, BlockType _type, bool fullremesh);
   glm::vec3 getTop(glm::vec2 _pos);
 
   //Generate Function / Chunk Handlers
@@ -62,6 +62,7 @@ public:
 
   //Helpers for Blueprint
   Blueprint blueprint;
+  Blueprint remeshBuffer;
   bool evaluateBlueprint(Blueprint &_blueprint);
   void bufferChunks(View &view);
 

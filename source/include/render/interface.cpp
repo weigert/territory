@@ -268,6 +268,7 @@ void Interface::render(View &view, World &world, Population &population){
             State state;
             state.task = _task->name;
             state.target = _target;
+            state.reachable = false;
             state.time = _time;
             state.pos = view.select;
             state.block = (BlockType)_block;

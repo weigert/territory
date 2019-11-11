@@ -21,6 +21,10 @@ void World::generate(){
   //Seed the Random Generator
   srand(SEED);
 
+  //Set the Blueprint Properties
+  blueprint.dim = dim;
+  blueprint.chunkSize = chunkSize;
+
   //Generate the Blank Region Files
   std::cout<<"Generating Blank World"<<std::endl;
   generateBlank();
@@ -401,14 +405,19 @@ BlockType World::getBlock(glm::vec3 _pos){
   return (BlockType)chunks[chunk_order[ind]].data[chunks[chunk_order[ind]].getIndex(p)];
 }
 
-void World::setBlock(glm::vec3 _pos, BlockType _type){
+void World::setBlock(glm::vec3 _pos, BlockType _type, bool fullremesh){
   glm::vec3 c = glm::floor(_pos/glm::vec3(chunkSize));
   glm::vec3 p = glm::mod(_pos, glm::vec3(chunkSize));
   int ind = helper::getIndex(c, dim);
 
   if(!(glm::all(glm::greaterThanEqual(c, min)) && glm::all(glm::lessThanEqual(c, max)))) return;
   chunks[chunk_order[ind]].setPosition(p, _type);
-  chunks[chunk_order[ind]].refreshModel = true;
+
+  //Add to the EditBuffer
+  blueprint.addEditBuffer(_pos, _type, false);
+
+  if(fullremesh) chunks[chunk_order[ind]].remesh = true;
+  else remeshBuffer.addEditBuffer(_pos, _type, false);
 }
 
 //Get the Top-Free space position in the x-z position
@@ -567,7 +576,6 @@ void World::bufferChunks(View &view){
 
   //Update the Corresponding Chunk Models
   view.loadChunkModels(*this);
-
   lock = false;
 }
 
@@ -575,6 +583,7 @@ bool World::loadWorld(){
   //Get current path
   boost::filesystem::path data_dir(boost::filesystem::current_path());
   data_dir /= "save";
+
   //Make sure savedirectory exists
   if(!boost::filesystem::is_directory(data_dir)){
     //Create the directory upon failure
@@ -586,7 +595,7 @@ bool World::loadWorld(){
   if(!boost::filesystem::is_directory(data_dir)){
     //Create the directory upon failure
     boost::filesystem::create_directory(data_dir);
-    //Save the world here
+    //Generate a new world!
     saveWorld();
     return true;
   }
@@ -598,6 +607,7 @@ bool World::loadWorld(){
     boost::archive::text_iarchive ia(in);
     ia >> *this;
   }
+
   return true;
 }
 
