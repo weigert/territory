@@ -124,12 +124,10 @@ BlockType Octree::getPosition(glm::vec3 _pos, int LOD){
   return BLOCK_AIR;
 }
 
-//Convert Index to Binary Sequence
 glm::vec3 Octree::getPos(int index){
   return glm::vec3((index>>2)%2, (index>>1)%2, (index>>0)%2);
 }
 
-//Convert Binary Sequence to Index
 int Octree::getIndex(glm::ivec3 _pos){
-  return _pos.x<<2+_pos.y<<1+_pos.z<<0;
+  return _pos.x*4+_pos.y*2+_pos.z*1;
 }

@@ -31,9 +31,9 @@ void World::generate(){
 
   //Generate Height
   std::cout<<"Filling World"<<std::endl;
-  //generateBuildings();  //Building Example
+  generateBuildings();  //Building Example
   //generatePerlin();     //Lake Example
-  generateForest();       //Forest Example
+  //generateForest();       //Forest Example
 }
 
 void World::generateBlank(){
