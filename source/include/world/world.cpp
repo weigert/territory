@@ -31,9 +31,9 @@ void World::generate(){
 
   //Generate Height
   std::cout<<"Filling World"<<std::endl;
-  generateBuildings();  //Building Example
+  //generateBuildings();  //Building Example
   //generatePerlin();     //Lake Example
-  //generateForest();       //Forest Example
+  generateForest();       //Forest Example
 }
 
 void World::generateBlank(){
@@ -386,8 +386,11 @@ bool World::evaluateBlueprint(Blueprint &_blueprint){
     }
 
     //Write the chunk back
-    if(format_octree)
+    if(format_octree){
+      //Don't forget to simplify this octree!!
+      _octree.trySimplify();  //This takes advantage of the sparsity.
       oa << _octree;
+    }
     else
       oa << _chunk;
 

@@ -34,82 +34,43 @@ Chunk Octree::toChunk(){
 
 
 bool Octree::trySimplify(){
-  //Output the Current dive Depth
-  //If we are at a node, return true
-  if(subTree.empty()){
-    return true;
-  }
+  if(subTree.empty() || depth == 0) return true;
 
   //Types of all blocks
   BlockType _type[subTree.size()];
-  bool fail = false;
+  bool success = true;
+
   //Loop over all elements
-  for(unsigned int i = 0; i < subTree.size(); i ++){
+  for(unsigned int i = 0; i < subTree.size(); ++i){
     //Check if subelement is simple!
-    if(!subTree[i].trySimplify()){
-      //We have a non-simple subelement -> can't combine
-      fail = true;
-    }
+    if(!subTree[i].trySimplify()) success = false;
+    else if(subTree[i].type == BLOCK_AIR) subTree.erase(subTree.begin()+i);
+
     //Add the subtree's element to the type list! (even for failed)
     _type[i] = subTree[i].type;
   }
 
-  if(subTree.size()!=8){
-    fail = true;
+  //Maybe we removed all subelements?
+  if(subTree.empty()) return true;
+
+  //Make sure we don't simplify non-complete subTrees.
+  if(subTree.size()!=8 || !success) return false;
+
+  //Loop over the guys to compare
+  for(unsigned int i = 0; i < subTree.size(); i++){
+    //Not all sub-components are identical - no simplification possible.
+    if(_type[i] != _type[0]) return false;
   }
 
-  //All sub-elements are simple, so check if they are identical
-  if(!fail){
-    //Loop over the guys to compare
-    for(unsigned int i = 1; i < subTree.size(); i++){
-      //If they are not all identical!
-      if(_type[i] != _type[0]){
-        fail = true;
-      }
-    }
-  }
-
-  //Sub-elements are either non-simple, or non-identical. Set Majority
-  if(fail){
-    //By default it's air
-    int Maj = 0;
-    BlockType majType = BLOCK_AIR;
-    //Find the Majority Class
-    for(unsigned int i = 0; i < subTree.size(); i++){
-      //Make sure we don't observe air
-      if(_type[i] != BLOCK_AIR){
-        int newMaj = std::count(_type, _type+subTree.size(), _type[i]);
-        //If we have more of that specific type, make sure we update maj
-        if(newMaj > Maj){
-          Maj = newMaj;
-          majType = _type[i];
-        }
-      }
-    }
-
-    //Set the Majority Class
-    type = majType;
-    return false;
-  }
-
-  //We still haven't failed, so combine them and
-  if(!fail){
-    //Find the Majority Class
-
-    //One of our subelements is non-simple or non-matching, so we can't combine
-    subTree.clear();
-    type = _type[0];
-    return true;
-  }
-
-  //We failed, so return false.
-  return false;
+  //Clear the Subtree, set the type, return true.
+  subTree.clear();
+  type = _type[0];
+  return true;
 }
 
 bool Octree::contains(glm::vec3 _pos){
   //This only checks if the x, y, z coordinates are within the width of the octree element
-  int width = pow(2,depth);
-
+  int width = 1<<depth;
   return glm::all(glm::lessThan(_pos, glm::vec3(width))) && glm::all(glm::greaterThanEqual(_pos, glm::vec3(0)));
 }
 
@@ -130,18 +91,14 @@ bool Octree::setPosition(glm::vec3 _pos, BlockType _type){
   }
 
   //Get the Position we want to set.
-  int width = pow(2,depth-1);
+  int width = 1<<depth-1;
   glm::vec3 _p = glm::floor(_pos/glm::vec3(width));
-  std::byte _index = getIndex(_p);
+  int _index = getIndex(_p);
 
-  //Loop over our subTree, see if we can find the node with the right index.
-  for(unsigned int i = 0; i < subTree.size(); i++){
-    //If we have the node at the right position...
-    if(subTree[i].index == _index){
-      //Set the position in that node.
-      return subTree[i].setPosition(_pos - _p*glm::vec3(width), _type);
-    }
-  }
+  //Loop over our subTree, see if we can find the node with the right index, then set the appropriate position.
+  for(auto &_subtree:subTree)
+    if(_subtree.index == _index)
+      return _subtree.setPosition(_pos - _p*glm::vec3(width), _type);
 
   //Finally, we haven't found the right subTree element. Add an element to the subTree, and expand it.
   Octree element;
@@ -155,36 +112,24 @@ bool Octree::setPosition(glm::vec3 _pos, BlockType _type){
 }
 
 BlockType Octree::getPosition(glm::vec3 _pos, int LOD){
-  //Check if we are at the bottom of the line
-  if(subTree.empty() || LOD == 0){
-    return type;
-  }
-  //Find the subtree element that contains the value
-  for(unsigned int i = 0; i < subTree.size(); i++){
-    //Binary Representation in 3 Coords
-    glm::vec3 p = getPos(subTree[i].index);
-    int width = pow(2, depth-1);
+  //Check if we are at the bottom of the line (in any sense)
+  if(depth == 0 || subTree.empty() || LOD == 0) return type;
 
-    //Check if the subtree contains it
-    if(subTree[i].contains(_pos - p*glm::vec3(width))){
-      //We found the element that we wish to try to replace now.
-      return subTree[i].getPosition(_pos - p*glm::vec3(width), LOD-1);
-    }
-  }
+  //Check which SubTree contains the requested position
+  for(auto &_subtree:subTree)
+    if(_subtree.contains(_pos - getPos(_subtree.index)*glm::vec3(1<<depth-1)))
+      return _subtree.getPosition(_pos - getPos(_subtree.index)*glm::vec3(1<<depth-1), LOD-1);
+
+  //Didn't find the guy, therefore it's air.
   return BLOCK_AIR;
 }
 
-glm::vec3 Octree::getPos(std::byte index){
-  //(XYZ) = (111)
-  //Generate Binary Sequence
-  int _x = (int)(index)/4;
-  int _y = ((int)index-4*_x)/2;
-  int _z = ((int)index-4*_x - 2*_y);
-  //Return Binary Vectory
-  return glm::vec3(_x, _y, _z);
+//Convert Index to Binary Sequence
+glm::vec3 Octree::getPos(int index){
+  return glm::vec3((index>>2)%2, (index>>1)%2, (index>>0)%2);
 }
 
-std::byte Octree::getIndex(glm::vec3 _pos){
-  //Decode the Binary into Decimals
-  return (std::byte)(_pos.x*4+_pos.y*2+_pos.z*1);
+//Convert Binary Sequence to Index
+int Octree::getIndex(glm::ivec3 _pos){
+  return _pos.x<<2+_pos.y<<1+_pos.z<<0;
 }
