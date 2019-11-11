@@ -9,14 +9,18 @@ public:
     index = 0;
   }
 
+  //Needs to be set initially.
   BlockType type;               //Type
   std::vector<Octree> subTree;  //Sparse SubTree
-  int depth;                    //Current Depth
+  int depth = 4;                    //Current Depth
+  glm::vec3 pos;
+
+  //Stuff that is set live!
   int index;                    //Current Index
 
   //Back and forth to chunks
   void fromChunk(Chunk &chunk);
-  void toChunk(Chunk &chunk);
+  Chunk toChunk();
 
   //Filling and Combining Operations for Subtrees
   bool trySimplify();

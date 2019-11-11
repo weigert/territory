@@ -31,9 +31,9 @@ void World::generate(){
 
   //Generate Height
   std::cout<<"Filling World"<<std::endl;
-  //generateBuildings();  //Building Example
+  generateBuildings();  //Building Example
   //generatePerlin();     //Lake Example
-  generateForest();       //Forest Example
+  //generateForest();       //Forest Example
 }
 
 void World::generateBlank(){
@@ -55,7 +55,18 @@ void World::generateBlank(){
         chunk.size = chunkSize;
         chunk.pos = glm::vec3(i, j, k);
 
+        //Octree Part!
+        Octree octree;
+        octree.fromChunk(chunk);
+        octree.depth = 4;
+
+        if(format_octree)
         //Save the current loaded chunks to file and the world data
+        {
+          boost::archive::text_oarchive oa(out);
+          oa << octree;    //Append the Chunk to the Region File
+        }
+        else
         {
           boost::archive::text_oarchive oa(out);
           oa << chunk;    //Append the Chunk to the Region File
@@ -340,8 +351,10 @@ bool World::evaluateBlueprint(Blueprint &_blueprint){
   std::ofstream out((data_dir/"world.region.temp").string(), std::ofstream::app);
 
   //Chunk for Saving Data
+  Octree _octree;
   Chunk _chunk;
   int n_chunks = 0;
+
 
   //Loop over the Guy
   while(n_chunks < dim.x*dim.y*dim.z){
@@ -354,17 +367,30 @@ bool World::evaluateBlueprint(Blueprint &_blueprint){
     boost::archive::text_iarchive ia(in);
 
     //Load the Chunk
-    ia >> _chunk;
+    if(format_octree)
+      ia >> _octree;
+    else
+      ia >> _chunk;
 
     //Overwrite relevant portions
-    while(!_blueprint.editBuffer.empty() && glm::all(glm::equal(_chunk.pos, _blueprint.editBuffer.back().cpos))){
+    while(format_octree && !_blueprint.editBuffer.empty() && glm::all(glm::equal(_octree.pos, _blueprint.editBuffer.back().cpos))){
+      //Change the Guy
+      _octree.setPosition(glm::mod(_blueprint.editBuffer.back().pos, glm::vec3(chunkSize)), _blueprint.editBuffer.back().type);
+      _blueprint.editBuffer.pop_back();
+    }
+
+    while(!format_octree && !_blueprint.editBuffer.empty() && glm::all(glm::equal(_chunk.pos, _blueprint.editBuffer.back().cpos))){
       //Change the Guy
       _chunk.setPosition(glm::mod(_blueprint.editBuffer.back().pos, glm::vec3(chunkSize)), _blueprint.editBuffer.back().type);
       _blueprint.editBuffer.pop_back();
     }
 
     //Write the chunk back
-    oa << _chunk;
+    if(format_octree)
+      oa << _octree;
+    else
+      oa << _chunk;
+
     n_chunks++;
   }
 
@@ -547,6 +573,7 @@ void World::bufferChunks(View &view){
     data_dir /= saveFile;
     std::ifstream in((data_dir/"world.region").string());
 
+    Octree _octree;
     Chunk _chunk;
     int n = 0;
 
@@ -559,8 +586,14 @@ void World::bufferChunks(View &view){
       //Load the Chunk
       {
         boost::archive::text_iarchive ia(in);
-        ia >> _chunk;
-        chunks.push_back(_chunk);
+        if(format_octree){
+          ia >> _octree;
+          chunks.push_back(_octree.toChunk());
+        }
+        else{
+          ia >> _chunk;
+          chunks.push_back(_chunk);
+        }
         load.pop_back();
       }
     }
@@ -600,7 +633,7 @@ bool World::loadWorld(){
     return true;
   }
 
-  //Load the World
+  //Load the World Mete-
   data_dir /= "world.meta";
   std::ifstream in(data_dir.string());
   {
@@ -651,6 +684,9 @@ void serialize(Archive & ar, Octree & _octree, const unsigned int version)
   ar & _octree.index;
   ar & _octree.type;
   ar & _octree.subTree;
+  ar & _octree.pos.x;
+  ar & _octree.pos.y;
+  ar & _octree.pos.z;
 }
 
 //World Serializer
@@ -658,6 +694,7 @@ template<class Archive>
 void serialize(Archive & ar, World & _world, const unsigned int version)
 {
   ar & _world.saveFile;
+  ar & _world.format_octree;  //Whether the metedata has octree format
   ar & _world.chunkSize;
   ar & _world.dim.x;
   ar & _world.dim.y;
