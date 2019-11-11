@@ -132,7 +132,7 @@ bool Octree::setPosition(glm::vec3 _pos, BlockType _type){
   //Get the Position we want to set.
   int width = pow(2,depth-1);
   glm::vec3 _p = glm::floor(_pos/glm::vec3(width));
-  int _index = getIndex(_p);
+  std::byte _index = getIndex(_p);
 
   //Loop over our subTree, see if we can find the node with the right index.
   for(unsigned int i = 0; i < subTree.size(); i++){
@@ -174,17 +174,17 @@ BlockType Octree::getPosition(glm::vec3 _pos, int LOD){
   return BLOCK_AIR;
 }
 
-glm::vec3 Octree::getPos(int index){
+glm::vec3 Octree::getPos(std::byte index){
   //(XYZ) = (111)
   //Generate Binary Sequence
-  int _x = index/4;
-  int _y = (index-4*_x)/2;
-  int _z = (index-4*_x - 2*_y);
+  int _x = (int)(index)/4;
+  int _y = ((int)index-4*_x)/2;
+  int _z = ((int)index-4*_x - 2*_y);
   //Return Binary Vectory
   return glm::vec3(_x, _y, _z);
 }
 
-int Octree::getIndex(glm::vec3 _pos){
+std::byte Octree::getIndex(glm::vec3 _pos){
   //Decode the Binary into Decimals
-  return _pos.x*4+_pos.y*2+_pos.z*1;
+  return (std::byte)(_pos.x*4+_pos.y*2+_pos.z*1);
 }

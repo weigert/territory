@@ -4,19 +4,12 @@
 
 class Octree{
 public:
-  Octree(){
-    type = BLOCK_AIR;
-    index = 0;
-  }
-
   //Needs to be set initially.
-  BlockType type;               //Type
+  BlockType type = BLOCK_AIR;
   std::vector<Octree> subTree;  //Sparse SubTree
   int depth = 4;                    //Current Depth
-  glm::ivec3 pos;
-
-  //Stuff that is set live!
-  int index;                    //Current Index
+  glm::ivec3 pos = glm::ivec3(0);
+  std::byte index = (std::byte)0;                    //Current Index
 
   //Back and forth to chunks
   void fromChunk(Chunk &chunk);
@@ -27,8 +20,8 @@ public:
   bool contains(glm::vec3 _pos);
 
   //Index Functions
-  glm::vec3 getPos(int index);
-  int getIndex(glm::vec3 _pos);
+  glm::vec3 getPos(std::byte index);
+  std::byte getIndex(glm::vec3 _pos);
 
   //We need setters, getters, volume setters, etc.
   bool setPosition(glm::vec3 _pos, BlockType _type);
