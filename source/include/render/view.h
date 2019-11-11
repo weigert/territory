@@ -63,7 +63,7 @@ class View{
     SDL_GLContext gContext;
     ImGuiIO io;
     unsigned int SCREEN_WIDTH = 1200, SCREEN_HEIGHT = 800;
-    const unsigned int SHADOW_WIDTH = 1200, SHADOW_HEIGHT = 1200;
+    const unsigned int SHADOW_WIDTH = 2000, SHADOW_HEIGHT = 2000;
     bool fullscreen = false;
     bool vsync = false;
 
@@ -106,6 +106,7 @@ class View{
     Shader reflectShader;
     Shader cubeShader;
     Shader depthShader;
+    Shader spriteDepthShader;
     Shader spriteShader;
     Shader billboardShader;
     Shader blurShader;

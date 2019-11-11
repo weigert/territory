@@ -92,6 +92,10 @@ void View::setupShaders(){
   depthShader.setup("depth.vs", "depth.fs");
   depthShader.addAttribute(0, "in_Position");
 
+  spriteDepthShader.setup("spritedepth.vs", "spritedepth.fs");
+  spriteDepthShader.addAttribute(0, "in_Quad");
+  spriteDepthShader.addAttribute(1, "in_Tex");
+
   //Setup Spriteshader
   spriteShader.setup("sprite.vs", "sprite.fs");
   spriteShader.addAttribute(0, "in_Quad");
@@ -122,6 +126,7 @@ void View::cleanup(){
   cubeShader.cleanup();
   reflectShader.cleanup();
   depthShader.cleanup();
+  spriteDepthShader.cleanup();
   spriteShader.cleanup();
   billboardShader.cleanup();
   itemShader.cleanup();
@@ -234,8 +239,6 @@ void View::render(World &world, Population &population){
 
   //Activate the Texture
   glClear(GL_DEPTH_BUFFER_BIT);
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, shadow.depthTexture);
 
   //Loop over the Models to Render to Shadowmap
   for(unsigned int i = 0; i < models.size(); i++){
@@ -244,6 +247,35 @@ void View::render(World &world, Population &population){
     //Render the Model
     models[i].render();
   }
+
+  //Render the Sprites to the Depthmap
+  spriteDepthShader.useProgram();
+  spriteDepthShader.setInt("spriteTexture", 0);
+
+  //Loop over all Sprites
+  for(unsigned int i = 0; i < population.bots.size(); i++){
+    //Check for No-Render Condition
+    if(population.bots[i].dead) continue;
+    if(!helper::inModRange(population.bots[i].pos, viewPos, renderDistance, world.chunkSize)) continue;
+
+    //Set the Position of the Sprite relative to the sun
+    population.bots[i].sprite.resetModel();
+    population.bots[i].sprite.model = glm::translate(population.bots[i].sprite.model, population.bots[i].pos-viewPos);
+    population.bots[i].sprite.model = glm::rotate(population.bots[i].sprite.model, glm::radians(-90.0f), glm::vec3(0, 1, 0));
+    float rot = acos(glm::dot(glm::vec3(-1, 0, 0), glm::normalize(glm::vec3(lightPos.x, 0, lightPos.z))));
+    population.bots[i].sprite.model = glm::rotate(population.bots[i].sprite.model, rot, glm::vec3(0, 1, 0));
+
+    //Setup the Uniforms
+    spriteShader.setMat4("mvp", depthProjection*depthCamera*population.bots[i].sprite.model);
+    spriteShader.setFloat("nframe", (float)(population.bots[i].sprite.animation.nframe % population.bots[i].sprite.animation.frames));
+    spriteShader.setFloat("animation", (float)population.bots[i].sprite.animation.ID);
+    spriteShader.setFloat("width", (float)population.bots[i].sprite.animation.w);
+    spriteShader.setFloat("height", (float)population.bots[i].sprite.animation.h);
+
+    //Render the Sprite Billboard
+    population.bots[i].sprite.render();
+  }
+
   glBindVertexArray(0);
 
   /* REFLECTION */
@@ -357,6 +389,7 @@ void View::render(World &world, Population &population){
     spriteShader.setFloat("animation", (float)population.bots[i].sprite.animation.ID);
     spriteShader.setFloat("width", (float)population.bots[i].sprite.animation.w);
     spriteShader.setFloat("height", (float)population.bots[i].sprite.animation.h);
+    spriteShader.setFloat("lightStrength", lightStrength);
 
     //Render the Sprite Billboard
     population.bots[i].sprite.render();
@@ -405,6 +438,7 @@ void View::render(World &world, Population &population){
   glBindVertexArray(image.vao);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
+
   //Render screen to monitor with vertical blur shader
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glActiveTexture(GL_TEXTURE0+0);
@@ -416,6 +450,20 @@ void View::render(World &world, Population &population){
   blurShader.setBool("vert", true);
   glBindVertexArray(temp1.vao);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+/*
+  //Render screen to monitor with vertical blur shader
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glActiveTexture(GL_TEXTURE0+0);
+  glBindTexture(GL_TEXTURE_2D, shadow.depthTexture);
+  billboardShader.setInt("imageTexture", 0);
+  glActiveTexture(GL_TEXTURE0+1);
+  glBindTexture(GL_TEXTURE_2D, shadow.depthTexture);
+  billboardShader.setInt("depthTexture", 1);
+  billboardShader.setBool("vert", true);
+  glBindVertexArray(shadow.vao);
+  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+*/
 
   //Add the GUI
   renderGUI(world, population);
