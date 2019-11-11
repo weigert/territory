@@ -444,7 +444,7 @@ glm::vec3 View::intersect(World world, glm::vec2 mouse){
   glm::vec3 _ydir = glm::normalize(glm::cross(_dir, _xdir));
   glm::vec3 _startpos = _camerapos + _xdir*scalex*(SCREEN_WIDTH*zoom) + _ydir*scaley*(SCREEN_HEIGHT*zoom);
 
-  glm::vec3 a = glm::round(_startpos - _dir * glm::vec3(50));
+  glm::vec3 a = glm::round(_startpos - _dir * glm::vec3(100));
   glm::vec3 b = glm::round(_startpos + _dir * glm::vec3(100));
 
   //Get the direction
@@ -454,6 +454,8 @@ glm::vec3 View::intersect(World world, glm::vec2 mouse){
   s.x = (a.x > b.x)?-1:1;
   s.y = (a.y > b.y)?-1:1;
   s.z = (a.z > b.z)?-1:1;
+
+  BlockType _block;
 
   //Find the driving axis and do the guy
   if(dir.x >= dir.y && dir.x >= dir.z){
@@ -476,8 +478,8 @@ glm::vec3 View::intersect(World world, glm::vec2 mouse){
       p1 += 2 * dir.y;
       p2 += 2 * dir.z;
 
-      //We have found a point... check if it is air or not!
-      if(world.getBlock(a) != BLOCK_AIR) return a;
+      _block = world.getBlock(a);
+      if(_block != BLOCK_VOID && _block != BLOCK_AIR) return a;
     }
   }
   else if(dir.y >= dir.x && dir.y >= dir.z){
@@ -499,7 +501,9 @@ glm::vec3 View::intersect(World world, glm::vec2 mouse){
       }
       p1 += 2 * dir.x;
       p2 += 2 * dir.z;
-      if(world.getBlock(a) != BLOCK_AIR) return a;
+
+      _block = world.getBlock(a);
+      if(_block != BLOCK_VOID && _block != BLOCK_AIR) return a;
     }
   }
   else{
@@ -521,7 +525,9 @@ glm::vec3 View::intersect(World world, glm::vec2 mouse){
       }
       p1 += 2 * dir.x;
       p2 += 2 * dir.y;
-      if(world.getBlock(a) != BLOCK_AIR) return a;
+
+      _block = world.getBlock(a);
+      if(_block != BLOCK_VOID && _block != BLOCK_AIR) return a;
     }
   }
   return glm::vec3(0);
@@ -546,6 +552,4 @@ void View::calcFPS(){
     ave[i] = floor((arr[i-5]+arr[i-4]+arr[i-3]+arr[i-2]+arr[i-1]+arr[i]+arr[i+1]+arr[i+2]+arr[i+3]+arr[i+4]+arr[i+5])/11.0);
   }
   arr[plotSize-1] = FPS;
-
-  //This needs to be averaged somehow..
 }

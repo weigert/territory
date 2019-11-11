@@ -178,10 +178,9 @@ bool Task::walk(World &world, Population &population, Audio &audio, State &_args
     return true;
   }
 
-  //Check if the Position is out ouf bounds...
-  glm::vec3 c = glm::floor(_args.pos/glm::vec3(world.chunkSize));
-  if(!(glm::all(glm::greaterThanEqual(c, world.min)) && glm::all(glm::lessThanEqual(c, world.max)))){
-    _log.debug("Position is outside of loaded range.");
+  //Check if we specify that the position must be directly reachable
+  if(_args.reachable && world.getBlock(_args.pos) != BLOCK_AIR){
+    _log.debug("Target position is occupied or not loaded.");
     return true;
   }
 
@@ -559,6 +558,7 @@ bool Task::seek(World &world, Population &population, Audio &audio, State &_args
       Task walk("Seek", botID, &Task::walk);
       walk.args.pos = recalled.back().state.pos;
       walk.args.range = population.bots[botID].range;
+      walk.args.reachable = false;  //Spot must not be directly reachable
       _args.pos = walk.args.pos;
 
       //Check if we are within range of the memory location.

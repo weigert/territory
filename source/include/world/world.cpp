@@ -1,4 +1,4 @@
-//Include Header File
+ //Include Header File
 //Dependencies
 #include "chunk.h"
 #include "octree.h"
@@ -392,7 +392,6 @@ int World::moveWeight(BlockType _type){
 }
 
 BlockType World::getBlock(glm::vec3 _pos){
-  //Chunk Position and World Position
   glm::vec3 c = glm::floor(_pos/glm::vec3(chunkSize));
   glm::vec3 p = glm::mod(_pos, glm::vec3(chunkSize));
   int ind = helper::getIndex(c, dim);
@@ -403,27 +402,26 @@ BlockType World::getBlock(glm::vec3 _pos){
 }
 
 void World::setBlock(glm::vec3 _pos, BlockType _type){
-  //Check if the position is inside, if not return 0, otherwise return the block
-  for(unsigned int i = 0; i < chunks.size(); i++){
-    glm::vec3 c = glm::floor(_pos/glm::vec3(chunkSize));
-    //Check the Chunkpos
-    if(c == chunks[i].pos){
-      chunks[i].setPosition(glm::mod(_pos, glm::vec3(chunkSize)), _type);
-      chunks[i].refreshModel = true;
-      break;
-    }
-  }
+  glm::vec3 c = glm::floor(_pos/glm::vec3(chunkSize));
+  glm::vec3 p = glm::mod(_pos, glm::vec3(chunkSize));
+  int ind = helper::getIndex(c, dim);
+
+  if(!(glm::all(glm::greaterThanEqual(c, min)) && glm::all(glm::lessThanEqual(c, max)))) return;
+  chunks[chunk_order[ind]].setPosition(p, _type);
+  chunks[chunk_order[ind]].refreshModel = true;
 }
 
 //Get the Top-Free space position in the x-z position
 glm::vec3 World::getTop(glm::vec2 _pos){
   //Highest Block you can Stand O
   int max = 0;
+  BlockType floor;
 
   //Loop over the height
   for(int i = 1; i < dim.y*chunkSize; i++){
+    floor = getBlock(glm::vec3(_pos.x, i-1, _pos.y));
     //Check if we satisfy the conditions
-    if(getBlock(glm::vec3(_pos.x, i, _pos.y)) == BLOCK_AIR && getBlock(glm::vec3(_pos.x, i-1, _pos.y)) == BLOCK_GRASS){
+    if(getBlock(glm::vec3(_pos.x, i, _pos.y)) == BLOCK_AIR && (floor == BLOCK_GRASS || floor == BLOCK_SAND)){
       if(i > max){
         max = i;
       }

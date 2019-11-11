@@ -68,9 +68,7 @@ int main( int argc, char* args[] ) {
 
 		//Render the View
 		view.updateChunkModels( world );
-
-			view.render(world, population);
-
+		view.render(world, population);
 		view.calcFPS();
 	}
 
