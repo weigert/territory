@@ -373,7 +373,7 @@ bool World::evaluateBlueprint(Blueprint &_blueprint){
       ia >> _chunk;
 
     //Overwrite relevant portions
-    while(format_octree && !_blueprint.editBuffer.empty() && glm::all(glm::equal(_octree.pos, _blueprint.editBuffer.back().cpos))){
+    while(format_octree && !_blueprint.editBuffer.empty() && glm::all(glm::equal(_octree.pos,  (glm::ivec3)_blueprint.editBuffer.back().cpos))){
       //Change the Guy
       _octree.setPosition(glm::mod(_blueprint.editBuffer.back().pos, glm::vec3(chunkSize)), _blueprint.editBuffer.back().type);
       _blueprint.editBuffer.pop_back();

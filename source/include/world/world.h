@@ -31,7 +31,7 @@ public:
   int sealevel = 16;
   std::chrono::milliseconds tickLength = std::chrono::milliseconds(1000);
   glm::vec3 dim = glm::vec3(20, 5, 20);
-  bool format_octree = false;
+  bool format_octree = true;
 
   //Min and Max Chunk Positions
   glm::vec3 min = glm::vec3(0);

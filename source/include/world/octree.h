@@ -13,7 +13,7 @@ public:
   BlockType type;               //Type
   std::vector<Octree> subTree;  //Sparse SubTree
   int depth = 4;                    //Current Depth
-  glm::vec3 pos;
+  glm::ivec3 pos;
 
   //Stuff that is set live!
   int index;                    //Current Index
