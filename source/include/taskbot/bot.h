@@ -7,6 +7,8 @@
 #include "../forward/item.fwd.h"
 #include "../forward/audio.fwd.h"
 
+std::string spriteFiles[4] = {"cowboyfull.png", "hunterfull.png", "nativefull.png", "ladyfull.png"}; 
+
 class Bot{
   public:
     Bot(int _ID);

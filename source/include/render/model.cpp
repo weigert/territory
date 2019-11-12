@@ -89,12 +89,11 @@ void Model::render(){
   //Bind the Index Buffer
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
   glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
-  //glDrawArrays(GL_TRIANGLES, 0, positions.size()/3);
 }
 
 void Model::addCube(glm::vec3 pos, BlockType type){
   //No-Mesh
-  if(type == BLOCK_AIR || type == BLOCK_VOID) return;
+  if(!block::isVisible(type)) return;
 
   GLfloat front[12] = { -0.5,  0.5, 0.5,
                          0.5,  0.5, 0.5,
@@ -230,7 +229,7 @@ void Model::addCube(glm::vec3 pos, BlockType type){
   }
 
   //Get the Color
-  glm::vec4 _color = color::getColor(type, color::hashrand(helper::getIndex(pos, glm::vec3(16))));
+  glm::vec4 _color = block::getColor(type, color::hashrand(helper::getIndex(pos, glm::vec3(16))));
 
   //Do this 6 Times, for all points for each face (6 Faces)!
   for(int i = 0; i < 4*6; i++){
@@ -239,9 +238,6 @@ void Model::addCube(glm::vec3 pos, BlockType type){
     colors.push_back(_color.z);
     colors.push_back(_color.w);
   }
-
-  //Update the VBO Size
-  update();
 }
 
 
@@ -250,6 +246,11 @@ void Model::fromChunkGreedy(Chunk chunk){
   positions.clear();
   colors.clear();
   normals.clear();
+
+  cpos = chunk.pos;
+
+  //EditBuffer with the data for separate meshing...
+  Blueprint temp;
 
   //Loop over all 6 possible orientations...
   for(int d = 0; d < 6; d++){
@@ -281,6 +282,13 @@ void Model::fromChunkGreedy(Chunk chunk){
           BlockType atPos = chunk.getPosition(glm::vec3(x[0],x[1],x[2]));
           mask[s] = BLOCK_AIR;
 
+          //Skip Non-Cubic Elements in the Chunk! (every iteration)
+          if(!block::isCubic(atPos)){
+            //If it is our first pass, also add it to the meshing editBuffer.
+            if(d == 0) temp.addEditBuffer(glm::vec3(x[0], x[1], x[2]), atPos, false);
+            continue;
+          }
+
           //Basically, we are facing out of the chunk, so we do take over the surface.
           if(x[u] + q[u] < 0 || x[u] + q[u] >= chunk.size){
             mask[s] = atPos;
@@ -289,7 +297,8 @@ void Model::fromChunkGreedy(Chunk chunk){
 
           //Now see if we should remove this mask element or not, i.e. not visible!
           BlockType facing = chunk.getPosition(glm::vec3(x[0]+q[0],x[1]+q[1],x[2]+q[2]));
-          if(facing == BLOCK_AIR){
+          //Make sure that the facing block can be air or non-cubic!
+          if(facing == BLOCK_AIR || !block::isCubic(facing)){
             mask[s] = atPos;
           }
         }
@@ -391,7 +400,7 @@ void Model::fromChunkGreedy(Chunk chunk){
           }
 
           //Add Colors and Normals to all vertices.
-          glm::vec4 _color = color::getColor(current, color::hashrand(helper::getIndex(glm::vec3(x[0], x[1], x[2]), glm::vec3(16))));
+          glm::vec4 _color = block::getColor(current, color::hashrand(helper::getIndex(glm::vec3(x[0], x[1], x[2]), glm::vec3(16))));
 
           for(int m = 0; m < 4; m++){
             colors.push_back(_color.x);
@@ -411,5 +420,165 @@ void Model::fromChunkGreedy(Chunk chunk){
     }
     //Next Surface Orientation
   }
+
+  //Mesh all the guys that could not be meshed greedily with large quads.
+  while(!temp.editBuffer.empty()){
+    //For now, we add cubes
+    addIrregular(temp.editBuffer.back().pos, temp.editBuffer.back().type);
+    temp.editBuffer.pop_back();
+  }
   //Finish!
+}
+
+//Add an Irregular BlockType!
+void Model::addIrregular(glm::vec3 pos, BlockType type){
+  //Load a Model or something from a file?
+
+  /*
+  We are gonna make little cactus flowers.
+  */
+
+  //No-Mesh
+  if(!block::isVisible(type)) return;
+
+  GLfloat front[12] = { -0.25,  0.0, 0.25,
+                         0.25,  0.0, 0.25,
+                         0.25, -0.5, 0.25,
+                        -0.25, -0.5, 0.25};
+
+  GLfloat back[12] = {  -0.25,  0.0, -0.25,
+                         0.25, -0.5, -0.25,
+                         0.25,  0.0, -0.25,
+                        -0.25, -0.5, -0.25};
+
+  GLfloat top[12] = {   -0.25,  0.0,  0.25,
+                         0.25,  0.0, -0.25,
+                         0.25,  0.0,  0.25,
+                        -0.25,  0.0, -0.25};
+
+  GLfloat bottom[12] = {-0.25, -0.5,  0.25,
+                         0.25, -0.5,  0.25,
+                         0.25, -0.5, -0.25,
+                        -0.25, -0.5, -0.25};
+
+  GLfloat right[12] = {  0.25, -0.5,  0.25,
+                         0.25,  0.0,  0.25,
+                         0.25,  0.0, -0.25,
+                         0.25, -0.5, -0.25};
+
+   GLfloat left[12] = { -0.25, -0.5,  0.25,
+                        -0.25,  0.0, -0.25,
+                        -0.25,  0.0,  0.25,
+                        -0.25, -0.5, -0.25};
+
+  //Add Indices to these guys... (naive version)
+  indices.push_back(positions.size()/3+0);
+  indices.push_back(positions.size()/3+1);
+  indices.push_back(positions.size()/3+2);
+  indices.push_back(positions.size()/3+0);
+  indices.push_back(positions.size()/3+2);
+  indices.push_back(positions.size()/3+3);
+  for(int l = 0; l < 4; l++){
+    positions.push_back((front[l*3]+pos.x));
+    positions.push_back((front[l*3+1]+pos.y));
+    positions.push_back((front[l*3+2]+pos.z));
+
+    //Add the Appropriate Normals
+    normals.push_back(0);
+    normals.push_back(0);
+    normals.push_back(1);
+  }
+  //Add Indices to these guys... (naive version)
+  indices.push_back(positions.size()/3+0);
+  indices.push_back(positions.size()/3+1);
+  indices.push_back(positions.size()/3+2);
+  indices.push_back(positions.size()/3+0);
+  indices.push_back(positions.size()/3+3);
+  indices.push_back(positions.size()/3+1);
+  for(int l = 0; l < 4; l++){
+    positions.push_back((back[l*3]+pos.x));
+    positions.push_back((back[l*3+1]+pos.y));
+    positions.push_back((back[l*3+2]+pos.z));
+
+    //Add the Appropriate Normals
+    normals.push_back(0);
+    normals.push_back(0);
+    normals.push_back(-1);
+  }
+  //Add Indices to these guys... (naive version)
+  indices.push_back(positions.size()/3+0);
+  indices.push_back(positions.size()/3+1);
+  indices.push_back(positions.size()/3+2);
+  indices.push_back(positions.size()/3+0);
+  indices.push_back(positions.size()/3+3);
+  indices.push_back(positions.size()/3+1);
+  for(int l = 0; l < 4; l++){
+    positions.push_back((top[l*3]+pos.x));
+    positions.push_back((top[l*3+1]+pos.y));
+    positions.push_back((top[l*3+2]+pos.z));
+
+    //Add the Appropriate Normals
+    normals.push_back(0);
+    normals.push_back(1);
+    normals.push_back(0);
+  }
+  //Add Indices to these guys... (naive version)
+  indices.push_back(positions.size()/3+0);
+  indices.push_back(positions.size()/3+1);
+  indices.push_back(positions.size()/3+2);
+  indices.push_back(positions.size()/3+0);
+  indices.push_back(positions.size()/3+2);
+  indices.push_back(positions.size()/3+3);
+  for(int l = 0; l < 4; l++){
+    positions.push_back((bottom[l*3]+pos.x));
+    positions.push_back((bottom[l*3+1]+pos.y));
+    positions.push_back((bottom[l*3+2]+pos.z));
+
+    //Add the Appropriate Normals
+    normals.push_back(0);
+    normals.push_back(-1);
+    normals.push_back(0);
+  }
+  //Add Indices to these guys... (naive version)
+  indices.push_back(positions.size()/3+0);
+  indices.push_back(positions.size()/3+1);
+  indices.push_back(positions.size()/3+2);
+  indices.push_back(positions.size()/3+0);
+  indices.push_back(positions.size()/3+2);
+  indices.push_back(positions.size()/3+3);
+  for(int l = 0; l < 4; l++){
+    positions.push_back((right[l*3]+pos.x));
+    positions.push_back((right[l*3+1]+pos.y));
+    positions.push_back((right[l*3+2]+pos.z));
+
+    //Add the Appropriate Normals
+    normals.push_back(1);
+    normals.push_back(0);
+    normals.push_back(0);
+  }
+  //Add Indices to these guys... (naive version)
+  indices.push_back(positions.size()/3+0);
+  indices.push_back(positions.size()/3+1);
+  indices.push_back(positions.size()/3+2);
+  indices.push_back(positions.size()/3+0);
+  indices.push_back(positions.size()/3+3);
+  indices.push_back(positions.size()/3+1);
+  for(int l = 0; l < 4; l++){
+    positions.push_back((left[l*3]+pos.x));
+    positions.push_back((left[l*3+1]+pos.y));
+    positions.push_back((left[l*3+2]+pos.z));
+
+    //Add the Appropriate Normals
+    normals.push_back(-1);
+    normals.push_back(0);
+    normals.push_back(0);
+  }
+
+  //Do this 6 Times, for all points for each face (6 Faces)!
+  for(int i = 0; i < 4*6; i++){
+    colors.push_back(0.75);
+    colors.push_back(0.15);
+    colors.push_back(0.5);
+    colors.push_back(1.0);
+  }
 }

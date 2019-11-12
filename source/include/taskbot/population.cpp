@@ -35,7 +35,7 @@ void Population::removeBot(int id){
 
 Population::Population(World &world){
   //Create some bots
-  for(int j = 0; j < 100; j++){
+  for(int j = 0; j < 1; j++){
     addBot(world);
   }
 }

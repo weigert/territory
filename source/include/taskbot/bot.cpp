@@ -101,7 +101,7 @@ inline void Bot::addMemory(State &state){
     if(memories[i].state.pos != state.pos) continue;
     //We already have a memory at this location!
 
-    if(state.block == BLOCK_AIR){
+    if(!block::isMemorable(state.block)){
       //This Memory needs to be removed.
       memories.erase(memories.begin()+i);
       return;
@@ -114,11 +114,7 @@ inline void Bot::addMemory(State &state){
   }
 
   //No New Memories for these Blocks
-  if(state.block == BLOCK_AIR) return;
-  if(state.block == BLOCK_STONE) return;
-  if(state.block == BLOCK_DIRT) return;
-  if(state.block == BLOCK_GRASS) return;
-  if(state.block == BLOCK_SAND) return;
+  if(!block::isMemorable(state.block)) return;
 
   Memory memory;
   Memory oldMemory;
@@ -160,7 +156,8 @@ void Bot::addSound(State _state){
 
 void Bot::setupSprite(){
   //Load the Sprite Thing
-  sprite.loadImage("cowboyfull.png");
+  sprite.loadImage(spriteFiles[rand()%4]);
+  //sprite.loadImage("dickbuttfull.png");
   sprite.setupBuffer(false);
   sprite.resetModel();
 }

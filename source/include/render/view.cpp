@@ -196,6 +196,7 @@ void View::updateChunkModels(World &world){
     }
     //Otherwise we are in bounds, so add that cube to the relevant model.
     models[world.chunk_order[ind]].addCube(p, world.remeshBuffer.editBuffer.back().type);
+    models[world.chunk_order[ind]].update();
     world.remeshBuffer.editBuffer.pop_back();
   }
 
@@ -281,7 +282,6 @@ void View::render(World &world, Population &population){
     //Render the Sprite Billboard
     population.bots[i].sprite.render();
   }
-
   glBindVertexArray(0);
 
   /* REFLECTION */
@@ -550,7 +550,7 @@ glm::vec3 View::intersect(World world, glm::vec2 mouse){
       p2 += 2 * dir.z;
 
       _block = world.getBlock(a);
-      if(_block != BLOCK_VOID && _block != BLOCK_AIR) return a;
+      if(block::isVisible(_block)) return a;
     }
   }
   else if(dir.y >= dir.x && dir.y >= dir.z){
@@ -574,7 +574,7 @@ glm::vec3 View::intersect(World world, glm::vec2 mouse){
       p2 += 2 * dir.z;
 
       _block = world.getBlock(a);
-      if(_block != BLOCK_VOID && _block != BLOCK_AIR) return a;
+      if(block::isVisible(_block)) return a;
     }
   }
   else{
@@ -598,7 +598,7 @@ glm::vec3 View::intersect(World world, glm::vec2 mouse){
       p2 += 2 * dir.y;
 
       _block = world.getBlock(a);
-      if(_block != BLOCK_VOID && _block != BLOCK_AIR) return a;
+      if(block::isVisible(_block)) return a;
     }
   }
   return glm::vec3(0);

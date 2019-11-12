@@ -4,8 +4,6 @@
 #include "../world/blueprint.h"
 #include "state.h"
 #include "../game/item.h"
-#include "../render/audio.h"
-
 #include "task.h"
 
 /*
@@ -179,7 +177,7 @@ bool Task::walk(World &world, Population &population, Audio &audio, State &_args
   }
 
   //Check if we specify that the position must be directly reachable
-  if(_args.reachable && world.getBlock(_args.pos) != BLOCK_AIR){
+  if(_args.reachable && !block::isOccupiable(world.getBlock(_args.pos))){
     _log.debug("Target position is occupied or not loaded.");
     return true;
   }
@@ -276,8 +274,8 @@ bool Task::destroy(World &world, Population &population, Audio &audio, State &_a
   //Check for Non-Destroy Task
   BlockType _type = world.getBlock(_args.pos);
 
-  if(_type == BLOCK_AIR){
-    _log.debug("Block is air");
+  if(!block::isDestructable(_type)){
+    _log.debug("Block is not destructable.");
     return true;
   }
 
@@ -331,7 +329,7 @@ bool Task::destroy(World &world, Population &population, Audio &audio, State &_a
   //Loop over all possible blocks
   glm::vec3 _pseudopos = _args.pos;
 
-  if(_type == BLOCK_WOOD || _type == BLOCK_CACTUS){
+  if(block::isFellable(_type)){
     while(_type != BLOCK_AIR){
       //Destroy the Block
       world.setBlock(_pseudopos, BLOCK_AIR, true);

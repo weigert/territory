@@ -17,8 +17,6 @@ namespace helper{
     return -1;
   }
 
-
-
   void set(float a[], float b[], int size){
     for(int i = 0; i < size; i++){
       a[i] = b[i];

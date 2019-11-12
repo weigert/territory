@@ -1,5 +1,7 @@
 //Pathfinding Stuff"
+
 #pragma once
+#include "../render/audio.h"
 #include "../forward/world.fwd.h"
 #include "../forward/blueprint.fwd.h"
 #include "../forward/item.fwd.h"

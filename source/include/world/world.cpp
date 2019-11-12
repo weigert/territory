@@ -419,15 +419,6 @@ bool World::evaluateBlueprint(Blueprint &_blueprint){
 ===================================================
 */
 
-int World::moveWeight(BlockType _type){
-  switch(_type){
-    case BLOCK_AIR:
-      return 1;
-    default:
-      return 10;
-  }
-}
-
 BlockType World::getBlock(glm::vec3 _pos){
   glm::vec3 c = glm::floor(_pos/glm::vec3(chunkSize));
   glm::vec3 p = glm::mod(_pos, glm::vec3(chunkSize));
@@ -463,7 +454,7 @@ glm::vec3 World::getTop(glm::vec2 _pos){
   for(int i = 1; i < dim.y*chunkSize; i++){
     floor = getBlock(glm::vec3(_pos.x, i-1, _pos.y));
     //Check if we satisfy the conditions
-    if(getBlock(glm::vec3(_pos.x, i, _pos.y)) == BLOCK_AIR && (floor == BLOCK_GRASS || floor == BLOCK_SAND)){
+    if(getBlock(glm::vec3(_pos.x, i, _pos.y)) == BLOCK_AIR && block::isSpawnable(floor)){
       if(i > max){
         max = i;
       }
