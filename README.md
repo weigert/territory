@@ -99,6 +99,8 @@ A number of other files describe other systems which are either implemented or a
 ## License
 This software is available under the [Mozilla Public License](https://www.mozilla.org/en-US/MPL/2.0/). Still, I don't want to clutter the source with header text, so I hope that's ok. Feel free to use and modify the source of this project.
 
+The music and artwork used in the project (everything in /resource/) is not open source. That content was made specifically for this version of this project. If you plan on *distributing* your own variant of this software, you must use your own music and artwork, or contact me. Using the artwork and music yourself for personal use is fine of course.
+
 ## Articles
 For the interested, there are some writeups on the various elements of this project on my blog, explaining the systems and the thought process behind their design:
 
