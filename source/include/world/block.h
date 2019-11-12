@@ -69,7 +69,7 @@ namespace block{
 
   //Can the bot be "inside" this block?
   bool isOccupiable(BlockType type){
-    return type == BLOCK_AIR || type == BLOCK_WATER;
+    return type == BLOCK_AIR;
   }
 
   //Block Moveweights

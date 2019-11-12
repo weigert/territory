@@ -99,6 +99,29 @@ bool Octree::setPosition(glm::vec3 _pos, BlockType _type){
       return _subtree.setPosition(_pos - _p*glm::vec3(width), _type);
 
   //Finally, we haven't found the right subTree element. Add an element to the subTree, and expand it.
+
+  /*
+  If we haven't found the subtree element, we must spawn it.
+  That means splitting the octree if the subtree is empty.
+  */
+
+  //If our subTree is empty, and we aren't block air, then we need to spawn 7 other guys of our guy.
+  if(subTree.empty() && type != BLOCK_AIR){
+    for(int i = 0; i < 8; i++){
+      Octree element;
+      element.depth = depth-1;
+      element.index = i;
+      element.type = type;
+      if(i != _index) element.setPosition(_pos - _p*glm::vec3(width), type);
+      else element.setPosition(_pos - _p*glm::vec3(width), _type);
+      subTree.push_back(element);
+    }
+    return true;
+  }
+
+  //Otherwise, our type is either air (meaning we can just append the guy)
+  //or our subtree isn't empty anyway.
+
   Octree element;
   element.depth = depth-1;
   element.type = type;
