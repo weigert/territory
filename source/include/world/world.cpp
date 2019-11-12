@@ -64,6 +64,7 @@ void World::generateBlank(){
         //Save the current loaded chunks to file and the world data
         {
           boost::archive::text_oarchive oa(out);
+          oa << chunk.pos;
           oa << octree;    //Append the Chunk to the Region File
         }
         else
@@ -367,19 +368,21 @@ bool World::evaluateBlueprint(Blueprint &_blueprint){
     boost::archive::text_iarchive ia(in);
 
     //Load the Chunk
-    if(format_octree)
+    if(format_octree){
+      ia >> _chunk.pos;
       ia >> _octree;
+    }
     else
       ia >> _chunk;
 
     //Overwrite relevant portions
-    while(format_octree && !_blueprint.editBuffer.empty() && glm::all(glm::equal(_octree.pos,  (glm::ivec3)_blueprint.editBuffer.back().cpos))){
+    while(format_octree && !_blueprint.editBuffer.empty() && glm::all(glm::equal(_chunk.pos,  (glm::ivec3)_blueprint.editBuffer.back().cpos))){
       //Change the Guy
       _octree.setPosition(glm::mod(_blueprint.editBuffer.back().pos, glm::vec3(chunkSize)), _blueprint.editBuffer.back().type);
       _blueprint.editBuffer.pop_back();
     }
 
-    while(!format_octree && !_blueprint.editBuffer.empty() && glm::all(glm::equal(_chunk.pos, _blueprint.editBuffer.back().cpos))){
+    while(!format_octree && !_blueprint.editBuffer.empty() && glm::all(glm::equal(_chunk.pos,  (glm::ivec3)_blueprint.editBuffer.back().cpos))){
       //Change the Guy
       _chunk.setPosition(glm::mod(_blueprint.editBuffer.back().pos, glm::vec3(chunkSize)), _blueprint.editBuffer.back().type);
       _blueprint.editBuffer.pop_back();
@@ -389,6 +392,7 @@ bool World::evaluateBlueprint(Blueprint &_blueprint){
     if(format_octree){
       //Don't forget to simplify this octree!!
       _octree.trySimplify();  //This takes advantage of the sparsity.
+      oa << _chunk.pos;
       oa << _octree;
     }
     else
@@ -517,14 +521,14 @@ void World::bufferChunks(View &view){
 
   //Chunks that need to be removed
   std::stack<int> remove;
-  std::vector<glm::vec3> load;
+  std::vector<glm::ivec3> load;
 
   //Construct the Vector of guys we should load
   for(int i = min.x; i <= max.x; i ++){
     for(int j = min.y; j <= max.y; j ++){
       for(int k = min.z; k <= max.z; k ++){
         //Add the vector that we should be loading
-        load.push_back(glm::vec3(i, j, k));
+        load.push_back(glm::ivec3(i, j, k));
       }
     }
   }
@@ -532,7 +536,7 @@ void World::bufferChunks(View &view){
   //Loop over all existing chunks
   for(unsigned int i = 0; i < chunks.size(); i++){
     //Check if any of these chunks are outside of the limits of a / b
-    if(glm::any(glm::lessThan(chunks[i].pos, min)) || glm::any(glm::greaterThan(chunks[i].pos, max))){
+    if(glm::any(glm::lessThan(chunks[i].pos,  (glm::ivec3)min)) || glm::any(glm::greaterThan(chunks[i].pos,  (glm::ivec3)max))){
       //Add the chunk to the erase pile
       remove.push(i);
       continue;
@@ -590,8 +594,11 @@ void World::bufferChunks(View &view){
       {
         boost::archive::text_iarchive ia(in);
         if(format_octree){
+          ia >> _chunk.pos;
           ia >> _octree;
+
           chunks.push_back(_octree.toChunk());
+          chunks.back().pos = _chunk.pos;
         }
         else{
           ia >> _chunk;
@@ -667,13 +674,20 @@ bool World::saveWorld(){
 namespace boost {
 namespace serialization {
 
+//Vector Serializer
+template<class Archive>
+void serialize(Archive & ar, glm::ivec3 & _vec, const unsigned int version)
+{
+  ar & _vec.x;
+  ar & _vec.y;
+  ar & _vec.z;
+}
+
 //Chunk Serializer
 template<class Archive>
 void serialize(Archive & ar, Chunk & _chunk, const unsigned int version)
 {
-  ar & _chunk.pos.x;
-  ar & _chunk.pos.y;
-  ar & _chunk.pos.z;
+  ar & _chunk.pos;
   ar & _chunk.size;
   ar & _chunk.biome;
   ar & _chunk.data;
@@ -687,9 +701,6 @@ void serialize(Archive & ar, Octree & _octree, const unsigned int version)
   ar & _octree.index;
   ar & _octree.type;
   ar & _octree.subTree;
-  ar & _octree.pos.x;
-  ar & _octree.pos.y;
-  ar & _octree.pos.z;
 }
 
 //World Serializer

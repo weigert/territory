@@ -5,7 +5,6 @@
 
 //Generate Octree from Chunks
 void Octree::fromChunk(Chunk &chunk){
-  pos = chunk.pos;
   //Write the Chunk
   for(int i = 0; i < chunk.size; i++){
     for(int j = 0; j < chunk.size; j++){
@@ -20,7 +19,6 @@ void Octree::fromChunk(Chunk &chunk){
 
 Chunk Octree::toChunk(){
   Chunk chunk;
-  chunk.pos = pos;
   //Do the thing
   for(int i = 0; i < chunk.size; i++){
     for(int j = 0; j < chunk.size; j++){

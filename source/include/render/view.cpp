@@ -171,7 +171,7 @@ void View::loadChunkModels(World &world){
     }
 
     //Old chunks need to be translated too. Translate according to player position.
-    glm::vec3 axis = (world.chunks[i].pos)*(float)world.chunkSize-viewPos;
+    glm::vec3 axis = (glm::vec3)(world.chunks[i].pos)*(float)world.chunkSize-viewPos;
 
     //Translate the guy
     models[i].reset();
@@ -222,7 +222,7 @@ void View::render(World &world, Population &population){
   skyCol = color::bezier(ease::cubic(t), color::skycolors);
 
   //Move the Light Across the Sky
-  lightPos = glm::vec3(-10.0f, ease::quartic(t)*20.0f+10.0f, -10.0f+t*20.0f);
+  lightPos = glm::vec3(-10.0f, ease::quadratic(t)*20.0f+10.0f, -10.0f+t*20.0f);
   glm::mat4 depthCamera = glm::lookAt(lightPos, glm::vec3(0,0,0), glm::vec3(0,1,0));
 
   //Set the Fog-Color
@@ -262,7 +262,13 @@ void View::render(World &world, Population &population){
     population.bots[i].sprite.resetModel();
     population.bots[i].sprite.model = glm::translate(population.bots[i].sprite.model, population.bots[i].pos-viewPos);
     population.bots[i].sprite.model = glm::rotate(population.bots[i].sprite.model, glm::radians(-90.0f), glm::vec3(0, 1, 0));
-    float rot = acos(glm::dot(glm::vec3(-1, 0, 0), glm::normalize(glm::vec3(lightPos.x, 0, lightPos.z))));
+    float rot = 0;
+    if(lightPos.z < 0){
+      rot = -acos(glm::dot(glm::vec3(-1, 0, 0), glm::normalize(glm::vec3(lightPos.x, 0, lightPos.z))));
+    }
+    else{
+      rot = acos(glm::dot(glm::vec3(-1, 0, 0), glm::normalize(glm::vec3(lightPos.x, 0, lightPos.z))));
+    }
     population.bots[i].sprite.model = glm::rotate(population.bots[i].sprite.model, rot, glm::vec3(0, 1, 0));
 
     //Setup the Uniforms

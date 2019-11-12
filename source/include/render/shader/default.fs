@@ -34,9 +34,12 @@ vec4 shade()
     if(greaterThanEqual(shadowCoord.xy, vec2(0.0f)) == bvec2(true) && lessThanEqual(shadowCoord.xy, vec2(1.0f)) == bvec2(true)){
       // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
       float currentDepth = shadowCoord.z;
-      float bias = max(0.05 * (1.0 - dot(ex_Normal, lightPos)), 0.005);
+      //float bias = 0.005;min(0.005, 2.0-pow(1-dot(ex_Normal, normalize(lightPos)), 3));//min(0.005, );
+      float bias = 0.005;
       vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
-      int a = 2;
+      int a = 1;
+      float pcfDepth = texture(shadowMap, shadowCoord.xy).r;
+
       for(int x = -a; x <= a; ++x)
       {
           for(int y = -a; y <= a; ++y)
@@ -46,6 +49,7 @@ vec4 shade()
           }
       }
       shadow/=((2*a+1)*(2*a+1)*2.0);
+
     }
     return vec4(vec3(1-shadow), 1.0f);
 }
@@ -67,7 +71,7 @@ void main(void) {
   //Lighting
   float diffuse = clamp(dot(ex_Normal, normalize(lightPos)), 0.1,  0.7);
   float ambient = 0.1;
-  float specular = pow(max(dot(normalize(lookDir), normalize(reflectDir)), 0.0), 32);
+  float specular = pow(max(dot(normalize(lookDir), normalize(reflectDir)), 0.0), 64);
 
   //Color!
   fragColor = ex_Color*vec4(lightCol*lightStrength*(diffuse + ambient + specular), 1.0f);

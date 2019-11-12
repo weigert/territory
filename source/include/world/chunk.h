@@ -6,7 +6,7 @@
 class Chunk{
 public:
   //Position information and size information
-  glm::vec3 pos;
+  glm::ivec3 pos;
   bool remesh = false;
   int size = 16;
   BiomeType biome;
