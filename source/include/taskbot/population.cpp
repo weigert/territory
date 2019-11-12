@@ -9,7 +9,8 @@ void Population::addBot(World world){
   //Add a bot
   Bot bot(bots.size());
   bot.setupSprite();
-  bot.pos = glm::vec3(75, 1, 75);//world.getTop(glm::vec2(40, 40));
+  //bot.pos = glm::vec3(75, 1, 75);//world.getTop(glm::vec2(40, 40));
+  bot.pos = world.getTop(glm::vec2(75, 75));
   //This is the only place I want to allocate the task...
   Task *masterTask = new Task("Human Task", bot.ID, &Task::Dummy);
   bot.current = masterTask;
@@ -34,12 +35,12 @@ void Population::removeBot(int id){
 
 Population::Population(World &world){
   //Create some bots
-  for(int j = 0; j < 10; j++){
+  for(int j = 0; j < 1; j++){
     addBot(world);
   }
 }
 
-void Population::update(World &world, View view, Audio &audio){
+void Population::update(World &world, View &view, Audio &audio){
   for(Bot& bot : bots){
     //No Execution Conditions
     if(bot.dead) continue;

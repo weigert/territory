@@ -32,7 +32,6 @@ int main( int argc, char* args[] ) {
 
 	//Generate the World and Chunks
 	world.bufferChunks( view );
-	view.loadChunkModels( world );
 
 	//Add Population
 	Population population( world );
@@ -61,9 +60,11 @@ int main( int argc, char* args[] ) {
 		//Process the Audio
 		audio.process();
 
-	//	timer::benchmark<std::chrono::microseconds>([&](){
-		if(!paused) population.update(world, view, audio);
-	//	});
+		if(!paused && !world.lock){
+	//		timer::benchmark<std::chrono::microseconds>([&](){
+				population.update(world, view, audio);
+	//		});
+		}
 
 		//Render the View
 		view.updateChunkModels( world );

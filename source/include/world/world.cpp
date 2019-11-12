@@ -1,10 +1,11 @@
-//Include Header File
+ //Include Header File
 //Dependencies
 #include "chunk.h"
 #include "octree.h"
 #include "../game/item.h"
 #include "../render/shader.h"
 #include "../render/billboard.h"
+#include "../render/model.h"
 #include "../render/view.h"
 #include "world.h"
 
@@ -20,15 +21,19 @@ void World::generate(){
   //Seed the Random Generator
   srand(SEED);
 
+  //Set the Blueprint Properties
+  blueprint.dim = dim;
+  blueprint.chunkSize = chunkSize;
+
   //Generate the Blank Region Files
   std::cout<<"Generating Blank World"<<std::endl;
   generateBlank();
 
   //Generate Height
   std::cout<<"Filling World"<<std::endl;
-  //generateBuildings();  //Building Example
+  generateBuildings();  //Building Example
   //generatePerlin();     //Lake Example
-  generateForest();       //Forest Example
+  //generateForest();       //Forest Example
 }
 
 void World::generateBlank(){
@@ -50,7 +55,19 @@ void World::generateBlank(){
         chunk.size = chunkSize;
         chunk.pos = glm::vec3(i, j, k);
 
+        //Octree Part!
+        Octree octree;
+        octree.fromChunk(chunk);
+        octree.depth = 4;
+
+        if(format_octree)
         //Save the current loaded chunks to file and the world data
+        {
+          boost::archive::text_oarchive oa(out);
+          oa << chunk.pos;
+          oa << octree;    //Append the Chunk to the Region File
+        }
+        else
         {
           boost::archive::text_oarchive oa(out);
           oa << chunk;    //Append the Chunk to the Region File
@@ -335,8 +352,10 @@ bool World::evaluateBlueprint(Blueprint &_blueprint){
   std::ofstream out((data_dir/"world.region.temp").string(), std::ofstream::app);
 
   //Chunk for Saving Data
+  Octree _octree;
   Chunk _chunk;
   int n_chunks = 0;
+
 
   //Loop over the Guy
   while(n_chunks < dim.x*dim.y*dim.z){
@@ -349,17 +368,36 @@ bool World::evaluateBlueprint(Blueprint &_blueprint){
     boost::archive::text_iarchive ia(in);
 
     //Load the Chunk
-    ia >> _chunk;
+    if(format_octree){
+      ia >> _chunk.pos;
+      ia >> _octree;
+    }
+    else
+      ia >> _chunk;
 
     //Overwrite relevant portions
-    while(!_blueprint.editBuffer.empty() && glm::all(glm::equal(_chunk.pos, _blueprint.editBuffer.back().cpos))){
+    while(format_octree && !_blueprint.editBuffer.empty() && glm::all(glm::equal(_chunk.pos,  (glm::ivec3)_blueprint.editBuffer.back().cpos))){
+      //Change the Guy
+      _octree.setPosition(glm::mod(_blueprint.editBuffer.back().pos, glm::vec3(chunkSize)), _blueprint.editBuffer.back().type);
+      _blueprint.editBuffer.pop_back();
+    }
+
+    while(!format_octree && !_blueprint.editBuffer.empty() && glm::all(glm::equal(_chunk.pos,  (glm::ivec3)_blueprint.editBuffer.back().cpos))){
       //Change the Guy
       _chunk.setPosition(glm::mod(_blueprint.editBuffer.back().pos, glm::vec3(chunkSize)), _blueprint.editBuffer.back().type);
       _blueprint.editBuffer.pop_back();
     }
 
     //Write the chunk back
-    oa << _chunk;
+    if(format_octree){
+      //Don't forget to simplify this octree!!
+      _octree.trySimplify();  //This takes advantage of the sparsity.
+      oa << _chunk.pos;
+      oa << _octree;
+    }
+    else
+      oa << _chunk;
+
     n_chunks++;
   }
 
@@ -381,51 +419,42 @@ bool World::evaluateBlueprint(Blueprint &_blueprint){
 ===================================================
 */
 
-int World::moveWeight(BlockType _type){
-  switch(_type){
-    case BLOCK_AIR:
-      return 1;
-    default:
-      return 10;
-  }
-}
-
 BlockType World::getBlock(glm::vec3 _pos){
-  //Chunk Position and World Position
   glm::vec3 c = glm::floor(_pos/glm::vec3(chunkSize));
   glm::vec3 p = glm::mod(_pos, glm::vec3(chunkSize));
+  int ind = helper::getIndex(c, dim);
 
-  for(unsigned int i = 0; i < chunks.size(); i++){
-    //Compare to Chunk Position
-    if(c == chunks[i].pos){
-      return (BlockType)chunks[i].data[chunks[i].getIndex(p)];
-    }
-  }
-  return BLOCK_AIR;
+  //Get the Block with Error Handling
+  if(!(glm::all(glm::greaterThanEqual(c, min)) && glm::all(glm::lessThanEqual(c, max)))) return BLOCK_VOID;
+  return (BlockType)chunks[chunk_order[ind]].data[chunks[chunk_order[ind]].getIndex(p)];
 }
 
-void World::setBlock(glm::vec3 _pos, BlockType _type){
-  //Check if the position is inside, if not return 0, otherwise return the block
-  for(unsigned int i = 0; i < chunks.size(); i++){
-    glm::vec3 c = glm::floor(_pos/glm::vec3(chunkSize));
-    //Check the Chunkpos
-    if(c == chunks[i].pos){
-      chunks[i].setPosition(glm::mod(_pos, glm::vec3(chunkSize)), _type);
-      chunks[i].refreshModel = true;
-      break;
-    }
-  }
+void World::setBlock(glm::vec3 _pos, BlockType _type, bool fullremesh){
+  glm::vec3 c = glm::floor(_pos/glm::vec3(chunkSize));
+  glm::vec3 p = glm::mod(_pos, glm::vec3(chunkSize));
+  int ind = helper::getIndex(c, dim);
+
+  if(!(glm::all(glm::greaterThanEqual(c, min)) && glm::all(glm::lessThanEqual(c, max)))) return;
+  chunks[chunk_order[ind]].setPosition(p, _type);
+
+  //Add to the EditBuffer
+  blueprint.addEditBuffer(_pos, _type, false);
+
+  if(fullremesh) chunks[chunk_order[ind]].remesh = true;
+  else remeshBuffer.addEditBuffer(_pos, _type, false);
 }
 
 //Get the Top-Free space position in the x-z position
 glm::vec3 World::getTop(glm::vec2 _pos){
   //Highest Block you can Stand O
   int max = 0;
+  BlockType floor;
 
   //Loop over the height
   for(int i = 1; i < dim.y*chunkSize; i++){
+    floor = getBlock(glm::vec3(_pos.x, i-1, _pos.y));
     //Check if we satisfy the conditions
-    if(getBlock(glm::vec3(_pos.x, i, _pos.y)) == BLOCK_AIR && getBlock(glm::vec3(_pos.x, i-1, _pos.y)) == BLOCK_GRASS){
+    if(getBlock(glm::vec3(_pos.x, i, _pos.y)) == BLOCK_AIR && block::isSpawnable(floor)){
       if(i > max){
         max = i;
       }
@@ -468,29 +497,29 @@ Inventory World::pickup(glm::vec3 pos){
 ===================================================
 */
 
-void World::bufferChunks(View view){
+void World::bufferChunks(View &view){
   lock = true;
   //Load / Reload all Visible Chunks
   evaluateBlueprint(blueprint);
 
   //Chunks that should be loaded
-  glm::vec3 a = glm::floor(view.viewPos/glm::vec3(chunkSize))-view.renderDistance;
-  glm::vec3 b = glm::floor(view.viewPos/glm::vec3(chunkSize))+view.renderDistance;
+  min = glm::floor(view.viewPos/glm::vec3(chunkSize))-view.renderDistance;
+  max = glm::floor(view.viewPos/glm::vec3(chunkSize))+view.renderDistance;
 
   //Can't exceed a certain size
-  a = glm::clamp(a, glm::vec3(0), dim-glm::vec3(1));
-  b = glm::clamp(b, glm::vec3(0), dim-glm::vec3(1));
+  min = glm::clamp(min, glm::vec3(0), dim-glm::vec3(1));
+  max = glm::clamp(max, glm::vec3(0), dim-glm::vec3(1));
 
   //Chunks that need to be removed
   std::stack<int> remove;
-  std::vector<glm::vec3> load;
+  std::vector<glm::ivec3> load;
 
   //Construct the Vector of guys we should load
-  for(int i = a.x; i <= b.x; i ++){
-    for(int j = a.y; j <= b.y; j ++){
-      for(int k = a.z; k <= b.z; k ++){
+  for(int i = min.x; i <= max.x; i ++){
+    for(int j = min.y; j <= max.y; j ++){
+      for(int k = min.z; k <= max.z; k ++){
         //Add the vector that we should be loading
-        load.push_back(glm::vec3(i, j, k));
+        load.push_back(glm::ivec3(i, j, k));
       }
     }
   }
@@ -498,9 +527,10 @@ void World::bufferChunks(View view){
   //Loop over all existing chunks
   for(unsigned int i = 0; i < chunks.size(); i++){
     //Check if any of these chunks are outside of the limits of a / b
-    if(glm::any(glm::lessThan(chunks[i].pos, a)) || glm::any(glm::greaterThan(chunks[i].pos, b))){
+    if(glm::any(glm::lessThan(chunks[i].pos,  (glm::ivec3)min)) || glm::any(glm::greaterThan(chunks[i].pos,  (glm::ivec3)max))){
       //Add the chunk to the erase pile
       remove.push(i);
+      continue;
     }
 
     //Make sure that the chunk that we determined will not be removed is also not reloaded
@@ -512,11 +542,10 @@ void World::bufferChunks(View view){
     }
   }
 
-  updateModels = remove;
-
-  //Loop over the erase pile, delete the relevant chunks.
+  //Loop over the erase pile, delete the relevant chunks and models.
   while(!remove.empty()){
     chunks.erase(chunks.begin()+remove.top());
+    view.models.erase(view.models.begin()+remove.top());
     remove.pop();
   }
 
@@ -542,25 +571,45 @@ void World::bufferChunks(View view){
     data_dir /= saveFile;
     std::ifstream in((data_dir/"world.region").string());
 
+    Octree _octree;
     Chunk _chunk;
     int n = 0;
 
     while(!load.empty()){
       //Skip Lines
-      while(n < load.back().x*dim.z*dim.y+load.back().y*dim.z+load.back().z){
+      while(n < helper::getIndex(load.back(), dim)){
         in.ignore(1000000,'\n');
         n++;
       }
       //Load the Chunk
       {
         boost::archive::text_iarchive ia(in);
-        ia >> _chunk;
-        chunks.push_back(_chunk);
+        if(format_octree){
+          ia >> _chunk.pos;
+          ia >> _octree;
+
+          chunks.push_back(_octree.toChunk());
+          chunks.back().pos = _chunk.pos;
+        }
+        else{
+          ia >> _chunk;
+          chunks.push_back(_chunk);
+        }
         load.pop_back();
       }
     }
     in.close();
   }
+
+  //Write the Chunk Order
+  chunk_order.clear();
+  for(int i = 0; i < chunks.size(); i++){
+    //Set the Pointer to the chunk guy
+    chunk_order[helper::getIndex(chunks[i].pos, dim)] = i;
+  }
+
+  //Update the Corresponding Chunk Models
+  view.loadChunkModels(*this);
   lock = false;
 }
 
@@ -568,6 +617,7 @@ bool World::loadWorld(){
   //Get current path
   boost::filesystem::path data_dir(boost::filesystem::current_path());
   data_dir /= "save";
+
   //Make sure savedirectory exists
   if(!boost::filesystem::is_directory(data_dir)){
     //Create the directory upon failure
@@ -579,18 +629,19 @@ bool World::loadWorld(){
   if(!boost::filesystem::is_directory(data_dir)){
     //Create the directory upon failure
     boost::filesystem::create_directory(data_dir);
-    //Save the world here
+    //Generate a new world!
     saveWorld();
     return true;
   }
 
-  //Load the World
+  //Load the World Mete-
   data_dir /= "world.meta";
   std::ifstream in(data_dir.string());
   {
     boost::archive::text_iarchive ia(in);
     ia >> *this;
   }
+
   return true;
 }
 
@@ -614,13 +665,20 @@ bool World::saveWorld(){
 namespace boost {
 namespace serialization {
 
+//Vector Serializer
+template<class Archive>
+void serialize(Archive & ar, glm::ivec3 & _vec, const unsigned int version)
+{
+  ar & _vec.x;
+  ar & _vec.y;
+  ar & _vec.z;
+}
+
 //Chunk Serializer
 template<class Archive>
 void serialize(Archive & ar, Chunk & _chunk, const unsigned int version)
 {
-  ar & _chunk.pos.x;
-  ar & _chunk.pos.y;
-  ar & _chunk.pos.z;
+  ar & _chunk.pos;
   ar & _chunk.size;
   ar & _chunk.biome;
   ar & _chunk.data;
@@ -641,6 +699,7 @@ template<class Archive>
 void serialize(Archive & ar, World & _world, const unsigned int version)
 {
   ar & _world.saveFile;
+  ar & _world.format_octree;  //Whether the metedata has octree format
   ar & _world.chunkSize;
   ar & _world.dim.x;
   ar & _world.dim.y;

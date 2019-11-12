@@ -10,7 +10,7 @@ class Population{
   public:
     //Functions
     Population(World &world);
-    void update(World &world, View view, Audio &audio);
+    void update(World &world, View &view, Audio &audio);
 
     //Population Functions
     void addBot(World world);

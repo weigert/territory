@@ -25,7 +25,7 @@ using namespace std;
 int GetMap(World &world, int x, int y, int z)
 {
   //Get the Element we Need
-  return (world.moveWeight(world.getBlock(glm::vec3(x,y,z))) + 9 - world.moveWeight(world.getBlock(glm::vec3(x,y-1,z))));
+  return (block::moveWeight(world.getBlock(glm::vec3(x,y,z))) + 9 - block::moveWeight(world.getBlock(glm::vec3(x,y-1,z))));
 }
 
 // Definitions
@@ -138,7 +138,7 @@ bool MapSearchNode::GetSuccessors(World &world, AStarSearch<MapSearchNode> *asta
 	}
 
 
-	if( (GetMap(world, x, y, z+1 ) < 9) 
+	if( (GetMap(world, x, y, z+1 ) < 9)
 		&& !((parent_x == x) && (parent_y == y+1) && (parent_z == z))
 		)
 	{

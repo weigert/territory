@@ -59,9 +59,9 @@ namespace color{
   }
 
   //Use the Position Hash (Generates Hash from Index)
-  std::hash<unsigned int> position_hash;
-  double hashrand(unsigned int i){
-    return (double)(position_hash(i)%1000)/1000.0;
+  std::hash<std::string> position_hash;
+  double hashrand(int i){
+    return (double)(position_hash(std::to_string(i))%1000)/1000.0;
   }
 
   //De-Casteljau Algorithm (Templated)
@@ -75,61 +75,5 @@ namespace color{
       points = next;
     }
     return points[0];
-  }
-
-  /*
-  Bezier Takes as its input a number, which I currently generate randomly.
-  This number should actually be hashed, not random.
-  */
-
-  glm::vec4 getColor(BlockType _type, double t){
-    //Switch the value and return a vector
-    switch(_type){
-      case BLOCK_GRASS:
-        return bezier(t, grasscolors);
-        break;
-      case BLOCK_DIRT:
-        return glm::vec4(0.74f, 0.5f, 0.36f, 1.0f);
-        break;
-      case BLOCK_WATER:
-        return glm::vec4(0.3f, 0.57f, 0.67f, 1.0f);
-        break;
-      case BLOCK_SAND:
-        return bezier(t, sandcolors);
-        break;
-      case BLOCK_CLAY:
-        return bezier(t, claycolors);
-        break;
-      case BLOCK_STONE:
-        return glm::vec4(0.5f, 0.5f, 0.5f, 1.0f);
-        break;
-      case BLOCK_LEAVES:
-        return bezier(t, leafcolors);
-        break;
-      case BLOCK_WOOD:
-        return glm::vec4(0.6f, 0.375f, 0.14f, 1.0f);
-        break;
-      case BLOCK_GRAVEL:
-        return glm::vec4(0.08f, 0.32f, 0.43f, 1.0f);
-        break;
-      case BLOCK_SANDSTONE:
-        return glm::vec4(0.8f, 0.75f, 0.64f, 1.0f);
-        break;
-      case BLOCK_PUMPKIN:
-        return glm::vec4(1.0f, 0.5f, 0.0f, 1.0f);
-        break;
-      case BLOCK_CACTUS:
-        return glm::vec4(0.0f, 0.44f, 0.3f, 1.0f);
-        break;
-      case BLOCK_PLANKS:
-        return glm::vec4(0.75f, 0.6f, 0.28f, 1.0f);
-        break;
-      case BLOCK_GLASS:
-        return glm::vec4(0.8f, 0.9f, 0.95f, 0.2f);
-        break;
-      default:
-        return glm::vec4(1.0f, 1.0f, 1.0f, 0.5f);
-        break;
-    }
   }
 }

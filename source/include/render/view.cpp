@@ -92,6 +92,10 @@ void View::setupShaders(){
   depthShader.setup("depth.vs", "depth.fs");
   depthShader.addAttribute(0, "in_Position");
 
+  spriteDepthShader.setup("spritedepth.vs", "spritedepth.fs");
+  spriteDepthShader.addAttribute(0, "in_Quad");
+  spriteDepthShader.addAttribute(1, "in_Tex");
+
   //Setup Spriteshader
   spriteShader.setup("sprite.vs", "sprite.fs");
   spriteShader.addAttribute(0, "in_Quad");
@@ -122,6 +126,7 @@ void View::cleanup(){
   cubeShader.cleanup();
   reflectShader.cleanup();
   depthShader.cleanup();
+  spriteDepthShader.cleanup();
   spriteShader.cleanup();
   billboardShader.cleanup();
   itemShader.cleanup();
@@ -154,25 +159,19 @@ void View::cleanup(){
 */
 
 void View::loadChunkModels(World &world){
-  //Update the Models for the Chunks
-
-  while(!world.updateModels.empty()){
-    models.erase(models.begin()+world.updateModels.top());
-    world.updateModels.pop();
-  }
-
   //Loop over all chunks
   for(unsigned int i = 0; i < world.chunks.size(); i++){
     //If we are at capacity, add a new item
     if(i == models.size()){
       Model model;
+      model.cpos = world.chunks[i].pos;
       model.fromChunkGreedy(world.chunks[i]);
       model.setup();
       models.push_back(model);
     }
 
     //Old chunks need to be translated too. Translate according to player position.
-    glm::vec3 axis = (world.chunks[i].pos)*(float)world.chunkSize-viewPos;
+    glm::vec3 axis = (glm::vec3)(world.chunks[i].pos)*(float)world.chunkSize-viewPos;
 
     //Translate the guy
     models[i].reset();
@@ -183,12 +182,30 @@ void View::loadChunkModels(World &world){
 }
 
 void View::updateChunkModels(World &world){
+  //Get the Chunk Position if the remeshBuffer isn't empty!
+  while(!world.remeshBuffer.editBuffer.empty()){
+    //Add the Cubes
+    glm::vec3 c = world.remeshBuffer.editBuffer.back().cpos;
+    glm::vec3 p = glm::mod(world.remeshBuffer.editBuffer.back().pos, glm::vec3(world.chunkSize));
+    int ind = helper::getIndex(c, world.dim);
+
+    //Skip non-loaded remeshBuffer objects
+    if(!(glm::all(glm::greaterThanEqual(c, world.min)) && glm::all(glm::lessThanEqual(c, world.max)))){
+      world.remeshBuffer.editBuffer.pop_back();
+      continue;
+    }
+    //Otherwise we are in bounds, so add that cube to the relevant model.
+    models[world.chunk_order[ind]].addCube(p, world.remeshBuffer.editBuffer.back().type);
+    models[world.chunk_order[ind]].update();
+    world.remeshBuffer.editBuffer.pop_back();
+  }
+
   //Loop over all chunks, see if they are updated.
   for(unsigned int i = 0; i < world.chunks.size(); i++){
-    if(world.chunks[i].refreshModel){
+    if(world.chunks[i].remesh){
       models[i].fromChunkGreedy(world.chunks[i]);
       models[i].update();
-      world.chunks[i].refreshModel = false;
+      world.chunks[i].remesh = false;
     }
   }
 }
@@ -203,16 +220,15 @@ void View::render(World &world, Population &population){
 
   /* Set Current Parameters based on the time! */
   float t = (double)world.time/(60.0*24.0);
-  float g = (t-t*t);
-  skyCol = color::bezier(t, color::skycolors);
+  skyCol = color::bezier(ease::cubic(t), color::skycolors);
 
   //Move the Light Across the Sky
-  lightPos = glm::vec3(-10.0f, g*20.0f+10.0f, -5.0f+t*10.0f);
+  lightPos = glm::vec3(-10.0f, ease::quadratic(t)*20.0f+10.0f, -10.0f+t*20.0f);
   glm::mat4 depthCamera = glm::lookAt(lightPos, glm::vec3(0,0,0), glm::vec3(0,1,0));
 
   //Set the Fog-Color
-  fogColor = glm::vec4(4*g, 4*g, 4*g, 1.0);
-  lightStrength = 6*g+0.1;
+  fogColor = glm::vec4(ease::quartic(t), ease::quartic(t), ease::quartic(t), 1.0);
+  lightStrength = 1.4*ease::quartic(t)+0.1;
 
   /* SHADOW MAPPING */
   glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
@@ -224,8 +240,6 @@ void View::render(World &world, Population &population){
 
   //Activate the Texture
   glClear(GL_DEPTH_BUFFER_BIT);
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, shadow.depthTexture);
 
   //Loop over the Models to Render to Shadowmap
   for(unsigned int i = 0; i < models.size(); i++){
@@ -233,6 +247,40 @@ void View::render(World &world, Population &population){
     depthShader.setMat4("model", models[i].model);
     //Render the Model
     models[i].render();
+  }
+
+  //Render the Sprites to the Depthmap
+  spriteDepthShader.useProgram();
+  spriteDepthShader.setInt("spriteTexture", 0);
+
+  //Loop over all Sprites
+  for(unsigned int i = 0; i < population.bots.size(); i++){
+    //Check for No-Render Condition
+    if(population.bots[i].dead) continue;
+    if(!helper::inModRange(population.bots[i].pos, viewPos, renderDistance, world.chunkSize)) continue;
+
+    //Set the Position of the Sprite relative to the sun
+    population.bots[i].sprite.resetModel();
+    population.bots[i].sprite.model = glm::translate(population.bots[i].sprite.model, population.bots[i].pos-viewPos);
+    population.bots[i].sprite.model = glm::rotate(population.bots[i].sprite.model, glm::radians(-90.0f), glm::vec3(0, 1, 0));
+    float rot = 0;
+    if(lightPos.z < 0){
+      rot = -acos(glm::dot(glm::vec3(-1, 0, 0), glm::normalize(glm::vec3(lightPos.x, 0, lightPos.z))));
+    }
+    else{
+      rot = acos(glm::dot(glm::vec3(-1, 0, 0), glm::normalize(glm::vec3(lightPos.x, 0, lightPos.z))));
+    }
+    population.bots[i].sprite.model = glm::rotate(population.bots[i].sprite.model, rot, glm::vec3(0, 1, 0));
+
+    //Setup the Uniforms
+    spriteShader.setMat4("mvp", depthProjection*depthCamera*population.bots[i].sprite.model);
+    spriteShader.setFloat("nframe", (float)(population.bots[i].sprite.animation.nframe % population.bots[i].sprite.animation.frames));
+    spriteShader.setFloat("animation", (float)population.bots[i].sprite.animation.ID);
+    spriteShader.setFloat("width", (float)population.bots[i].sprite.animation.w);
+    spriteShader.setFloat("height", (float)population.bots[i].sprite.animation.h);
+
+    //Render the Sprite Billboard
+    population.bots[i].sprite.render();
   }
   glBindVertexArray(0);
 
@@ -347,6 +395,7 @@ void View::render(World &world, Population &population){
     spriteShader.setFloat("animation", (float)population.bots[i].sprite.animation.ID);
     spriteShader.setFloat("width", (float)population.bots[i].sprite.animation.w);
     spriteShader.setFloat("height", (float)population.bots[i].sprite.animation.h);
+    spriteShader.setFloat("lightStrength", lightStrength);
 
     //Render the Sprite Billboard
     population.bots[i].sprite.render();
@@ -395,6 +444,7 @@ void View::render(World &world, Population &population){
   glBindVertexArray(image.vao);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
+
   //Render screen to monitor with vertical blur shader
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glActiveTexture(GL_TEXTURE0+0);
@@ -406,6 +456,20 @@ void View::render(World &world, Population &population){
   blurShader.setBool("vert", true);
   glBindVertexArray(temp1.vao);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+/*
+  //Render screen to monitor with vertical blur shader
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glActiveTexture(GL_TEXTURE0+0);
+  glBindTexture(GL_TEXTURE_2D, shadow.depthTexture);
+  billboardShader.setInt("imageTexture", 0);
+  glActiveTexture(GL_TEXTURE0+1);
+  glBindTexture(GL_TEXTURE_2D, shadow.depthTexture);
+  billboardShader.setInt("depthTexture", 1);
+  billboardShader.setBool("vert", true);
+  glBindVertexArray(shadow.vao);
+  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+*/
 
   //Add the GUI
   renderGUI(world, population);
@@ -451,7 +515,7 @@ glm::vec3 View::intersect(World world, glm::vec2 mouse){
   glm::vec3 _ydir = glm::normalize(glm::cross(_dir, _xdir));
   glm::vec3 _startpos = _camerapos + _xdir*scalex*(SCREEN_WIDTH*zoom) + _ydir*scaley*(SCREEN_HEIGHT*zoom);
 
-  glm::vec3 a = glm::round(_startpos - _dir * glm::vec3(50));
+  glm::vec3 a = glm::round(_startpos - _dir * glm::vec3(100));
   glm::vec3 b = glm::round(_startpos + _dir * glm::vec3(100));
 
   //Get the direction
@@ -461,6 +525,8 @@ glm::vec3 View::intersect(World world, glm::vec2 mouse){
   s.x = (a.x > b.x)?-1:1;
   s.y = (a.y > b.y)?-1:1;
   s.z = (a.z > b.z)?-1:1;
+
+  BlockType _block;
 
   //Find the driving axis and do the guy
   if(dir.x >= dir.y && dir.x >= dir.z){
@@ -483,8 +549,8 @@ glm::vec3 View::intersect(World world, glm::vec2 mouse){
       p1 += 2 * dir.y;
       p2 += 2 * dir.z;
 
-      //We have found a point... check if it is air or not!
-      if(world.getBlock(a) != BLOCK_AIR) return a;
+      _block = world.getBlock(a);
+      if(block::isVisible(_block)) return a;
     }
   }
   else if(dir.y >= dir.x && dir.y >= dir.z){
@@ -506,7 +572,9 @@ glm::vec3 View::intersect(World world, glm::vec2 mouse){
       }
       p1 += 2 * dir.x;
       p2 += 2 * dir.z;
-      if(world.getBlock(a) != BLOCK_AIR) return a;
+
+      _block = world.getBlock(a);
+      if(block::isVisible(_block)) return a;
     }
   }
   else{
@@ -528,7 +596,9 @@ glm::vec3 View::intersect(World world, glm::vec2 mouse){
       }
       p1 += 2 * dir.x;
       p2 += 2 * dir.y;
-      if(world.getBlock(a) != BLOCK_AIR) return a;
+
+      _block = world.getBlock(a);
+      if(block::isVisible(_block)) return a;
     }
   }
   return glm::vec3(0);
@@ -548,6 +618,9 @@ void View::calcFPS(){
   //Set the FPS
   for(int i = 0; i < plotSize-1; i++){
     arr[i] = arr[i+1];
+  }
+  for(int i = 5; i < plotSize-5; i++){
+    ave[i] = floor((arr[i-5]+arr[i-4]+arr[i-3]+arr[i-2]+arr[i-1]+arr[i]+arr[i+1]+arr[i+2]+arr[i+3]+arr[i+4]+arr[i+5])/11.0);
   }
   arr[plotSize-1] = FPS;
 }

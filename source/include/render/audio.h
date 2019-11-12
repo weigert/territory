@@ -1,6 +1,11 @@
 #pragma once
 #include "../forward/audio.fwd.h"
 
+enum SoundByte{
+  SOUND_NONE = 0,
+  SOUND_HIT = 1
+};
+
 //Soundbytes and Music Stores in here, as well as calling functions.
 class Audio{
 public:
@@ -15,5 +20,3 @@ public:
   bool cleanup();
   void process();
 };
-
-/* Yes, this is a singleton. Deal with it. */

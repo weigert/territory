@@ -244,7 +244,6 @@ void eventHandler::handlePlayerMove(World &world, View &view, int a){
     //Do the thing
     view.viewPos += m;
     world.bufferChunks( view );
-    view.loadChunkModels(world); //This can be made more efficient to only reload new chunks
   }
 
   //Regularly shift player's position

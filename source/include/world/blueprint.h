@@ -39,8 +39,8 @@ bool operator>(const bufferObject& a, const bufferObject& b) {
 class Blueprint{
 public:
   //Dimension Parameters
-  int chunkSize = 16;
-  glm::vec3 dim = glm::vec3(20, 5, 20);
+  static int chunkSize;
+  static glm::vec3 dim;
 
   //Helpers
   std::vector<bufferObject> editBuffer;
@@ -66,6 +66,10 @@ public:
   void tree(int height);
   void cactus();
 };
+
+//Default Initialization
+int Blueprint::chunkSize = 16;
+glm::vec3 Blueprint::dim = glm::vec3(20,5,20);
 
 namespace boost {
 namespace serialization {

@@ -268,6 +268,7 @@ void Interface::render(View &view, World &world, Population &population){
             State state;
             state.task = _task->name;
             state.target = _target;
+            state.reachable = false;
             state.time = _time;
             state.pos = view.select;
             state.block = (BlockType)_block;
@@ -289,7 +290,7 @@ void Interface::render(View &view, World &world, Population &population){
 
     if(ImGui::BeginTabItem("View")){
       //Add an FPS Plot
-      ImGui::PlotLines("FPS Counter", view.arr, IM_ARRAYSIZE(view.arr));
+      ImGui::PlotLines("FPS Counter", view.ave, IM_ARRAYSIZE(view.ave));
 
       //Generate a colorpicker for the light and sky
       static float sky[3] = {view.skyCol.x, view.skyCol.y, view.skyCol.z};

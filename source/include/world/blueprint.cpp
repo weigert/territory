@@ -99,10 +99,11 @@ void Blueprint::flatSurface(int x, int z){
 //Do this guy
 void Blueprint::cactus(){
   //Loop until the height
-  int height = 4+rand()%2;
+  int height = 4;
   for(int i = 0; i < height; i++){
     addEditBuffer(glm::vec3(0, i, 0), BLOCK_CACTUS, true);
   }
+  addEditBuffer(glm::vec3(0, height, 0), BLOCK_CACTUSFLOWER, true);
 }
 
 //Do this guy

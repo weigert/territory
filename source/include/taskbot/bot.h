@@ -7,6 +7,8 @@
 #include "../forward/item.fwd.h"
 #include "../forward/audio.fwd.h"
 
+std::string spriteFiles[4] = {"cowboyfull.png", "hunterfull.png", "nativefull.png", "ladyfull.png"}; 
+
 class Bot{
   public:
     Bot(int _ID);
@@ -46,7 +48,7 @@ class Bot{
     void addSound(State _state);
     std::deque<Memory> recallMemories(Memory &query, bool all);
     void updateMemory(Memory &query, bool all, Memory &memory);
-    void addMemory(World world, glm::vec3 _pos);
+    inline void addMemory(State &state);
 };
 
 //Constructors

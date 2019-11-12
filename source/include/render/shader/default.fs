@@ -27,31 +27,42 @@ uniform int clip;
 
 out vec4 fragColor;
 
-vec4 shade()
-{
-    float shadow = 0.0;
-    //Make sure shadow is inside the shadowCoord Box, otherwise don't draw shadows!
-    if(greaterThanEqual(shadowCoord.xy, vec2(0.0f)) == bvec2(true) && lessThanEqual(shadowCoord.xy, vec2(1.0f)) == bvec2(true)){
-      // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
-      float currentDepth = shadowCoord.z;
-      float bias = max(0.05 * (1.0 - dot(ex_Normal, lightPos)), 0.005);
-      vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
-      int a = 2;
-      for(int x = -a; x <= a; ++x)
-      {
-          for(int y = -a; y <= a; ++y)
-          {
-              float pcfDepth = texture(shadowMap, shadowCoord.xy + vec2(x, y) * texelSize).r;
-              shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
-          }
-      }
-      shadow/=((2*a+1)*(2*a+1)*2.0);
-    }
-    return vec4(vec3(1-shadow), 1.0f);
-}
-
 float rand(vec2 co){
     return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+}
+
+float gridSample(int size){
+  //Stuff
+  float shadow = 0.0;
+  float currentDepth = shadowCoord.z;
+
+  //Compute Bias
+  float m = 1-dot(ex_Normal, normalize(lightPos));
+  float h = 0.2*m;
+  float g = 0.002;
+  float bias = mix(g, h, pow(m, 5));
+
+  vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
+
+  for(int x = -size; x <= size; ++x){
+      for(int y = -size; y <= size; ++y){
+          float pcfDepth = texture(shadowMap, shadowCoord.xy + vec2(x, y) * texelSize).r;
+          shadow += currentDepth-bias > pcfDepth ? 1.0 : 0.0;
+      }
+  }
+  shadow/=((2*size+1)*(2*size+1)*2.0);
+  return shadow;
+}
+
+vec4 shade(){
+    //Shadow Value
+    float shadow = 0.0;
+    if(!(greaterThanEqual(shadowCoord.xy, vec2(0.0f)) == bvec2(true) && lessThanEqual(shadowCoord.xy, vec2(1.0f)) == bvec2(true)))
+      return vec4(vec3(1-shadow), 1.0f);
+
+    //Sample the Shadow Value from Texture
+    shadow = gridSample(1);
+    return vec4(vec3(1-shadow), 1.0f);
 }
 
 void main(void) {
@@ -67,7 +78,7 @@ void main(void) {
   //Lighting
   float diffuse = clamp(dot(ex_Normal, normalize(lightPos)), 0.1,  0.7);
   float ambient = 0.1;
-  float specular = pow(max(dot(normalize(lookDir), normalize(reflectDir)), 0.0), 32);
+  float specular = pow(max(dot(normalize(lookDir), normalize(reflectDir)), 0.0), 64);
 
   //Color!
   fragColor = ex_Color*vec4(lightCol*lightStrength*(diffuse + ambient + specular), 1.0f);

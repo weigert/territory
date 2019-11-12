@@ -1,6 +1,7 @@
 //Include Forward Declaration
 #include "../game/item.h"
 #include "blueprint.h"
+#include "chunk.h"
 
 #pragma once
 #include "../forward/world.fwd.h"
@@ -24,14 +25,21 @@ public:
 
   //Block Data in Octree
   std::vector<Chunk> chunks; //Loaded Chunks
-  std::stack<int> updateModels;
+  std::unordered_map<int, int> chunk_order;
   int SEED = 100;
   int chunkSize = 16;
   int sealevel = 16;
   std::chrono::milliseconds tickLength = std::chrono::milliseconds(1000);
   glm::vec3 dim = glm::vec3(20, 5, 20);
+  bool format_octree = true;
+
+  //Min and Max Chunk Positions
+  glm::vec3 min = glm::vec3(0);
+  glm::vec3 max = dim;
+
+  //Other Stuff
   bool lock = false;  //Lock the World Data for Chunk Loading
-  volatile int time = 0;  //Is set in a separate timed thread.
+  volatile int time = 540;  //Is set in a separate timed thread.
 
   //Items placed / on the ground
   Inventory placed;
@@ -42,7 +50,7 @@ public:
   //Movement Weights
   int moveWeight(BlockType _type);
   BlockType getBlock(glm::vec3 _pos);
-  void setBlock(glm::vec3 _pos, BlockType _type);
+  void setBlock(glm::vec3 _pos, BlockType _type, bool fullremesh);
   glm::vec3 getTop(glm::vec2 _pos);
 
   //Generate Function / Chunk Handlers
@@ -55,8 +63,9 @@ public:
 
   //Helpers for Blueprint
   Blueprint blueprint;
+  Blueprint remeshBuffer;
   bool evaluateBlueprint(Blueprint &_blueprint);
-  void bufferChunks(View view);
+  void bufferChunks(View &view);
 
   //File IO Management
   std::string saveFile;

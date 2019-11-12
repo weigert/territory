@@ -2,6 +2,7 @@
 in vec2 ex_Tex;
 out vec4 fragColor;
 
+uniform float lightStrength;
 uniform sampler2D spriteTexture;
 
 void main(){
@@ -10,6 +11,6 @@ void main(){
     discard;
   }
   else{
-    fragColor = color;
+    fragColor = min(vec4(vec3(lightStrength), 1.0)*color, color);
   }
 }
