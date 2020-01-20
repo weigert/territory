@@ -192,7 +192,7 @@ void Interface::render(View &view, World &world, Population &population){
         ImGui::Text("%d", (int)view.select.z);
       }
 
-      ImGui::Checkbox("Debug Messages", &(_log._debug));
+      ImGui::Checkbox("Debug Messages", &(logger::_debug));
 
       ImGui::EndTabItem();
     }

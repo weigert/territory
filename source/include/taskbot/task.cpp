@@ -172,24 +172,24 @@ bool Task::walk(World &world, Population &population, Audio &audio, State &_args
 
   //Check if we're already there (or in range)
   if(helper::inRange(population.bots[botID].pos, _args.pos, _args.range)){
-    _log.debug("Arrived at location within range.");
+    logger::debug("Arrived at location within range.");
     return true;
   }
 
   //Check if we specify that the position must be directly reachable
   if(_args.reachable && !block::isOccupiable(world.getBlock(_args.pos))){
-    _log.debug("Target position is occupied or not loaded.");
+    logger::debug("Target position is occupied or not loaded.");
     return true;
   }
 
   //Do the Stuff
   if(initFlag || population.bots[botID].path.empty()){
     //Calculate a Path Here.
-    _log.debug("Calculating Path.");
+    logger::debug("Calculating Path.");
     population.bots[botID].path = calculatePath(botID, _args.pos, population, world, _args.range);
     //If the Path is still empty
     if(population.bots[botID].path.empty()){
-      _log.debug("No valid path.");
+      logger::debug("No valid path.");
 
       /*
         Update Memory at Location if Unreachable
@@ -275,7 +275,7 @@ bool Task::destroy(World &world, Population &population, Audio &audio, State &_a
   BlockType _type = world.getBlock(_args.pos);
 
   if(!block::isDestructable(_type)){
-    _log.debug("Block is not destructable.");
+    logger::debug("Block is not destructable.");
     return true;
   }
 
@@ -317,7 +317,7 @@ bool Task::destroy(World &world, Population &population, Audio &audio, State &_a
 
   //Check if we found the item.
   if(!find){
-    _log.debug("Bot doesn't have required items.");
+    logger::debug("Bot doesn't have required items.");
     return true;
   }
   */
@@ -469,7 +469,7 @@ bool Task::build(World &world, Population &population, Audio &audio, State &_arg
 
 bool Task::take(World &world, Population &population, Audio &audio, State &_args){
   if(!helper::inRange(population.bots[botID].pos, _args.pos, population.bots[botID].range)){
-    _log.debug("Too far away.");
+    logger::debug("Too far away.");
     return true;
   }
 
@@ -477,7 +477,7 @@ bool Task::take(World &world, Population &population, Audio &audio, State &_args
   Inventory _inventory = world.pickup(_args.pos);
 
   if(_inventory.empty()){
-    _log.debug("Found nothing.");
+    logger::debug("Found nothing.");
     return true;
   }
 
@@ -488,7 +488,7 @@ bool Task::take(World &world, Population &population, Audio &audio, State &_args
   //We don't want specific items
   if(_args.inventory.empty()){
     mergeInventory(population.bots[botID].inventory, _inventory);
-    _log.debug("Picked up everything.");
+    logger::debug("Picked up everything.");
     return true;
   }
 
@@ -513,7 +513,7 @@ bool Task::take(World &world, Population &population, Audio &audio, State &_args
 
   //Add the non-picked up items back to the world.
   mergeInventory(world.drops, _inventory);
-  _log.debug("Picked up specific items.");
+  logger::debug("Picked up specific items.");
   return true;
 
   //Add the inventory to the bots inventory
@@ -549,7 +549,7 @@ bool Task::seek(World &world, Population &population, Audio &audio, State &_args
 
     if(recalled.empty()){
       //Pick a random location and walk there...
-      _log.debug("No relevant location found in memory. Walking to random location nearby.");
+      logger::debug("No relevant location found in memory. Walking to random location nearby.");
       Task walk("Stroll", botID, &Task::walk);
       walk.args.pos = world.getTop(glm::vec2(population.bots[botID].pos.x, population.bots[botID].pos.z) + glm::vec2(rand()%11-5, rand()%11-5));
       walk.args.range = population.bots[botID].range;
@@ -584,11 +584,11 @@ bool Task::seek(World &world, Population &population, Audio &audio, State &_args
       //Check if we are within range of the memory location.
       if(helper::inRange(population.bots[botID].pos, walk.args.pos, population.bots[botID].range)){
         //We are within range of a validated location
-        _log.debug("Accessed location in range of seek objective.");
+        logger::debug("Accessed location in range of seek objective.");
         return true;
       }
 
-      _log.debug("Walking within range of location in memory.");
+      logger::debug("Walking within range of location in memory.");
       queue.push_back(walk);
     }
   }

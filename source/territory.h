@@ -41,10 +41,9 @@ enum BiomeType{
 #include <boost/filesystem/path.hpp>
 
 //Logger
-#include "include/game/logger.cpp"
-Logger _log;
 
 //Helper Functions
+#include "include/helpers/logger.h"
 #include "include/helpers/ease.h"
 #include "include/helpers/arraymath.h"
 #include "include/helpers/color.h"
