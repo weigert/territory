@@ -61,9 +61,9 @@ int main( int argc, char* args[] ) {
 		audio.process();
 
 		if(!paused && !world.lock){
-			timer::benchmark<std::chrono::microseconds>([&](){
+	//		timer::benchmark<std::chrono::microseconds>([&](){
 				population.update(world, view, audio);
-			});
+	//		});
 		}
 
 		//Render the View
