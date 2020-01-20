@@ -1,7 +1,7 @@
 # territory
 3D rendered proc-gen world test
 
-C++ Homebrew Voxel Engine + Intelligent Agent / NPC Simulation (the initial purpose of this project)
+C++ homebrew voxel engine for intelligent agent-driven (NPC) procedural generation / world simulation.
 
 Blog: https://weigert.vsos.ethz.ch/
 
