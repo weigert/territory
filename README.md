@@ -100,6 +100,11 @@ I will try to keep the feature list as complete as possible.
 ## Contributing
 If you are interested in contributing to this project, with ideas or source code, please let me know.
 
+I could particularly benefit from experience in the areas of:
+- 3D Rendering with OpenGL / Fast Shader Programming
+- GUI Programming (I am using ImGUI but would like to switch to a custom HUD!)
+- Voxel Data Storage / Large World Storage
+
 There are lots of possibilities to include generative systems for the simulation, so if you have a nice concept I would be happy to see it.
 
 Currently, this is 100% solo.
