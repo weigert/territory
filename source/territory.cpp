@@ -1,11 +1,10 @@
-//Hexelrender Mainfile
 #include "territory.h"
 
 //Main Function
 int main( int argc, char* args[] ) {
 	//Handle the Console Arguments
 	if(argc<2){
-		_log.error("Missing Filename.");
+		logger::error("Missing Filename.");
 		return 0;
 	}
 
@@ -21,12 +20,12 @@ int main( int argc, char* args[] ) {
 
 	//Initialize the View
 	if(!view.Init()){
-		_log.error("View could not be initialized.");
+		logger::error("View could not be initialized.");
 		return 0;
 	}
 
 	if(!audio.Init()){
-	  _log.debug("Failed to load audio.");
+	  logger::debug("Failed to load audio.");
 		return 0;
 	}
 
@@ -69,7 +68,7 @@ int main( int argc, char* args[] ) {
 		//Render the View
 		view.updateChunkModels( world );
 		view.render(world, population);
-		view.calcFPS();
+		view.calcFrameTime();
 	}
 
 	//End the Program Correctly

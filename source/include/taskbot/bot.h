@@ -3,27 +3,33 @@
 #include "../forward/world.fwd.h"
 #include "../forward/task.fwd.h"
 #include "../forward/sprite.fwd.h"
-#include "../forward/state.fwd.h"
+#include "state.h"
 #include "../forward/item.fwd.h"
 #include "../forward/audio.fwd.h"
 
-std::string spriteFiles[4] = {"cowboyfull.png", "hunterfull.png", "nativefull.png", "ladyfull.png"}; 
+std::string spriteFiles[4] = {"cowboyfull.png", "hunterfull.png", "nativefull.png", "ladyfull.png"};
+
+struct Memory{
+    State state;
+    int recallScore;
+};
 
 class Bot{
+  private:
+    unsigned int memorySize;
+    unsigned int shortermSize;
+
   public:
     Bot(int _ID);
 
     //Meta Data
-    glm::vec3 home = glm::vec3(0);
     glm::vec3 pos = glm::vec3(0);
     glm::vec3 range = glm::vec3(1, 2, 1);
     glm::vec3 viewDistance = glm::vec3(1);
 
-    int ID;
-    unsigned int memorySize;
-    unsigned int shortermSize;
     std::string species;
     bool dead = false;
+    int ID;
 
     //Bot has a sprite
     Sprite sprite;
@@ -38,7 +44,7 @@ class Bot{
     bool interrupt = false; //Interrupt flag
     bool tryInterrupt(State _state); //Attempt an Interruption of the Bot
     std::string task = "Idle"; //Task Name
-    std::vector<glm::vec3> path;   //Movement Path
+    std::stack<glm::vec3> path;   //Movement Path
     void executeTask(World &world, Population &population, Audio &audio);
 
     //Memories / Brain
@@ -59,5 +65,4 @@ Bot::Bot(int _ID){
   species = "Human";
   ID = _ID;
   pos = glm::vec3(0);
-  home = glm::vec3(0);
 }

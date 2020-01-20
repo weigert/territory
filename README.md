@@ -1,6 +1,8 @@
 # territory
 3D rendered proc-gen world test
 
+Blog: https://weigert.vsos.ethz.ch/
+
 ## Compiling
 
 Use the make file to compile the binary.
@@ -38,6 +40,7 @@ Mouse and Keyboard Inputs:
 	- Right-Click: Select Block (and give task at that location using the panel)
 		- Drag and Release: Select Block Region
 		- V: Toggle See-Through Region (for building debugging)
+	- Fn+F11: Toggle Fullscreen
 
 ### Panel
 In-simulation control panel allows for manipulating the simulation.
@@ -66,35 +69,49 @@ In-simulation control panel allows for manipulating the simulation.
 		- Change Render-distance (move out of current chunk to reload chunks)
 		- Toggle Rendering Options
 
-![Example Rendering](https://github.com/weigert/territory/blob/master/resource/test.png)
-![Control Panel](https://github.com/weigert/territory/blob/master/resource/test2.png)
+## Screenshots
+Perlin world generation, example of what the rendering looks like and what the control panel looks like. This is in fullscreen mode.
+
+![Fullscreen](https://github.com/weigert/territory/blob/working_branch/screenshots/screenshot_fullscreen.png)
+
+Dense forest world gen. The leaf colors are varied using bezier curves, parameterized by the hashed block position in world-space (see my blog for more information).
+
+![Forest](https://github.com/weigert/territory/blob/working_branch/screenshots/screenshot_forest.png)
+
+Example of a "village" (which is really just a spot in the desert where I had the bots build a bunch of houses). It wasn't like this at world gen, but rather the bots built this 100% from scratch. Then I took the screenshot. There are tons of bots in this image.
+
+![Village](https://github.com/weigert/territory/blob/working_branch/screenshots/screenshot_village.png)
+
+If you turn the camera just right, your 3D projection becomes this pseudo-isometric projection and looks really nice. Here is an example of a watery world-gen. Again using hashed bezier parameters for color variation.
+
+![Water](https://github.com/weigert/territory/blob/working_branch/screenshots/screenshot_lake.png)
+
+And zoomed out a bit.
+
+![Water Far](https://github.com/weigert/territory/blob/working_branch/screenshots/screenshot_lake2.png)
 
 ## Source
 ### Reading
+In the wiki, there is a dedicated page to reading and understanding the source code.
 
-	- Dependencies: Read *source/territory.h* and the makefile
-	- Structure: Read *source/territory.cpp*
-
-I also make heavy usage of forward declarations to avoid cyclical dependencies in this project. To understand how the forward declaration structure works, read:
-
-	- Forward Declarations: *thoughts/structure.md*
-
-You may not be interested in all aspects of this project. In that case, reading certain portions of the source code can give you insight into the system.
-
-	- Rendering Engine: Read *source/include/render/view.h*
-	- Taskbot System: Read *source/include/taskbot/population.h*
-	- World Generation / Storage: Read *source/include/world/world.h*
-	- 3D Pathfinding: Read *source/include/taskbot/task.cpp* (bottom) and *source/include/astar/**
+You may not be interested in all aspects of this project. In that case, reading certain portions of the source code can give you insight into the system. This is also listed on the wiki page.
 
 ## Features
-A description of features and future plans for various elements of the simulation can be found in the folder *thoughts*.
+A description of features and future plans for various elements of the simulation can be found in the wiki also.
 
-	- General: Read *milestones.md*
-	- Simulation Engine: Read *thoughts/engine.md*
-	- World Generator: Read *thoughts/world.md*
-	- Population: Read *thoughts/population.md*
+I will try to keep the feature list as complete as possible.
 
-A number of other files describe other systems which are either implemented or are planned.
+## Contributing
+If you are interested in contributing to this project, with ideas or source code, please let me know.
+
+I could particularly benefit from experience in the areas of:
+- 3D Rendering with OpenGL / Fast Shader Programming
+- GUI Programming (I am using ImGUI but would like to switch to a custom HUD!)
+- Voxel Data Storage / Large World Storage
+
+There are lots of possibilities to include generative systems for the simulation, so if you have a nice concept I would be happy to see it.
+
+Currently, this is 100% solo.
 
 ## License
 This software is available under the [Mozilla Public License](https://www.mozilla.org/en-US/MPL/2.0/). Still, I don't want to clutter the source with header text, so I hope that's ok. Feel free to use and modify the source of this project.

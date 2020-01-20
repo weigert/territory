@@ -12,7 +12,6 @@ uniform int clip;
 //Sampler for the ShadowMap
 out vec4 fragColor;
 
-
 void main(void) {
    if (ex_FragPos.y < clip-0.5) discard;
 

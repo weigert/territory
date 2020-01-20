@@ -41,10 +41,9 @@ enum BiomeType{
 #include <boost/filesystem/path.hpp>
 
 //Logger
-#include "include/game/logger.cpp"
-Logger _log;
 
 //Helper Functions
+#include "include/helpers/logger.h"
 #include "include/helpers/ease.h"
 #include "include/helpers/arraymath.h"
 #include "include/helpers/color.h"
@@ -77,8 +76,8 @@ Logger _log;
 #include "include/game/item.cpp"
 
 //NPC Classes
+#include "include/taskbot/group.cpp"
 #include "include/taskbot/state.cpp"
-#include "include/taskbot/memory.cpp"
 #include "include/taskbot/bot.cpp"
 #include "include/taskbot/population.cpp"
 #include "include/taskbot/task.cpp"

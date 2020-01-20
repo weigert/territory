@@ -8,5 +8,5 @@ void main(){
   ex_Tex = in_Tex;
 
   //Shift it in the plane by changing the z value
-  gl_Position = vec4(in_Quad, -1.0, 1.0);
+  gl_Position = vec4(in_Quad, 0.0, 1.0);
 }

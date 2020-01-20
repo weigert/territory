@@ -15,7 +15,7 @@ class Population{
     //Population Functions
     void addBot(World world);
     void removeBot(int id);
-
+    
     //Bot Container
     std::deque<Bot> bots;
 };

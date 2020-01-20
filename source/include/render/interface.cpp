@@ -3,7 +3,6 @@
 #include "../render/sprite.h"
 #include "../taskbot/bot.h"
 #include "../taskbot/state.h"
-#include "../taskbot/memory.h"
 #include "../taskbot/task.h"
 #include "../render/view.h"
 #include "../game/item.h"
@@ -193,7 +192,7 @@ void Interface::render(View &view, World &world, Population &population){
         ImGui::Text("%d", (int)view.select.z);
       }
 
-      ImGui::Checkbox("Debug Messages", &(_log._debug));
+      ImGui::Checkbox("Debug Messages", &(logger::_debug));
 
       ImGui::EndTabItem();
     }
@@ -290,7 +289,8 @@ void Interface::render(View &view, World &world, Population &population){
 
     if(ImGui::BeginTabItem("View")){
       //Add an FPS Plot
-      ImGui::PlotLines("FPS Counter", view.ave, IM_ARRAYSIZE(view.ave));
+      ImGui::Text("Frame Time (ms): "); ImGui::SameLine();
+      ImGui::Text("%f", view.frameTime);
 
       //Generate a colorpicker for the light and sky
       static float sky[3] = {view.skyCol.x, view.skyCol.y, view.skyCol.z};

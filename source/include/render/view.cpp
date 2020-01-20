@@ -219,6 +219,7 @@ void View::updateChunkModels(World &world){
 void View::render(World &world, Population &population){
 
   /* Set Current Parameters based on the time! */
+
   float t = (double)world.time/(60.0*24.0);
   skyCol = color::bezier(ease::cubic(t), color::skycolors);
 
@@ -230,24 +231,24 @@ void View::render(World &world, Population &population){
   fogColor = glm::vec4(ease::quartic(t), ease::quartic(t), ease::quartic(t), 1.0);
   lightStrength = 1.4*ease::quartic(t)+0.1;
 
+
+
   /* SHADOW MAPPING */
   glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
   glBindFramebuffer(GL_FRAMEBUFFER, shadow.fbo);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
   //Use the Shader
   depthShader.useProgram();
-  depthShader.setMat4("dvp", depthProjection * depthCamera * glm::mat4(1.0f));
-
-  //Activate the Texture
-  glClear(GL_DEPTH_BUFFER_BIT);
 
   //Loop over the Models to Render to Shadowmap
   for(unsigned int i = 0; i < models.size(); i++){
     //Set the Projection Stuff
-    depthShader.setMat4("model", models[i].model);
+    depthShader.setMat4("dmvp", depthProjection * depthCamera * models[i].model);
     //Render the Model
     models[i].render();
   }
+
 
   //Render the Sprites to the Depthmap
   spriteDepthShader.useProgram();
@@ -282,12 +283,15 @@ void View::render(World &world, Population &population){
     //Render the Sprite Billboard
     population.bots[i].sprite.render();
   }
+
   glBindVertexArray(0);
 
   /* REFLECTION */
   glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
   glBindFramebuffer(GL_FRAMEBUFFER, reflection.fbo);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+
   reflectShader.useProgram();    //Use the model's shader
   reflectShader.setVec3("lightCol", lightCol);
   reflectShader.setVec3("lightPos", lightPos);
@@ -300,8 +304,7 @@ void View::render(World &world, Population &population){
 
   //Set the other matrices
   reflectShader.setInt("clip", world.sealevel+viewPos.y);
-  reflectShader.setMat4("projection", projection);
-  reflectShader.setMat4("camera", reflectcamera);
+  reflectShader.setMat4("projectionCamera", projection*reflectcamera);
 
   //Loop over the Stuff
   for(unsigned int i = 0; i < models.size(); i++){
@@ -312,7 +315,6 @@ void View::render(World &world, Population &population){
   }
 
   /* REGULAR IMAGE */
-  glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
   glBindFramebuffer(GL_FRAMEBUFFER, image.fbo);
   glClearColor(skyCol.x, skyCol.y, skyCol.z, 1.0f); //Blue
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -340,10 +342,8 @@ void View::render(World &world, Population &population){
   cubeShader.setVec3("volPosB", select2-viewPos);
 
   //Set the other matrices
-  cubeShader.setMat4("projection", projection);
-  cubeShader.setMat4("camera", camera);
+  cubeShader.setMat4("projectionCamera", projection * camera);
   cubeShader.setMat4("dbmvp", biasMatrix * depthProjection * depthCamera * glm::mat4(1.0f));
-  cubeShader.setMat4("dmvp", depthProjection * depthCamera * glm::mat4(1.0f));
 
   //Loop over the Stuff
   for(unsigned int i = 0; i < models.size(); i++){
@@ -424,6 +424,7 @@ void View::render(World &world, Population &population){
     world.drops[i].sprite.render();
   }
 
+
   //Render Temp to Screen with a horizontal blur shader
   glBindFramebuffer(GL_FRAMEBUFFER, temp1.fbo);
   blurShader.useProgram();
@@ -460,14 +461,14 @@ void View::render(World &world, Population &population){
 /*
   //Render screen to monitor with vertical blur shader
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  billboardShader.useProgram();
   glActiveTexture(GL_TEXTURE0+0);
-  glBindTexture(GL_TEXTURE_2D, shadow.depthTexture);
+  glBindTexture(GL_TEXTURE_2D, image.texture);
   billboardShader.setInt("imageTexture", 0);
   glActiveTexture(GL_TEXTURE0+1);
-  glBindTexture(GL_TEXTURE_2D, shadow.depthTexture);
+  glBindTexture(GL_TEXTURE_2D, image.depthTexture);
   billboardShader.setInt("depthTexture", 1);
-  billboardShader.setBool("vert", true);
-  glBindVertexArray(shadow.vao);
+  glBindVertexArray(image.vao);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 */
 
@@ -610,17 +611,7 @@ glm::vec3 View::intersect(World world, glm::vec2 mouse){
 ================================================================================
 */
 
-void View::calcFPS(){
-  //Loop over the FPS
-  //We getting 60 FPS
-  FPS = (int)(1000.0f/(SDL_GetTicks()-ticks));
+void View::calcFrameTime(){
+  frameTime = (float)(SDL_GetTicks()-ticks);
   ticks = SDL_GetTicks();
-  //Set the FPS
-  for(int i = 0; i < plotSize-1; i++){
-    arr[i] = arr[i+1];
-  }
-  for(int i = 5; i < plotSize-5; i++){
-    ave[i] = floor((arr[i-5]+arr[i-4]+arr[i-3]+arr[i-2]+arr[i-1]+arr[i]+arr[i+1]+arr[i+2]+arr[i+3]+arr[i+4]+arr[i+5])/11.0);
-  }
-  arr[plotSize-1] = FPS;
 }

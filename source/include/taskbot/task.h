@@ -10,7 +10,7 @@
 #include "../forward/state.fwd.h"
 #include "../forward/audio.fwd.h"
 
-std::vector<glm::vec3> calculatePath(int id, glm::vec3 _dest, Population &population, World &world, glm::vec3 range);
+std::stack<glm::vec3> calculatePath(int id, glm::vec3 _dest, Population &population, World &world, glm::vec3 range);
 
 //Add this Typedef for easier reading
 typedef bool (Task::*Handle)(World&, Population&, Audio&, State&);

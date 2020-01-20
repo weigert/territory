@@ -30,7 +30,7 @@ public:
   int chunkSize = 16;
   int sealevel = 16;
   std::chrono::milliseconds tickLength = std::chrono::milliseconds(1000);
-  glm::vec3 dim = glm::vec3(20, 5, 20);
+  glm::vec3 dim = glm::vec3(64, 16, 64);
   bool format_octree = true;
 
   //Min and Max Chunk Positions
@@ -60,6 +60,7 @@ public:
   void generateBuildings();
   void generatePerlin();
   void generateForest();
+  void generateFull();
 
   //Helpers for Blueprint
   Blueprint blueprint;
