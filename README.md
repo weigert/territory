@@ -80,7 +80,7 @@ Dense forest world gen. The leaf colors are varied using bezier curves, paramete
 
 Example of a "village" (which is really just a spot in the desert where I had the bots build a bunch of houses). It wasn't like this at world gen, but rather the bots built this 100% from scratch. Then I took the screenshot. There are tons of bots in this image.
 
-![Village](https://github.com/weigert/territory/blob/working_branch/screenshots/screenshot_vilage.png)
+![Village](https://github.com/weigert/territory/blob/working_branch/screenshots/screenshot_village.png)
 
 If you turn the camera just right, your 3D projection becomes this pseudo-isometric projection and looks really nice. Here is an example of a watery world-gen. Again using hashed bezier parameters for color variation.
 
