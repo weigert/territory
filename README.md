@@ -1,6 +1,8 @@
 # territory
 3D rendered proc-gen world test
 
+Blog: https://weigert.vsos.ethz.ch/
+
 ## Compiling
 
 Use the make file to compile the binary.
