@@ -1,5 +1,5 @@
 # territory
-3D rendered proc-gen world test
+3D rendered proc-gen world test. C++ Homebrew Voxel Engine + Intelligent Agent Simulation
 
 Blog: https://weigert.vsos.ethz.ch/
 
