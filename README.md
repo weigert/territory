@@ -1,5 +1,7 @@
 # territory
-3D rendered proc-gen world test. C++ Homebrew Voxel Engine + Intelligent Agent Simulation
+3D rendered proc-gen world test
+
+C++ Homebrew Voxel Engine + Intelligent Agent / NPC Simulation (the initial purpose of this project)
 
 Blog: https://weigert.vsos.ethz.ch/
 
