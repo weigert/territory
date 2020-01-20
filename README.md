@@ -38,6 +38,7 @@ Mouse and Keyboard Inputs:
 	- Right-Click: Select Block (and give task at that location using the panel)
 		- Drag and Release: Select Block Region
 		- V: Toggle See-Through Region (for building debugging)
+	- Fn+F11: Toggle Fullscreen
 
 ### Panel
 In-simulation control panel allows for manipulating the simulation.
@@ -66,8 +67,22 @@ In-simulation control panel allows for manipulating the simulation.
 		- Change Render-distance (move out of current chunk to reload chunks)
 		- Toggle Rendering Options
 
-![Example Rendering](https://github.com/weigert/territory/blob/master/resource/test.png)
-![Control Panel](https://github.com/weigert/territory/blob/master/resource/test2.png)
+## Screenshots
+Perlin world generation, example of what the rendering looks like and what the control panel looks like. This is in fullscreen mode.
+
+![Fullscreen](https://github.com/weigert/territory/blob/master/screenshots/screenshot_fullscreen.png)
+
+Dense forest world gen. The leaf colors are varied using bezier curves, parameterized by the hashed block position in world-space (see my blog for more information).
+
+![Forest](https://github.com/weigert/territory/blob/master/screenshots/screenshot_forest.png)
+
+If you turn the camera just right, your 3D projection becomes this pseudo-isometric projection and looks really nice. Here is an example of a watery world-gen. Again using hashed bezier parameters for color variation.
+
+![Water](https://github.com/weigert/territory/blob/master/screenshots/screenshot_lake.png)
+
+And zoomed out a bit.
+
+![Water Far](https://github.com/weigert/territory/blob/master/screenshots/screenshot_lake2.png)
 
 ## Source
 ### Reading
