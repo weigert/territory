@@ -12,7 +12,8 @@ namespace graph{
   //Different Types of Graphs for Templating
   enum type{
     ROOMGRAPH,
-    ROADGRAPH
+    ROADGRAPH,
+    GROUPGRAPH
   };
 
 /*
@@ -51,6 +52,22 @@ namespace graph{
     Node<ROADGRAPH>* to;
     int distance;
   };
+  
+  /*
+    //Specialize Payloads for types
+    template <> struct Node<GROUPGRAPH>{
+      int ID;
+      Node(int _ID){ ID = _ID; }
+
+      //Payload
+      Group group;
+    };
+
+    template <> struct Edge<GROUPGRAPH>{
+      Node<GROUPGRAPH>* to;
+      grouprelationship relation;
+    };
+    */
 
   //Define a Nodecontainer
   template <type G> using nodecontainer = std::vector<Node<G>>;

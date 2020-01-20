@@ -60,13 +60,13 @@ void Bot::updateMemory(Memory &query, bool all, Memory &memory){
   //Loop through all existing Memories
   for(unsigned int i = 0; i < memories.size(); i++){
     //If all matches are required and we have all matches
-    if(all && (memories[i] == query)){
+    if(all && (memories[i].state == query.state)){
       //We have a memory that needs to be updated
       memories[i] = memory;
       continue;
     }
     //If not all matches are required and any query elements are contained
-    else if(!all && (memories[i] || query)){
+    else if(!all && (memories[i].state || query.state)){
       memories[i] = memory;
       continue;
     }
@@ -80,13 +80,13 @@ std::deque<Memory> Bot::recallMemories(Memory &query, bool all){
   //Loop through memories
   for(unsigned int i = 0; i < memories.size(); i++){
     //If all matches are required and we have all matches
-    if(all && (memories[i] == query)){
+    if(all && (memories[i].state == query.state)){
       recalled.push_back(memories[i]);
       memories[i].recallScore++;
       continue;
     }
     //If not all matches are required and any query elements are contained
-    else if(!all && (memories[i] || query)){
+    else if(!all && (memories[i].state || query.state)){
       recalled.push_back(memories[i]);
       memories[i].recallScore++;
       continue;

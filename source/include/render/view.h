@@ -63,7 +63,7 @@ class View{
     SDL_GLContext gContext;
     ImGuiIO io;
     unsigned int SCREEN_WIDTH = 1200, SCREEN_HEIGHT = 800;
-    const unsigned int SHADOW_WIDTH = 2000, SHADOW_HEIGHT = 2000;
+    const unsigned int SHADOW_WIDTH = 1000, SHADOW_HEIGHT = 1000;
     bool fullscreen = false;
     bool vsync = false;
 
@@ -151,10 +151,7 @@ class View{
     glm::vec3 intersect(World world, glm::vec2 mouse);
 
     //FPS Calculator
-    void calcFPS();
-    int ticks = 0;
-    const int plotSize = 100;
-    float FPS = 0.0f;
-    float arr[100] = {0};
-    float ave[100] = {0};
+    void calcFrameTime();
+    float frameTime = 0.0f;
+    float ticks = 0.0f;
 };

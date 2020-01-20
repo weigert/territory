@@ -77,8 +77,8 @@ Logger _log;
 #include "include/game/item.cpp"
 
 //NPC Classes
+#include "include/taskbot/group.cpp"
 #include "include/taskbot/state.cpp"
-#include "include/taskbot/memory.cpp"
 #include "include/taskbot/bot.cpp"
 #include "include/taskbot/population.cpp"
 #include "include/taskbot/task.cpp"

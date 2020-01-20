@@ -57,9 +57,15 @@ vec4 depthblur(int samples, float stddev){
 }
 
 void main(){
-    //Set fragment color, either by blur or depthblur
-    float depthVal = clamp(texture(depthTexture, ex_Tex).r, 0.0, 1.0);
+    //Fragment Color
     fragColor = texture(imageTexture, ex_Tex);
+
+    //Check for Blur
     if(_blur!=0) fragColor = depthblur(_blur, float(_blur)/2.0);
-    if(depthVal < 1.0 && _fog) fragColor = mix(fragColor, vec4(fogColor, 1.0), ease(depthVal));
+
+    //Check for Fog
+    if(!_fog) return;
+    float depthVal = clamp(texture(depthTexture, ex_Tex).r, 0.0, 1.0);
+    if(depthVal < 1.0)
+      fragColor = mix(fragColor, vec4(fogColor, 1.0), ease(depthVal));
 }

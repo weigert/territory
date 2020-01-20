@@ -6,7 +6,6 @@
 #include "../forward/sprite.fwd.h"
 #include "../forward/bot.fwd.h"
 #include "../forward/state.fwd.h"
-#include "../forward/memory.fwd.h"
 #include "../forward/task.fwd.h"
 #include "../forward/view.fwd.h"
 #include "../forward/item.fwd.h"

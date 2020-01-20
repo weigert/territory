@@ -1,10 +1,8 @@
 #version 130
 in vec3 in_Position;
-
-uniform mat4 dvp;
-uniform mat4 model;
+uniform mat4 dmvp;
 
 void main(void) {
 	// Set the position to the one defined in our vertex array
-	gl_Position = dvp * model * vec4(in_Position, 1.0f);
+	gl_Position = dmvp * vec4(in_Position, 1.0f);
 }

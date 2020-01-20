@@ -214,8 +214,8 @@ bool Task::walk(World &world, Population &population, Audio &audio, State &_args
 
   if(queue.empty()){
     Task move("Move to Position", botID, &Task::move);
-    move.args.pos = population.bots[botID].path.back();
-    population.bots[botID].path.pop_back();
+    move.args.pos = population.bots[botID].path.top();
+    population.bots[botID].path.pop();
     move.animation = 1;
     move.translate = glm::vec3(move.args.pos - population.bots[botID].pos)/glm::vec3(4);
     queue.push_back(move);
@@ -764,9 +764,9 @@ bool Task::Dummy(World &world, Population &population, Audio &audio, State &_arg
 */
 
 //Calculatepath - Return a path that the bots should follow along until a goal in 3D
-std::vector<glm::vec3> calculatePath(int id, glm::vec3 _dest, Population &population, World &world, glm::vec3 range){
+std::stack<glm::vec3> calculatePath(int id, glm::vec3 _dest, Population &population, World &world, glm::vec3 range){
     //Vector to Return
-    std::vector<glm::vec3> path;
+    std::stack<glm::vec3> path;
 
   	AStarSearch<MapSearchNode> astarsearch;
 
@@ -791,7 +791,7 @@ std::vector<glm::vec3> calculatePath(int id, glm::vec3 _dest, Population &popula
 
 		if( SearchState == AStarSearch<MapSearchNode>::SEARCH_STATE_SUCCEEDED ){
 				MapSearchNode *node = astarsearch.GetSolutionEnd();
-        path.push_back(glm::vec3(node->x, node->y, node->z));
+        path.push(glm::vec3(node->x, node->y, node->z));
 
         for(;;){
           node = astarsearch.GetSolutionPrev();
@@ -799,20 +799,21 @@ std::vector<glm::vec3> calculatePath(int id, glm::vec3 _dest, Population &popula
           {
             break;
           }
-          path.push_back(glm::vec3(node->x, node->y, node->z));
+          path.push(glm::vec3(node->x, node->y, node->z));
         }
 				// Once you're done with the solution you can free the nodes up
 				astarsearch.FreeSolutionNodes();
 		}
+    /*
 		else if( SearchState == AStarSearch<MapSearchNode>::SEARCH_STATE_FAILED ){
       //  if(debug){cout << "Search terminated. Did not find goal state\n";}
       path.clear();
-		}
+		}*/
 		astarsearch.EnsureMemoryFreed();
 
     //Remove the First Guy!
     if(!path.empty()){
-      path.pop_back();
+      path.pop();
     }
     return path;
 }

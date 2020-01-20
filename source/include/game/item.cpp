@@ -1,6 +1,5 @@
 #include "../taskbot/task.h"
 #include "../render/sprite.h"
-#include "../taskbot/memory.h"
 #include "../taskbot/state.h"
 #include "../world/world.h"
 #include "../taskbot/population.h"
