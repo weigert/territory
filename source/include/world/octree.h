@@ -12,7 +12,6 @@ public:
 
   //Back and forth to chunks
   void fromChunk(Chunk &chunk);
-  Chunk toChunk();
 
   //Filling and Combining Operations for Subtrees
   bool trySimplify();
@@ -44,3 +43,15 @@ std::ostream & operator << (std::ostream &out, const Octree &octree){
 
   return out;
 }
+
+/*
+  Right Now:
+
+  It will store 8 subtrees if it isn't air, and there is something else inside.
+  Does this make sense?
+  Not really.
+
+  It really should be that the subtree by default adopts whatever the supertree's value is.
+
+  The supertree always takes the majority element for compression reasons...
+*/

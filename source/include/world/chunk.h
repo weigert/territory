@@ -1,4 +1,3 @@
-//
 #pragma once
 #include "../forward/chunk.fwd.h"
 #include "../forward/octree.fwd.h"
@@ -12,7 +11,10 @@ public:
   BiomeType biome;
 
   //Data Storage Member
-  int data[16*16*16] = {0};
+  unsigned char data[16*16*16] = {0};
+
+  //From Octree Datastructure
+  void fromOctree(Octree &octree, glm::vec3 offset);
 
   //Get the Flat-Array Index
   int getIndex(glm::vec3 _p);

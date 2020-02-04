@@ -15,7 +15,11 @@ bool Blueprint::addEditBuffer(glm::vec3 _pos, BlockType _type, bool negative){
   editBuffer.push_back(bufferObject());
   editBuffer.back().pos = _pos;
   editBuffer.back().type = _type;
-  editBuffer.back().cpos = glm::floor(_pos/glm::vec3(chunkSize));
+  glm::vec3 _cpos = glm::floor(_pos/glm::vec3(chunkSize));
+
+  //Chunk and Region Position
+  editBuffer.back().cpos = _cpos;
+  editBuffer.back().rpos = glm::floor(glm::vec2(_cpos.x, _cpos.z)/glm::vec2(16));
   return true;
 }
 
@@ -25,7 +29,7 @@ void Blueprint::merge(Blueprint _other){
 }
 
 //Return a translated blueprint version.
-Blueprint Blueprint::translate(glm::vec3 _pos){
+Blueprint Blueprint::translate(glm::ivec3 _pos){
   Blueprint _new;
   //Loop over all buffer objects
   for(bufferObject& obj : editBuffer){
@@ -46,7 +50,7 @@ void Blueprint::removeDuplicates(bool later){
       bool duplicate = false;
       for(unsigned int j = 0; j < _new.editBuffer.size(); j++){
         //Check if they are identical some other guy
-        if(glm::all(glm::equal(editBuffer[i].pos+editBuffer[i].cpos*glm::vec3(16), _new.editBuffer[j].pos+_new.editBuffer[j].cpos*glm::vec3(16)))){
+        if(glm::all(glm::equal(editBuffer[i].pos+editBuffer[i].cpos*glm::ivec3(16), _new.editBuffer[j].pos+_new.editBuffer[j].cpos*glm::ivec3(16)))){
           duplicate = true;
           break;
         }
@@ -64,7 +68,7 @@ void Blueprint::removeDuplicates(bool later){
       bool duplicate = false;
       for(unsigned int j = 0; j < _new.editBuffer.size(); j++){
         //Check if they are identical some other guy
-        if(glm::all(glm::equal(editBuffer[i].pos+editBuffer[i].cpos*glm::vec3(16), _new.editBuffer[j].pos+_new.editBuffer[j].cpos*glm::vec3(16)))){
+        if(glm::all(glm::equal(editBuffer[i].pos+editBuffer[i].cpos*glm::ivec3(16), _new.editBuffer[j].pos+_new.editBuffer[j].cpos*glm::ivec3(16)))){
           duplicate = true;
           break;
         }
@@ -118,6 +122,10 @@ void Blueprint::tree(int height){
     addEditBuffer(glm::vec3(0, height, 1), BLOCK_LEAVES, true);
     addEditBuffer(glm::vec3(-1, height, 0), BLOCK_LEAVES, true);
     addEditBuffer(glm::vec3(0, height, -1), BLOCK_LEAVES, true);
+}
+
+void Blueprint::boulder(){
+  //Add a Boulder...
 }
 
 /*
@@ -431,7 +439,7 @@ void Blueprint::save(std::string savefile){
 
   std::ofstream out(data_dir.string());
   {
-    boost::archive::text_oarchive oa(out);
+    boost::archive::binary_oarchive oa(out);
     oa << *this;
   }
 }
@@ -442,7 +450,7 @@ void Blueprint::load(std::string loadfile){
   data_dir /= loadfile;
   std::ifstream in(data_dir.string());
   {
-    boost::archive::text_iarchive ia(in);
+    boost::archive::binary_iarchive ia(in);
     ia >> *this;
   }
 }

@@ -19,7 +19,7 @@ void error(std::string _err){
 }
 
 void debug(std::string _deb){
-  if(!debug) return;
+  if(!_debug) return;
 
   //Write the Debug Message to Console
   std::cout<<"[Debug] "<<_deb<<std::endl;

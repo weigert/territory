@@ -71,7 +71,7 @@ namespace color{
     while(points.size() > 1){
       std::vector<T> next;
       for(int i = 0; i < points.size()-1; i++)
-        next.push_back( (1-t)*points[i] + t*points[i+1] );
+        next.push_back( (1.0-t)*points[i] + t*points[i+1] );
       points = next;
     }
     return points[0];

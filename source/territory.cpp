@@ -67,8 +67,10 @@ int main( int argc, char* args[] ) {
 
 		//Render the View
 		view.updateChunkModels( world );
-		view.render(world, population);
-		view.calcFrameTime();
+	//	timer::benchmark<std::chrono::microseconds>([&](){
+			view.render(world, population);
+	//	});
+		view.calcFrameTime<std::chrono::microseconds>();
 	}
 
 	//End the Program Correctly

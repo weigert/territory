@@ -150,8 +150,9 @@ class View{
     //Get the Intersection and Stuff
     glm::vec3 intersect(World world, glm::vec2 mouse);
 
-    //FPS Calculator
+    //Frametime Calculation
+    template<typename D>
     void calcFrameTime();
-    float frameTime = 0.0f;
-    float ticks = 0.0f;
+    int frameTime = 0;
+    std::chrono::high_resolution_clock::time_point _old;
 };

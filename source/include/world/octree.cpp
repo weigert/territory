@@ -6,32 +6,17 @@
 //Generate Octree from Chunks
 void Octree::fromChunk(Chunk &chunk){
   //Write the Chunk
-  for(int i = 0; i < chunk.size; i++){
-    for(int j = 0; j < chunk.size; j++){
-      for(int k = 0; k < chunk.size; k++){
+  for(int i = 0; i < chunk.size; i++)
+    for(int j = 0; j < chunk.size; j++)
+      for(int k = 0; k < chunk.size; k++)
         setPosition(glm::vec3(i, j, k), (BlockType)chunk.data[chunk.getIndex(glm::vec3(i,j,k))]);
-      }
-    }
-  }
+
   //Simplify the Octree
   trySimplify();
 }
 
-Chunk Octree::toChunk(){
-  Chunk chunk;
-  //Do the thing
-  for(int i = 0; i < chunk.size; i++){
-    for(int j = 0; j < chunk.size; j++){
-      for(int k = 0; k < chunk.size; k++){
-        chunk.data[chunk.getIndex(glm::vec3(i,j,k))] = (int)getPosition(glm::vec3(i, j, k), depth);
-      }
-    }
-  }
-  return chunk;
-}
-
-
 bool Octree::trySimplify(){
+  //Already Simple
   if(subTree.empty() || depth == 0) return true;
 
   //Types of all blocks
@@ -68,8 +53,7 @@ bool Octree::trySimplify(){
 
 bool Octree::contains(glm::vec3 _pos){
   //This only checks if the x, y, z coordinates are within the width of the octree element
-  int width = 1<<depth;
-  return glm::all(glm::lessThan(_pos, glm::vec3(width))) && glm::all(glm::greaterThanEqual(_pos, glm::vec3(0)));
+  return glm::all(glm::lessThan(_pos, glm::vec3(1<<depth))) && glm::all(glm::greaterThanEqual(_pos, glm::vec3(0)));
 }
 
 bool Octree::setPosition(glm::vec3 _pos, BlockType _type){
@@ -134,12 +118,12 @@ bool Octree::setPosition(glm::vec3 _pos, BlockType _type){
 
 BlockType Octree::getPosition(glm::vec3 _pos, int LOD){
   //Check if we are at the bottom of the line (in any sense)
-  if(depth == 0 || subTree.empty() || LOD == 0) return type;
+  if(depth == LOD || subTree.empty()) return type;
 
   //Check which SubTree contains the requested position
   for(auto &_subtree:subTree)
     if(_subtree.contains(_pos - getPos(_subtree.index)*glm::vec3(1<<depth-1)))
-      return _subtree.getPosition(_pos - getPos(_subtree.index)*glm::vec3(1<<depth-1), LOD-1);
+      return _subtree.getPosition(_pos - getPos(_subtree.index)*glm::vec3(1<<depth-1), LOD);
 
   //Didn't find the guy, therefore it's air.
   return BLOCK_AIR;

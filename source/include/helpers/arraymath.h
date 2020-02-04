@@ -17,6 +17,13 @@ namespace helper{
     return -1;
   }
 
+  glm::vec3 getPos(int index, glm::vec3 s){
+    int x = index % (int)s.x;
+    int y = (int)(index / s.x) % (int)s.y;
+    int z = index / ( s.x * s.y );
+    return glm::vec3(x, y, z);
+  }
+
   void set(float a[], float b[], int size){
     for(int i = 0; i < size; i++){
       a[i] = b[i];

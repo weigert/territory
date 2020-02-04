@@ -51,7 +51,7 @@ bool View::Init(){
   ImGui::StyleColorsCustom();
 
   //Configure Global OpenGL State
-  glEnable( GL_DEPTH_TEST);
+  glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
   glEnable(GL_BLEND) ;
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -161,7 +161,8 @@ void View::cleanup(){
 void View::loadChunkModels(World &world){
   //Loop over all chunks
   for(unsigned int i = 0; i < world.chunks.size(); i++){
-    //If we are at capacity, add a new item
+
+    //If we are at capacity, add a new item (i.e. only the newly added chunks are fully remodeled)
     if(i == models.size()){
       Model model;
       model.cpos = world.chunks[i].pos;
@@ -185,12 +186,12 @@ void View::updateChunkModels(World &world){
   //Get the Chunk Position if the remeshBuffer isn't empty!
   while(!world.remeshBuffer.editBuffer.empty()){
     //Add the Cubes
-    glm::vec3 c = world.remeshBuffer.editBuffer.back().cpos;
-    glm::vec3 p = glm::mod(world.remeshBuffer.editBuffer.back().pos, glm::vec3(world.chunkSize));
+    glm::ivec3 c = world.remeshBuffer.editBuffer.back().cpos;
+    glm::ivec3 p = glm::mod((glm::vec3)world.remeshBuffer.editBuffer.back().pos, glm::vec3(world.chunkSize));
     int ind = helper::getIndex(c, world.dim);
 
     //Skip non-loaded remeshBuffer objects
-    if(!(glm::all(glm::greaterThanEqual(c, world.min)) && glm::all(glm::lessThanEqual(c, world.max)))){
+    if(!(glm::all(glm::greaterThanEqual(c, (glm::ivec3)world.min)) && glm::all(glm::lessThanEqual(c, (glm::ivec3)world.max)))){
       world.remeshBuffer.editBuffer.pop_back();
       continue;
     }
@@ -611,7 +612,10 @@ glm::vec3 View::intersect(World world, glm::vec2 mouse){
 ================================================================================
 */
 
+template<typename D>
 void View::calcFrameTime(){
-  frameTime = (float)(SDL_GetTicks()-ticks);
-  ticks = SDL_GetTicks();
+  //Current Time!
+  auto _new = std::chrono::high_resolution_clock::now();
+  frameTime = std::chrono::duration_cast<D>(_new - _old).count();
+  _old = std::chrono::high_resolution_clock::now();
 }

@@ -17,13 +17,22 @@ enum BuildingStyle{
 
 //EditBuffer Struct
 struct bufferObject {
-  glm::vec3 pos;
-  glm::vec3 cpos;
+  glm::ivec3 pos;
+  glm::ivec3 cpos;
+  glm::ivec2 rpos;
   BlockType type;
 };
 
 //Sorting Operator for bufferObjects
 bool operator>(const bufferObject& a, const bufferObject& b) {
+  //Sort by Region Position
+  if(a.rpos.x > b.rpos.x) return true;
+  if(a.rpos.x < b.rpos.x) return false;
+
+  if(a.rpos.y > b.rpos.y) return true;
+  if(a.rpos.y < b.rpos.y) return false;
+
+  //Sort by Chunk Position
   if(a.cpos.x > b.cpos.x) return true;
   if(a.cpos.x < b.cpos.x) return false;
 
@@ -47,7 +56,7 @@ public:
   bool addEditBuffer(glm::vec3 _pos, BlockType _type, bool negative);
   void removeDuplicates(bool later);
   void merge(Blueprint _other);
-  Blueprint translate(glm::vec3 _pos);
+  Blueprint translate(glm::ivec3 _pos);
 
   //Savers and Loaders
   void save(std::string savefile);
@@ -65,6 +74,7 @@ public:
 
   void tree(int height);
   void cactus();
+  void boulder();
 };
 
 //Default Initialization

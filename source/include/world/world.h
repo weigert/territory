@@ -70,6 +70,8 @@ public:
 
   //File IO Management
   std::string saveFile;
+  glm::vec3 region = glm::vec3(16, 16, 16);
+  std::string regionString(glm::vec3 cpos);
   bool loadWorld();
   bool saveWorld();
 };
