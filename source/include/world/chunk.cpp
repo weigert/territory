@@ -20,7 +20,7 @@ void Chunk::fromOctree(Octree &octree, glm::vec3 offset){
       for(int j = 0; j < 1<<octree.depth; j++)
         for(int k = 0; k < 1<<octree.depth; k++)
           data[helper::getIndex(offset + glm::vec3(i, j, k), glm::vec3(size))] = octree.type;
-          
+
     return;
   }
 

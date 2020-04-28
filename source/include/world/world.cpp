@@ -16,25 +16,18 @@
 */
 
 void World::generate(){
-  std::cout<<"Generating New World"<<std::endl;
-  std::cout<<"Seed: "<<SEED<<std::endl;
-  //Seed the Random Generator
-  srand(SEED);
+  logger::write("Generating New World");
 
   //Set the Blueprint Properties
   blueprint.dim = dim;
   blueprint.chunkSize = chunkSize;
 
   //Generate the Blank Region Files
-  std::cout<<"Generating Blank World"<<std::endl;
-  generateBlank();
+  blank();
 
   //Generate Height
-  std::cout<<"Filling World"<<std::endl;
-  //generateBuildings();
-  generateFull();  //Building Example
-  //generatePerlin();     //Lake Example
-  //generateForest();       //Forest Example
+  Terrain terrain(this);
+  terrain.generate();
 }
 
 std::string World::regionString(glm::vec3 cpos){
@@ -45,7 +38,7 @@ std::string World::regionString(glm::vec3 cpos){
   return ss.str();
 }
 
-void World::generateBlank(){
+void World::blank(){
   //Loop over all Chunks in the World
   for(int i = 0; i < dim.x; i++){
     for(int j = 0; j < dim.y; j++){
@@ -64,16 +57,15 @@ void World::generateBlank(){
         data_dir /= "world.region"+regionString(chunk.pos);
         std::ofstream out(data_dir.string(), std::ofstream::app);
 
-        //Octree Part!
-        Octree octree;
-        octree.fromChunk(chunk);
-        octree.trySimplify();
-        octree.depth = 4;
-
-        if(format_octree)
+        if(format == SAVE_OCTREE)
         //Save the current loaded chunks to file and the world data
         {
           boost::archive::text_oarchive oa(out);
+
+          Octree octree;
+          octree.fromChunk(chunk);
+          octree.trySimplify();
+          octree.depth = 4;
           oa << chunk.pos;
           oa << octree;    //Append the Chunk to the Region File
         }
@@ -88,306 +80,6 @@ void World::generateBlank(){
     }
   }
 }
-
-void World::generateBuildings(){
-  //Flat Surface
-  blueprint.flatSurface(dim.x*chunkSize, dim.z*chunkSize);
-  evaluateBlueprint(blueprint);
-
-  //Add some Cacti
-  Blueprint _cactus;
-  for(int i = 0; i < 500; i++){
-    _cactus.cactus();
-    blueprint.merge(_cactus.translate(glm::vec3(rand()%(int)(dim.x*chunkSize), 1, rand()%(int)(dim.z*chunkSize))));
-  }
-  evaluateBlueprint(blueprint);
-
-  //Add Generated Buildings
-  Blueprint _building;
-  _building.building<RUSTIC>(5);  //Recommended Max-Size: 5 (can handle 6)
-  blueprint.merge(_building.translate(glm::vec3(100, 1, 100)));
-  evaluateBlueprint(blueprint);
-}
-
-void World::generateFlat(){
-  //Flat Surface
-  blueprint.flatSurface(dim.x*chunkSize, dim.z*chunkSize);
-  evaluateBlueprint(blueprint);
-
-  //Rocks
-  std::cout<<"Adding Clay Boulders"<<std::endl;
-  for(int i = 0; i < 1000; i++){
-    int rock[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
-    blueprint.addEditBuffer(glm::vec3(rock[0], 1, rock[1]), BLOCK_CLAY, false);
-  }
-
-  //Evaluate the editBuffer
-  evaluateBlueprint(blueprint);
-
-  //Trees
-  std::cout<<"Adding Cacti"<<std::endl;
-  Blueprint _tree;
-
-  for(int i = 0; i < 2000; i++){
-    _tree.editBuffer.clear();
-    _tree.cactus(); //Construct a tree blueprint (height = 9
-    //Append the Translated Blueprint to the full blueprint.
-    int tree[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
-    blueprint.merge(_tree.translate(glm::vec3(tree[0], 1, tree[1])));
-  }
-
-  //Evaluate the Buffer
-  evaluateBlueprint(blueprint);
-}
-
-void World::generateForest(){
-  //Perlin Noise Generator
-  noise::module::Perlin perlin;
-  perlin.SetOctaveCount(10);
-  perlin.SetFrequency(6);
-  perlin.SetPersistence(0.5);
-
-  //Loop over the world-size
-  std::cout<<"Adding Ground."<<std::endl;
-  for(int i = 0; i < dim.x*chunkSize; i++){
-    for(int k = 0; k < dim.z*chunkSize; k++){
-
-      //Normalize the Block's x,z coordinates
-      float x = (float)(i) / (float)(chunkSize*dim.x);
-      float z = (float)(k) / (float)(chunkSize*dim.z);
-
-      float height = perlin.GetValue(x, SEED, z)/5+0.25;
-      height *= (dim.y*chunkSize);
-
-      //Now loop over the height and set the blocks
-      for(int j = 0; j < (int)height-1; j++){
-        blueprint.addEditBuffer(glm::vec3(i, j, k), BLOCK_DIRT, false);
-      }
-
-      //Add Grass on top
-      blueprint.addEditBuffer(glm::vec3(i, (int)height-1, k), BLOCK_GRASS, false);
-    }
-  }
-
-  //Rocks
-  std::cout<<"Adding Rocks"<<std::endl;
-  for(int i = 0; i < 500; i++){
-    int rock[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
-    //Normalize the Block's x,z coordinates
-    float x = (float)(rock[0]) / (float)(chunkSize*dim.x);
-    float z = (float)(rock[1]) / (float)(chunkSize*dim.z);
-
-    float height = perlin.GetValue(x, SEED, z)/5+0.25;
-    height *= (dim.y*chunkSize);
-
-    if(height < sealevel) continue;
-
-    blueprint.addEditBuffer(glm::vec3(rock[0], (int)height, rock[1]), BLOCK_STONE, false);
-  }
-
-  evaluateBlueprint(blueprint);
-
-  //Pumpkings
-  std::cout<<"Adding Pumpkins"<<std::endl;
-  for(int i = 0; i < 1000; i++){
-    int rock[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
-    //Normalize the Block's x,z coordinates
-    float x = (float)(rock[0]) / (float)(chunkSize*dim.x);
-    float z = (float)(rock[1]) / (float)(chunkSize*dim.z);
-
-    float height = perlin.GetValue(x, SEED, z)/5+0.25;
-    height *= (dim.y*chunkSize);
-
-    if(height < sealevel) continue;
-
-    blueprint.addEditBuffer(glm::vec3(rock[0], (int)height, rock[1]), BLOCK_PUMPKIN, false);
-  }
-
-
-  //Trees
-  std::cout<<"Adding Trees"<<std::endl;
-  Blueprint _tree;
-
-  for(int i = 0; i < 10000; i++){
-    //Generate a random size tree model.
-    int treeheight = rand()%6+8;
-    _tree.editBuffer.clear();
-    _tree.tree(treeheight); //Construct a tree blueprint (height = 9)
-
-    //Append the Translated Blueprint to the full blueprint.
-    int tree[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
-
-    float x = (float)(tree[0]) / (float)(chunkSize*dim.x);
-    float z = (float)(tree[1]) / (float)(chunkSize*dim.z);
-
-    float height = perlin.GetValue(x, SEED, z)/5+0.25;
-    height *= (dim.y*chunkSize);
-
-    blueprint.merge(_tree.translate(glm::vec3(tree[0], (int)height, tree[1])));
-  }
-
-  //Evaluate the Buffer
-  evaluateBlueprint(blueprint);
-}
-
-void World::generatePerlin(){
-  //Perlin Noise Generator
-  noise::module::Perlin perlin;
-  perlin.SetOctaveCount(10);
-  perlin.SetFrequency(6);
-  perlin.SetPersistence(0.5);
-
-  //Adding Water to world.
-  std::cout<<"Flooding World."<<std::endl;
-  for(int i = 0; i < dim.x*chunkSize; i++){
-    for(int j = 0; j < sealevel; j++){
-      for(int k = 0; k < dim.z*chunkSize; k++){
-        //Add water up to a specific height
-        blueprint.addEditBuffer(glm::vec3(i, j, k), BLOCK_WATER, false);
-      }
-    }
-  }
-  evaluateBlueprint(blueprint);
-
-  //Loop over the world-size
-  std::cout<<"Adding Ground."<<std::endl;
-  for(int i = 0; i < dim.x*chunkSize; i++){
-    for(int k = 0; k < dim.z*chunkSize; k++){
-
-      //Normalize the Block's x,z coordinates
-      float x = (float)(i) / (float)(chunkSize*dim.x);
-      float z = (float)(k) / (float)(chunkSize*dim.z);
-
-      float height = perlin.GetValue(x, SEED, z)/5+0.25;
-      height *= (dim.y*chunkSize);
-
-      //Now loop over the height and set the blocks
-      for(int j = 0; j < (int)height-1; j++){
-        if(j < sealevel-1) blueprint.addEditBuffer(glm::vec3(i, j, k), BLOCK_STONE, false);
-        else if(j <= sealevel) blueprint.addEditBuffer(glm::vec3(i, j, k), BLOCK_SAND, false);
-        else blueprint.addEditBuffer(glm::vec3(i, j, k), BLOCK_DIRT, false);
-      }
-
-      //Add Grass on top
-      if(height > sealevel+3) blueprint.addEditBuffer(glm::vec3(i, (int)height-1, k), BLOCK_GRASS, false);
-    }
-  }
-
-  //Evaluate the Guy
-  evaluateBlueprint(blueprint);
-
-  //Rocks
-  std::cout<<"Adding Rocks"<<std::endl;
-  for(int i = 0; i < 500; i++){
-    int rock[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
-    //Normalize the Block's x,z coordinates
-    float x = (float)(rock[0]) / (float)(chunkSize*dim.x);
-    float z = (float)(rock[1]) / (float)(chunkSize*dim.z);
-
-    float height = perlin.GetValue(x, SEED, z)/5+0.25;
-    height *= (dim.y*chunkSize);
-
-    if(height < sealevel) continue;
-
-    blueprint.addEditBuffer(glm::vec3(rock[0], (int)height, rock[1]), BLOCK_STONE, false);
-  }
-
-  //Evaluate the Guy
-  evaluateBlueprint(blueprint);
-
-  //Pumpkings
-  std::cout<<"Adding Pumpkins"<<std::endl;
-  for(int i = 0; i < 1000; i++){
-    int rock[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
-    //Normalize the Block's x,z coordinates
-    float x = (float)(rock[0]) / (float)(chunkSize*dim.x);
-    float z = (float)(rock[1]) / (float)(chunkSize*dim.z);
-
-    float height = perlin.GetValue(x, SEED, z)/5+0.25;
-    height *= (dim.y*chunkSize);
-
-    if(height < sealevel) continue;
-
-    blueprint.addEditBuffer(glm::vec3(rock[0], (int)height, rock[1]), BLOCK_PUMPKIN, false);
-  }
-
-  //Trees
-  std::cout<<"Adding Trees"<<std::endl;
-  Blueprint _tree;
-
-  for(int i = 0; i < 2500; i++){
-    //Generate a random size tree model.
-    int treeheight = rand()%6+8;
-    _tree.editBuffer.clear();
-    _tree.tree(treeheight); //Construct a tree blueprint (height = 9)
-
-    //Append the Translated Blueprint to the full blueprint.
-    int tree[2] = {rand()%(chunkSize*(int)dim.x), rand()%(chunkSize*(int)dim.z)};
-
-    float x = (float)(tree[0]) / (float)(chunkSize*dim.x);
-    float z = (float)(tree[1]) / (float)(chunkSize*dim.z);
-
-    float height = perlin.GetValue(x, SEED, z)/5+0.25;
-    height *= (dim.y*chunkSize);
-
-    if(height < 16) continue;
-
-    blueprint.merge(_tree.translate(glm::vec3(tree[0], (int)height, tree[1])));
-  }
-
-  //Evaluate the Buffer
-  evaluateBlueprint(blueprint);
-}
-
-void World::generateFull(){
-  //Perlin Noise Generator
-  noise::module::Perlin perlin;
-  perlin.SetOctaveCount(10);
-  perlin.SetFrequency(6);
-  perlin.SetPersistence(0.5);
-
-/*
-  //Adding Water to world.
-  std::cout<<"Flooding World."<<std::endl;
-  for(int i = 0; i < dim.x*chunkSize; i++){
-    for(int j = 0; j < sealevel; j++){
-      for(int k = 0; k < dim.z*chunkSize; k++){
-        //Add water up to a specific height
-        blueprint.addEditBuffer(glm::vec3(i, j, k), BLOCK_WATER, false);
-      }
-    }
-  }
-  evaluateBlueprint(blueprint);
-*/
-
-  //Loop over the world-size
-  std::cout<<"Adding Ground."<<std::endl;
-  for(int i = 0; i < dim.x*chunkSize; i++){
-    for(int k = 0; k < dim.z*chunkSize; k++){
-
-      //Normalize the Block's x,z coordinates
-      float x = (float)(i) / (float)(chunkSize*dim.x);
-      float z = (float)(k) / (float)(chunkSize*dim.z);
-
-      float height = perlin.GetValue(x, SEED, z)/3.0+0.5;
-      height *= (dim.y*chunkSize);
-
-      //Now loop over the height and set the blocks
-      for(int j = 0; j < (int)height-1; j++){
-        if(j < sealevel-1) blueprint.addEditBuffer(glm::vec3(i, j, k), BLOCK_STONE, false);
-        else if(j <= sealevel) blueprint.addEditBuffer(glm::vec3(i, j, k), BLOCK_SAND, false);
-        else blueprint.addEditBuffer(glm::vec3(i, j, k), BLOCK_DIRT, false);
-      }
-
-      //Add Grass on top
-      if(height > sealevel+3) blueprint.addEditBuffer(glm::vec3(i, (int)height-1, k), BLOCK_GRASS, false);
-    }
-
-    //Evaluate the blueprint if it gets too large... (cheapest fix)
-    if(blueprint.editBuffer.size() > region.x*region.y*region.z*chunkSize*chunkSize*chunkSize) evaluateBlueprint(blueprint);
-  }
-}
-
 
 /*
 ===================================================
@@ -406,6 +98,7 @@ bool World::evaluateBlueprint(Blueprint &_blueprint){
   boost::filesystem::path data_dir(boost::filesystem::current_path());
   data_dir /= "save";
   data_dir /= saveFile;
+  data_dir /= "world.region";
 
   //Chunk for Saving Data
   Octree _octree;
@@ -414,20 +107,17 @@ bool World::evaluateBlueprint(Blueprint &_blueprint){
 
   // Loop over the EditBuffer
   while(!_blueprint.editBuffer.empty()){
+    glm::vec3 a = _blueprint.editBuffer.back().cpos;
 
     //Load the Appropriate Locations
-    boost::filesystem::path data_dir(boost::filesystem::current_path());
-    data_dir /= "save";
-    data_dir /= saveFile;
-    data_dir /= "world.region"+regionString(_blueprint.editBuffer.back().cpos);
-    std::ifstream in(data_dir.string());
-    std::ofstream out(data_dir.string()+".temp", std::ofstream::app);
+    std::ifstream in((data_dir.string()+regionString(a)));
+    std::ofstream out((data_dir.string()+regionString(a)+".temp"), std::ofstream::app);
 
     int n = 0;
     while(n < region.x*region.y*region.z){
 
       //Load the Chunk
-      if(format_octree){
+      if(format == SAVE_OCTREE){
         boost::archive::text_iarchive ia(in);
         ia >> _chunk.pos;
         ia >> _octree;
@@ -441,14 +131,14 @@ bool World::evaluateBlueprint(Blueprint &_blueprint){
       bool edited = false;
 
       while(!_blueprint.editBuffer.empty() && glm::all(glm::equal(_chunk.pos, _blueprint.editBuffer.back().cpos))){
-        if(format_octree) _octree.setPosition(glm::mod((glm::vec3)_blueprint.editBuffer.back().pos, glm::vec3(chunkSize)), _blueprint.editBuffer.back().type);
+        if(format == SAVE_OCTREE) _octree.setPosition(glm::mod((glm::vec3)_blueprint.editBuffer.back().pos, glm::vec3(chunkSize)), _blueprint.editBuffer.back().type);
         else _chunk.setPosition(glm::mod((glm::vec3)_blueprint.editBuffer.back().pos, glm::vec3(chunkSize)), _blueprint.editBuffer.back().type);
         _blueprint.editBuffer.pop_back();
         edited = true;
       }
 
       //Write the chunk back
-      if(format_octree){
+      if(format == SAVE_OCTREE){
         boost::archive::text_oarchive oa(out);
 
         //Don't forget to simplify this octree!!
@@ -470,8 +160,8 @@ bool World::evaluateBlueprint(Blueprint &_blueprint){
     out.close();
 
     //Delete the first file, rename the temp file
-    boost::filesystem::remove_all(data_dir.string());
-    boost::filesystem::rename(data_dir.string()+".temp", data_dir.string());
+    boost::filesystem::remove_all((data_dir.string()+regionString(a)));
+    boost::filesystem::rename((data_dir.string()+regionString(a)+".temp"), (data_dir.string()+regionString(a)));
   }
 
   return true;
@@ -660,7 +350,7 @@ void World::bufferChunks(View &view){
         //Load the Chunk
         {
           boost::archive::text_iarchive ia(in);
-          if(format_octree){
+          if(format == SAVE_OCTREE){
             ia >> _chunk.pos;
             ia >> _octree;
             _octree.trySimplify();
@@ -777,7 +467,7 @@ template<class Archive>
 void serialize(Archive & ar, World & _world, const unsigned int version)
 {
   ar & _world.saveFile;
-  ar & _world.format_octree;  //Whether the metedata has octree format
+  ar & _world.format;
   ar & _world.chunkSize;
   ar & _world.dim.x;
   ar & _world.dim.y;

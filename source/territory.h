@@ -39,6 +39,7 @@ enum BiomeType{
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/serialization/vector.hpp>
+#include <boost/serialization/array.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 
@@ -62,6 +63,7 @@ enum BiomeType{
 #include "include/world/blueprint.cpp"
 #include "include/world/octree.cpp"
 #include "include/world/chunk.cpp"
+#include "include/world/terrain.cpp"
 #include "include/world/world.cpp"
 
 //View Classes

@@ -250,7 +250,6 @@ void View::render(World &world, Population &population){
     models[i].render();
   }
 
-
   //Render the Sprites to the Depthmap
   spriteDepthShader.useProgram();
   spriteDepthShader.setInt("spriteTexture", 0);
@@ -289,6 +288,8 @@ void View::render(World &world, Population &population){
 
   /* REFLECTION */
   glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+  /*
   glBindFramebuffer(GL_FRAMEBUFFER, reflection.fbo);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -314,6 +315,7 @@ void View::render(World &world, Population &population){
     //Render the Model
     models[i].render();               //Render Scene
   }
+  */
 
   /* REGULAR IMAGE */
   glBindFramebuffer(GL_FRAMEBUFFER, image.fbo);
@@ -446,7 +448,6 @@ void View::render(World &world, Population &population){
   glBindVertexArray(image.vao);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-
   //Render screen to monitor with vertical blur shader
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glActiveTexture(GL_TEXTURE0+0);
@@ -458,20 +459,6 @@ void View::render(World &world, Population &population){
   blurShader.setBool("vert", true);
   glBindVertexArray(temp1.vao);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-/*
-  //Render screen to monitor with vertical blur shader
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  billboardShader.useProgram();
-  glActiveTexture(GL_TEXTURE0+0);
-  glBindTexture(GL_TEXTURE_2D, image.texture);
-  billboardShader.setInt("imageTexture", 0);
-  glActiveTexture(GL_TEXTURE0+1);
-  glBindTexture(GL_TEXTURE_2D, image.depthTexture);
-  billboardShader.setInt("depthTexture", 1);
-  glBindVertexArray(image.vao);
-  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-*/
 
   //Add the GUI
   renderGUI(world, population);

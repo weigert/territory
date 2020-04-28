@@ -41,10 +41,28 @@ namespace color{
     glm::vec4(0.54, 0.70, 0.34, 1.0)
   };
 
-  std::vector<glm::vec4> leafcolors{
+  std::vector<glm::vec4> stonecolors{
+    glm::vec4(0.5, 0.5, 0.5, 1.0),
+    glm::vec4(0.6, 0.6, 0.6, 1.0),
+    glm::vec4(0.7, 0.7, 0.7, 1.0)
+  };
+
+  std::vector<glm::vec4> gravelcolors{
+    glm::vec4(0.9, 0.9, 0.9, 1.0),
+    glm::vec4(0.8, 0.8, 0.8, 1.0),
+    glm::vec4(0.7, 0.7, 0.7, 1.0)
+  };
+
+  std::vector<glm::vec4> autumncolors{
     glm::vec4(0.17, 0.40, 0.26, 0.8),
     glm::vec4(1.00, 0.75, 0.35, 1.0),
     glm::vec4(0.84, 0.21, 0.21, 1.0)
+  };
+
+  std::vector<glm::vec4> leafcolors{
+    glm::vec4(0.16, 0.44, 0.27, 1.0),
+    glm::vec4(0.05, 0.31, 0.22, 1.0),
+    glm::vec4(0.35, 0.43, 0.13, 1.0)
   };
 
   std::vector<glm::vec4> claycolors{

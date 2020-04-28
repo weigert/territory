@@ -28,13 +28,11 @@ void Blueprint::merge(Blueprint _other){
   editBuffer.insert(editBuffer.end(), _other.editBuffer.begin(), _other.editBuffer.end());
 }
 
-//Return a translated blueprint version.
+//Important: check for out-of-bounds elements! This is done in addEditBuffer.
 Blueprint Blueprint::translate(glm::ivec3 _pos){
   Blueprint _new;
-  //Loop over all buffer objects
-  for(bufferObject& obj : editBuffer){
+  for(bufferObject& obj : editBuffer)
     _new.addEditBuffer(_pos + obj.pos, obj.type, false);
-  }
   return _new;
 }
 
@@ -91,22 +89,16 @@ void Blueprint::removeDuplicates(bool later){
 */
 
 void Blueprint::flatSurface(int x, int z){
-  std::cout<<"Generating Flat Surface"<<std::endl;
-  for(int i = 0; i < x; i++){
-    for(int j = 0; j < z; j++){
-      //Add to the editBuffer
+  for(int i = 0; i < x; i++)
+    for(int j = 0; j < z; j++)
       addEditBuffer(glm::vec3(i,0,j), BLOCK_SAND, false);
-    }
-  }
 }
 
-//Do this guy
 void Blueprint::cactus(){
-  //Loop until the height
   int height = 4;
-  for(int i = 0; i < height; i++){
+  for(int i = 0; i < height; i++)
     addEditBuffer(glm::vec3(0, i, 0), BLOCK_CACTUS, true);
-  }
+
   addEditBuffer(glm::vec3(0, height, 0), BLOCK_CACTUSFLOWER, true);
 }
 

@@ -397,31 +397,18 @@ bool Task::place(World &world, Population &population, Audio &audio, State &_arg
 }
 
 bool Task::build(World &world, Population &population, Audio &audio, State &_args){
-  /*
-  One major problem is the attempt to path-find to the appropriate location.
-  This can be mitigated by increasing the possible access range.
-
-  I suspect also that the fact the chunks are being constantly remeshed is what is causing this lag.
-
-  Additionally, this needs to be split into convergence steps so the individual tasks don't take forever.
-
-  If states had a blueprint, then blueprints could also be split up and passed around between bots.
-
-
-  */
 
   //Multiple Placement Tasks after designing an appropriate blueprint!
   if(initFlag){
     //Define some blueprint...
     Blueprint _house;
-    _house.building<RUSTIC>(4);       //Choose which guy to build
-    _house = _house.translate(_args.pos + glm::vec3(0, 1, 0)); //Translate into worldspace and sort
+    _house.building<RUSTIC>(4);                 //Choose which guy to build
+    _house = _house.translate(_args.pos);       //Translate into worldspace and sort
     std::sort(_house.editBuffer.begin(), _house.editBuffer.end(),
             [](const bufferObject& a, const bufferObject& b) {
               if(a.pos.y < b.pos.y) return true;
               if(a.pos.y > b.pos.y) return false;
 
-              //Rest doesn't matter.
               return false;
             });
 

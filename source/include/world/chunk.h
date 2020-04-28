@@ -1,6 +1,7 @@
 #pragma once
 #include "../forward/chunk.fwd.h"
 #include "../forward/octree.fwd.h"
+#include "../forward/RLE.fwd.h"
 
 class Chunk{
 public:

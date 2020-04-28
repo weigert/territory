@@ -1,6 +1,23 @@
-#include "chunk.h"
-#include "octree.h"
 #include <bits/stdc++.h>
+#include "octree.h"
+
+//IO Operator for Octree (Debugging)
+std::ostream & operator << (std::ostream &out, const Octree &octree){
+  //Output Depth and Index
+  out<<"["<<octree.depth<<", "<<octree.index<<"]: ";
+
+  //Output the Data
+  out<<"{"<<(int)octree.type<<"}"<<std::endl;
+
+  //Output the Subtree
+  for(int i = 0; i < octree.subTree.size(); i++){
+    for(int j = 0; j <= 4-octree.depth; j++)
+      out<<" ";
+    out<<octree.subTree[i];
+  }
+
+  return out;
+}
 
 
 //Generate Octree from Chunks

@@ -79,7 +79,7 @@ public:
 
 //Default Initialization
 int Blueprint::chunkSize = 16;
-glm::vec3 Blueprint::dim = glm::vec3(20,5,20);
+glm::vec3 Blueprint::dim = glm::vec3(64,16,64);
 
 namespace boost {
 namespace serialization {

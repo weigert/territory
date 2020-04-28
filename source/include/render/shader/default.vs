@@ -34,7 +34,7 @@ void main(void) {
 	//Color Calculations - Per Vertex! Not Fragment.
 	float diffuse = clamp(dot(in_Normal, normalize(lightPos)), 0.1,  0.7);
 	float ambient = 0.1;
-	float specular = pow(max(dot(normalize(lookDir), normalize(reflect(lightPos, in_Normal))), 0.0), 64);
+	float specular = 0.1*pow(max(dot(normalize(lookDir), normalize(reflect(lightPos, in_Normal))), 0.0), 16);
 	ex_Color = in_Color*vec4(lightCol*lightStrength*(diffuse + ambient + specular), 1.0f);
 	ex_OriginalColor = in_Color;
 }
