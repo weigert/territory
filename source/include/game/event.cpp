@@ -91,7 +91,7 @@ void eventHandler::update(World &world, Population &population, View &view, Audi
     view.shadow.setup2(view.SHADOW_WIDTH, view.SHADOW_HEIGHT);
     view.temp1.setup(view.SCREEN_WIDTH, view.SCREEN_HEIGHT);
     view.temp2.setup(view.SCREEN_WIDTH, view.SCREEN_HEIGHT);
-    view.projection = glm::ortho(-(float)view.SCREEN_WIDTH*view.zoom, (float)view.SCREEN_WIDTH*view.zoom, -(float)view.SCREEN_HEIGHT*view.zoom, (float)view.SCREEN_HEIGHT*view.zoom, -100.0f, 100.0f);
+    view.projection = glm::ortho(-(float)view.SCREEN_WIDTH*view.zoom, (float)view.SCREEN_WIDTH*view.zoom, -(float)view.SCREEN_HEIGHT*view.zoom, (float)view.SCREEN_HEIGHT*view.zoom, -300.0f, 300.0f);
 
     _window = false;
   }
@@ -167,13 +167,13 @@ void eventHandler::update(World &world, Population &population, View &view, Audi
     if(scroll.front()->wheel.y > 0.99 && view.zoom <= 0.3){
       //Change the Zoom Value and Projection Matrix
       view.zoom+=view.zoomInc;
-      view.projection = glm::ortho(-(float)view.SCREEN_WIDTH*view.zoom, (float)view.SCREEN_WIDTH*view.zoom, -(float)view.SCREEN_HEIGHT*view.zoom, (float)view.SCREEN_HEIGHT*view.zoom, -100.0f, 100.0f);
+      view.projection = glm::ortho(-(float)view.SCREEN_WIDTH*view.zoom, (float)view.SCREEN_WIDTH*view.zoom, -(float)view.SCREEN_HEIGHT*view.zoom, (float)view.SCREEN_HEIGHT*view.zoom, -300.0f, 300.0f);
       scroll.pop_back();
     }
     //Scroll Closer
     else if(scroll.back()->wheel.y < -0.99 && view.zoom > 0.005){
       view.zoom-=view.zoomInc;
-      view.projection = glm::ortho(-(float)view.SCREEN_WIDTH*view.zoom, (float)view.SCREEN_WIDTH*view.zoom, -(float)view.SCREEN_HEIGHT*view.zoom, (float)view.SCREEN_HEIGHT*view.zoom, -100.0f, 100.0f);
+      view.projection = glm::ortho(-(float)view.SCREEN_WIDTH*view.zoom, (float)view.SCREEN_WIDTH*view.zoom, -(float)view.SCREEN_HEIGHT*view.zoom, (float)view.SCREEN_HEIGHT*view.zoom, -300.0f, 300.0f);
       scroll.pop_back();
     }
     else if(scroll.back()->wheel.x < -0.8){

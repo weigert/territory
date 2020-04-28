@@ -79,8 +79,8 @@ class View{
     glm::vec3 hover = glm::vec3(0);
 
     //Viewposition
-    glm::vec3 viewPos = glm::vec3(100, 1, 100);
-    glm::vec3 renderDistance = glm::vec3(2, 2, 2);
+    glm::vec3 viewPos = glm::vec3(128, 48, 128);
+    glm::vec3 renderDistance = glm::vec3(5, 2, 5);
 
     //LOD Handling
     int LOD = 4;
@@ -135,7 +135,7 @@ class View{
     glm::vec3 cameraPos = glm::vec3(10, 12, 10);
     glm::vec3 lookPos = glm::vec3(0, 2, 0);
     glm::mat4 camera = glm::lookAt(cameraPos, lookPos, glm::vec3(0,1,0));
-    glm::mat4 projection = glm::ortho(-(float)SCREEN_WIDTH*zoom, (float)SCREEN_WIDTH*zoom, -(float)SCREEN_HEIGHT*zoom, (float)SCREEN_HEIGHT*zoom, -300.0f, 300.0f);
+    glm::mat4 projection = glm::ortho(-(float)SCREEN_WIDTH*zoom, (float)SCREEN_WIDTH*zoom, -(float)SCREEN_HEIGHT*zoom, (float)SCREEN_HEIGHT*zoom, -500.0f, 500.0f);
     glm::mat4 depthModelMatrix = glm::mat4(1.0);
     glm::mat4 depthProjection = glm::ortho<float>(-120,120,-120,120,-50,100);
     glm::mat4 depthCamera = glm::lookAt(lightPos, glm::vec3(0,0,0), glm::vec3(0,1,0));
@@ -150,8 +150,9 @@ class View{
     //Get the Intersection and Stuff
     glm::vec3 intersect(World world, glm::vec2 mouse);
 
-    //FPS Calculator
+    //Frametime Calculation
+    template<typename D>
     void calcFrameTime();
-    float frameTime = 0.0f;
-    float ticks = 0.0f;
+    int frameTime = 0;
+    std::chrono::high_resolution_clock::time_point _old;
 };

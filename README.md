@@ -10,9 +10,9 @@ Blog: https://weigert.vsos.ethz.ch/
 Use the make file to compile the binary.
 
     make all
-    
+
 Tested on Ubuntu 18 LTS. I have been informed that on Ubuntu 19, the install folder for libnoise is different and needs to be fixed in the 'territory.h' header file.
-    
+
 ### Dependencies
 - gcc
 - SDL2 (core, image, mixer, ttf)
@@ -23,10 +23,10 @@ Tested on Ubuntu 18 LTS. I have been informed that on Ubuntu 19, the install fol
 - libnoise
 
 ## Usage
-    ./territory [world_name]
-If the world name doesn't exist, it will generate a world. If it does, it will load the world.
+    ./territory [world_name] [SEED]
+If the world name doesn't exist, it will generate a world with the specified seed. If it does, it will load the world (and ignore the seed input).
 
-If you want to use the perlin+forest world generator, edit the function World::generate() to use generatePerlin() instead of generateFlat(), recompile and generate a new world (e.g. by choosing a new world name, or deleting the one you were using).
+By default, the world generation occurs using the SimpleHydrology system (described a separate repository). This can take a little bit, as it simulates erosion and then extracts the voxel data from the terrain.
 
 ### Controls
 Mouse and Keyboard Inputs:

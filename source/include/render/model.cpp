@@ -96,6 +96,7 @@ void Model::fromChunkGreedy(Chunk chunk){
   positions.clear();
   colors.clear();
   normals.clear();
+  indices.clear();
 
   cpos = chunk.pos;
 

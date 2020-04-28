@@ -14,24 +14,29 @@
 #include "../forward/player.fwd.h"
 #include "../forward/item.fwd.h"
 
+enum SaveFormat{
+  SAVE_RAW,
+  SAVE_OCTREE,
+};
+
 class World{
 public:
   //Constructor
-  World(std::string _saveFile){
+  World(std::string _saveFile, int _SEED){
+    SEED = _SEED;
     saveFile = _saveFile;
-    //Try loading / saving the world
     loadWorld();
   }
 
   //Block Data in Octree
   std::vector<Chunk> chunks; //Loaded Chunks
   std::unordered_map<int, int> chunk_order;
-  int SEED = 100;
+  int SEED = 0; //1588047050
   int chunkSize = 16;
   int sealevel = 16;
   std::chrono::milliseconds tickLength = std::chrono::milliseconds(1000);
   glm::vec3 dim = glm::vec3(64, 16, 64);
-  bool format_octree = true;
+  SaveFormat format = SAVE_OCTREE;
 
   //Min and Max Chunk Positions
   glm::vec3 min = glm::vec3(0);
@@ -53,14 +58,9 @@ public:
   void setBlock(glm::vec3 _pos, BlockType _type, bool fullremesh);
   glm::vec3 getTop(glm::vec2 _pos);
 
-  //Generate Function / Chunk Handlers
+  //World Generation
   void generate();
-  void generateBlank();
-  void generateFlat();
-  void generateBuildings();
-  void generatePerlin();
-  void generateForest();
-  void generateFull();
+  void blank();
 
   //Helpers for Blueprint
   Blueprint blueprint;
@@ -70,6 +70,8 @@ public:
 
   //File IO Management
   std::string saveFile;
+  glm::vec3 region = glm::vec3(16, 16, 16);
+  std::string regionString(glm::vec3 cpos);
   bool loadWorld();
   bool saveWorld();
 };

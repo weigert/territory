@@ -290,7 +290,7 @@ void Interface::render(View &view, World &world, Population &population){
     if(ImGui::BeginTabItem("View")){
       //Add an FPS Plot
       ImGui::Text("Frame Time (ms): "); ImGui::SameLine();
-      ImGui::Text("%f", view.frameTime);
+      ImGui::Text("%i", view.frameTime);
 
       //Generate a colorpicker for the light and sky
       static float sky[3] = {view.skyCol.x, view.skyCol.y, view.skyCol.z};

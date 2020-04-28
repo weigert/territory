@@ -71,9 +71,11 @@ void main(void) {
   fragColor = shade()*ex_Color;
 
   //Reflection
+  /*
   if(ex_FragPos.y == clip-0.5 && ex_OriginalColor == vec4(0.3f, 0.57f, 0.67f, 1.0f))
     fragColor = mix(fragColor, texture(reflection, vec2(1-ex_Position.x, ex_Position.y)), 1-dot(vec3(0,-1,0), normalize(lookDir)));
-
+  */
+  
   //Texture Grain
   if(_grain) fragColor += 0.1*vec4(rand(ex_Position.xy)*vec3(1.0f), 1.0f);
 }

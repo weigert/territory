@@ -51,7 +51,7 @@ bool View::Init(){
   ImGui::StyleColorsCustom();
 
   //Configure Global OpenGL State
-  glEnable( GL_DEPTH_TEST);
+  glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
   glEnable(GL_BLEND) ;
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -161,7 +161,8 @@ void View::cleanup(){
 void View::loadChunkModels(World &world){
   //Loop over all chunks
   for(unsigned int i = 0; i < world.chunks.size(); i++){
-    //If we are at capacity, add a new item
+
+    //If we are at capacity, add a new item (i.e. only the newly added chunks are fully remodeled)
     if(i == models.size()){
       Model model;
       model.cpos = world.chunks[i].pos;
@@ -185,12 +186,12 @@ void View::updateChunkModels(World &world){
   //Get the Chunk Position if the remeshBuffer isn't empty!
   while(!world.remeshBuffer.editBuffer.empty()){
     //Add the Cubes
-    glm::vec3 c = world.remeshBuffer.editBuffer.back().cpos;
-    glm::vec3 p = glm::mod(world.remeshBuffer.editBuffer.back().pos, glm::vec3(world.chunkSize));
+    glm::ivec3 c = world.remeshBuffer.editBuffer.back().cpos;
+    glm::ivec3 p = glm::mod((glm::vec3)world.remeshBuffer.editBuffer.back().pos, glm::vec3(world.chunkSize));
     int ind = helper::getIndex(c, world.dim);
 
     //Skip non-loaded remeshBuffer objects
-    if(!(glm::all(glm::greaterThanEqual(c, world.min)) && glm::all(glm::lessThanEqual(c, world.max)))){
+    if(!(glm::all(glm::greaterThanEqual(c, (glm::ivec3)world.min)) && glm::all(glm::lessThanEqual(c, (glm::ivec3)world.max)))){
       world.remeshBuffer.editBuffer.pop_back();
       continue;
     }
@@ -249,7 +250,6 @@ void View::render(World &world, Population &population){
     models[i].render();
   }
 
-
   //Render the Sprites to the Depthmap
   spriteDepthShader.useProgram();
   spriteDepthShader.setInt("spriteTexture", 0);
@@ -288,6 +288,8 @@ void View::render(World &world, Population &population){
 
   /* REFLECTION */
   glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+  /*
   glBindFramebuffer(GL_FRAMEBUFFER, reflection.fbo);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -313,6 +315,7 @@ void View::render(World &world, Population &population){
     //Render the Model
     models[i].render();               //Render Scene
   }
+  */
 
   /* REGULAR IMAGE */
   glBindFramebuffer(GL_FRAMEBUFFER, image.fbo);
@@ -445,7 +448,6 @@ void View::render(World &world, Population &population){
   glBindVertexArray(image.vao);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-
   //Render screen to monitor with vertical blur shader
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glActiveTexture(GL_TEXTURE0+0);
@@ -457,20 +459,6 @@ void View::render(World &world, Population &population){
   blurShader.setBool("vert", true);
   glBindVertexArray(temp1.vao);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-/*
-  //Render screen to monitor with vertical blur shader
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  billboardShader.useProgram();
-  glActiveTexture(GL_TEXTURE0+0);
-  glBindTexture(GL_TEXTURE_2D, image.texture);
-  billboardShader.setInt("imageTexture", 0);
-  glActiveTexture(GL_TEXTURE0+1);
-  glBindTexture(GL_TEXTURE_2D, image.depthTexture);
-  billboardShader.setInt("depthTexture", 1);
-  glBindVertexArray(image.vao);
-  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-*/
 
   //Add the GUI
   renderGUI(world, population);
@@ -611,7 +599,10 @@ glm::vec3 View::intersect(World world, glm::vec2 mouse){
 ================================================================================
 */
 
+template<typename D>
 void View::calcFrameTime(){
-  frameTime = (float)(SDL_GetTicks()-ticks);
-  ticks = SDL_GetTicks();
+  //Current Time!
+  auto _new = std::chrono::high_resolution_clock::now();
+  frameTime = std::chrono::duration_cast<D>(_new - _old).count();
+  _old = std::chrono::high_resolution_clock::now();
 }

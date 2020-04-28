@@ -91,7 +91,7 @@ namespace block{
         return glm::vec4(0.74f, 0.5f, 0.36f, 1.0f);
         break;
       case BLOCK_WATER:
-        return glm::vec4(0.3f, 0.57f, 0.67f, 1.0f);
+        return glm::vec4(0.3f, 0.57f, 0.67f, 0.8f); //Semi Transparent!
         break;
       case BLOCK_SAND:
         return color::bezier(t, color::sandcolors);
@@ -100,7 +100,7 @@ namespace block{
         return color::bezier(t, color::claycolors);
         break;
       case BLOCK_STONE:
-        return glm::vec4(0.5f, 0.5f, 0.5f, 1.0f);
+        return color::bezier(t, color::stonecolors);
         break;
       case BLOCK_LEAVES:
         return color::bezier(t, color::leafcolors);
@@ -109,7 +109,7 @@ namespace block{
         return glm::vec4(0.6f, 0.375f, 0.14f, 1.0f);
         break;
       case BLOCK_GRAVEL:
-        return glm::vec4(0.08f, 0.32f, 0.43f, 1.0f);
+      return color::bezier(t, color::gravelcolors);
         break;
       case BLOCK_SANDSTONE:
         return glm::vec4(0.8f, 0.75f, 0.64f, 1.0f);

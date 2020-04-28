@@ -8,8 +8,11 @@ int main( int argc, char* args[] ) {
 		return 0;
 	}
 
+	//Extract Seed
+	int SEED = (argc == 3)?std::atoi(args[2]):0;
+
 	//Load / Generate a World
-	World world((std::string)args[1]);
+	World world((std::string)args[1], SEED);
 
 	//Add a Renderer
 	View view;
@@ -67,8 +70,10 @@ int main( int argc, char* args[] ) {
 
 		//Render the View
 		view.updateChunkModels( world );
-		view.render(world, population);
-		view.calcFrameTime();
+	//	timer::benchmark<std::chrono::microseconds>([&](){
+			view.render(world, population);
+	//	});
+		view.calcFrameTime<std::chrono::microseconds>();
 	}
 
 	//End the Program Correctly
