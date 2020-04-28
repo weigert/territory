@@ -26,7 +26,7 @@ Tested on Ubuntu 18 LTS. I have been informed that on Ubuntu 19, the install fol
     ./territory [world_name] [SEED]
 If the world name doesn't exist, it will generate a world with the specified seed. If it does, it will load the world (and ignore the seed input).
 
-By default, the world generation occurs using the SimpleHydrology system (described a separate repository). This can take a little bit, as it simulates erosion and then extracts the voxel data from the terrain.
+By default, the world generation occurs using the [SimpleHydrology](https://github.com/weigert/SimpleHydrology) system (described a separate repository). This can take a little bit, as it simulates erosion and then extracts the voxel data from the terrain.
 
 ### Controls
 Mouse and Keyboard Inputs:
@@ -91,6 +91,14 @@ If you turn the camera just right, your 3D projection becomes this pseudo-isomet
 And zoomed out a bit.
 
 ![Water Far](https://github.com/weigert/territory/blob/working_branch/screenshots/screenshot_lake2.png)
+
+Updated world generation using the [SimpleHydrology](https://github.com/weigert/SimpleHydrology) system
+
+![Hydrology Zoomed Out](https://github.com/weigert/territory/blob/working_branch/screenshots/screenshot_hydrology.png)
+
+And zoomed in a bit.
+
+![Hydrology Zoomed In](https://github.com/weigert/territory/blob/working_branch/screenshots/screenshot_hydrology2.png)
 
 ## Source
 ### Reading
