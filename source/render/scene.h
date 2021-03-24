@@ -23,7 +23,7 @@ vec3 renderdist = vec3(1);
 
 //Render Parameters
 int blur = 0; //Degree of Blur
-bool fog = false;
+bool fog = true;
 bool grain = false;
 vec3 fogcolor = vec3(0.6, 0.9f, 0.8f);
 

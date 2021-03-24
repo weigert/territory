@@ -39,6 +39,9 @@ public:
 
   bool remesh = true;
 
+  int quadstart = 0;
+  int quadsize = 0;
+
   //Get the Flat-Array Index
   int getIndex(vec3 _p);
   void setPosition(vec3 _p, BlockType _type);

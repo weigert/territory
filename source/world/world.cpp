@@ -206,6 +206,7 @@ void World::buffer(){
       Note: Sorting makes this much faster and more consistent!
   */
 
+/*
   //Sorting Indices
   vector<int> ind(chunks.size());
   for(size_t i = 0; i < chunks.size(); i++)
@@ -217,12 +218,13 @@ void World::buffer(){
     return (chunks[a] > chunks[b]);
   });
 
-  //Sort Models
+  //Sort Chunks and Models
   sort(chunks.begin(), chunks.end(), greater<Chunk>());
   vector<Model*> modelperm;
   for(size_t i = 0; i < models.size(); i++)
     modelperm.push_back(models[ind[i]]);
   swap(models, modelperm);
+*/
 
   //Potential Improvement:
   //  More precise iteration on min, max, minchunk, maxchunk
@@ -245,12 +247,6 @@ void World::buffer(){
 
   minchunk = min;
   maxchunk = max;
-
-
-
-
-
-
 
   logg::deb("Unloading ", remove.size(), " chunks");
 
@@ -328,21 +324,7 @@ void World::buffer(){
     }
   }
 
-
   lock = false;
-
-  logg::deb("Meshing Chunks...");
-
-  for(unsigned int i = 0; i < chunks.size(); i++){
-
-    if(i == models.size()) models.push_back(new Model());
-    if(chunks[i].remesh) models[i]->construct(chunkmesh::greedy, &chunks[i]);
-    chunks[i].remesh = false;
-    models[i]->move((vec3)(chunks[i].pos)*vec3(chunkSize));
-
-  }
-
-//  fullmodel.construct(chunkmesh::greedycollective, &chunks);
 
 }
 
@@ -354,38 +336,30 @@ void World::buffer(){
 
 void World::mesh(){
 
+  logg::deb("Meshing Chunks...");
 
-}
-
-void World::remesh(){
-
-  while(!remeshbuf.edits.empty()){
-
-    ivec3 c = remeshbuf.edits.back().cpos;
-//    ivec3 p = mod((vec3)remeshbuf.edits.back().pos, vec3(chunkSize));
-//    int ind = helper::getIndex(c, dim);
-
-    //Skip non-loaded remeshBuffer objects
-    if(!(all(greaterThanEqual(c, ivec3(0))) && all(lessThanEqual(c, (ivec3)dim)))){
-      remeshbuf.edits.pop_back();
-      continue;
-    }
-
-/*
-    //Otherwise we are in bounds, so add that cube to the relevant model.
-    models[chunk_order[ind]].addCube(p, world.remeshBuffer.editBuffer.back().type);
-    models[chunk_order[ind]].update();
-*/
-    remeshbuf.edits.pop_back();
-
-  }
-
-  //Loop over all chunks, see if they are updated.
   for(unsigned int i = 0; i < chunks.size(); i++){
-    if(chunks[i].remesh){
+
+    if(i == models.size())
+      models.push_back(new Model());
+
+    if(chunks[i].remesh)
       models[i]->construct(chunkmesh::greedy, &chunks[i]);
-      chunks[i].remesh = false;
-    }
+
+    chunks[i].remesh = false;
+
   }
+
+  fullmodel.construct([&](Model* m){
+    for(size_t i = 0; i < models.size(); i++){
+      for(size_t j = 0; j < models[i]->indices.size(); j++){
+        m->indices.push_back(models[i]->indices[j]+m->positions.size()/3);
+      }
+      m->positions.insert(m->positions.end(), models[i]->positions.begin(), models[i]->positions.end());
+      m->colors.insert(m->colors.end(), models[i]->colors.begin(), models[i]->colors.end());
+      m->normals.insert(m->normals.end(), models[i]->normals.begin(), models[i]->normals.end());
+    }
+  });
+
 
 }

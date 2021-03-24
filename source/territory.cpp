@@ -69,6 +69,8 @@ int main( int argc, char* args[] ) {
 
   Billboard shadow(2000, 2000, false);
 
+  logg::debug = false;
+
 	World world((std::string)args[1], SEED);
   world.buffer();
 
@@ -89,8 +91,13 @@ int main( int argc, char* args[] ) {
 
     if(!all(equal(floor(cam::look/vec3(world.chunkSize)), prelookpos))){
       prelookpos = floor(cam::look/vec3(world.chunkSize));
+      std::cout<<"Buffering ";
       timer::benchmark<std::chrono::milliseconds>([&](){
         world.buffer();
+      });
+      std::cout<<"Meshing ";
+      timer::benchmark<std::chrono::milliseconds>([&](){
+        world.mesh();
       });
     }
 
@@ -99,7 +106,6 @@ int main( int argc, char* args[] ) {
     if(cam::rad >= 6.0f) zoomstate = 0;
     else if(cam::rad >= 3.0f) zoomstate = 1;
     else if(cam::rad >= 1.5f) zoomstate = 2;
-//    else if(cam::rad >= 0.0f) zoomstate = 3;
 
     if(zoomstate != oldzoomstate){
       std::cout<<"Changed Zoom State "<<zoomstate<<std::endl;
@@ -127,7 +133,7 @@ int main( int argc, char* args[] ) {
       cam::moverate = scene::LOD;
 
       world.buffer();
-      world.remesh();
+      world.mesh();
 
       oldzoomstate = zoomstate;
     }
@@ -147,26 +153,18 @@ int main( int argc, char* args[] ) {
 	//Define the rendering pieeline
 	Tiny::view.pipeline = [&](){
 
-    timer::benchmark<std::chrono::milliseconds>([&](){
+  //  timer::benchmark<std::chrono::milliseconds>([&](){
 
     mat4 back = translate(mat4(1), -cam::look);
 
     // Shadow Mapping
 
     shadow.target();
-
     depthShader.use();
     depthShader.uniform("dvp", scene::dvp);
 
-  //  cubeShader.uniform("model", world.fullmodel.model);
-  //  world.fullmodel.render();
-
-
-    for(unsigned int i = 0; i < world.models.size(); i++){
-      depthShader.uniform("model", back*world.models[i]->model);
-      world.models[i]->render();
-    }
-
+    depthShader.uniform("model", back*world.fullmodel.model);
+    world.fullmodel.render();
 
     // Regular View
 
@@ -192,178 +190,8 @@ int main( int argc, char* args[] ) {
     //    cubeShader.uniform("volPosA", vec3(0));
     //    cubeShader.uniform("volPosB", vec3(0));
 
-//    cubeShader.uniform("model", world.fullmodel.model);
-//    world.fullmodel.render();
-
-    for(unsigned int i = 0; i < world.models.size(); i++){
-      cubeShader.uniform("model", glm::mat4(1));
-      world.models[i]->render();
-    }
-
-
-    glFlush();
-
-  });
-
-/*
-    billboardShader.use();
-    billboardShader.texture("imageTexture", shadow.depth);
-    billboardShader.uniform("model", flat.model);
-    flat.render();
-*/
-
-
-
-/*
-
-
-    //Render the Sprites to the Depthmap
-    spriteDepthShader.useProgram();
-    spriteDepthShader.setInt("spriteTexture", 0);
-
-    //Loop over all Sprites
-    for(unsigned int i = 0; i < population.bots.size(); i++){
-      //Check for No-Render Condition
-      if(population.bots[i].dead) continue;
-      if(!helper::inModRange(population.bots[i].pos, viewPos, renderDistance, world.chunkSize)) continue;
-
-      //Set the Position of the Sprite relative to the sun
-      population.bots[i].sprite.resetModel();
-      population.bots[i].sprite.model = glm::translate(population.bots[i].sprite.model, population.bots[i].pos-viewPos);
-      population.bots[i].sprite.model = glm::rotate(population.bots[i].sprite.model, glm::radians(-90.0f), glm::vec3(0, 1, 0));
-      float rot = 0;
-      if(lightPos.z < 0){
-        rot = -acos(glm::dot(glm::vec3(-1, 0, 0), glm::normalize(glm::vec3(lightPos.x, 0, lightPos.z))));
-      }
-      else{
-        rot = acos(glm::dot(glm::vec3(-1, 0, 0), glm::normalize(glm::vec3(lightPos.x, 0, lightPos.z))));
-      }
-      population.bots[i].sprite.model = glm::rotate(population.bots[i].sprite.model, rot, glm::vec3(0, 1, 0));
-
-      //Setup the Uniforms
-      spriteShader.setMat4("mvp", depthProjection*depthCamera*population.bots[i].sprite.model);
-      spriteShader.setFloat("nframe", (float)(population.bots[i].sprite.animation.nframe % population.bots[i].sprite.animation.frames));
-      spriteShader.setFloat("animation", (float)population.bots[i].sprite.animation.ID);
-      spriteShader.setFloat("width", (float)population.bots[i].sprite.animation.w);
-      spriteShader.setFloat("height", (float)population.bots[i].sprite.animation.h);
-
-      //Render the Sprite Billboard
-      population.bots[i].sprite.render();
-    }
-
-    glBindVertexArray(0);
-
-    */
-
-
-/*
-    //Picker Cube
-
-    if(picked){
-      picker.shaderColorPick.useProgram();
-      if(picked2){
-        //Get the Volume Selection Better
-        glm::vec3 a = select2-viewPos-(select2-select)/glm::vec3(2.0);
-        glm::mat4 trans = glm::translate(glm::mat4(1.0), a);
-        picker.model = glm::scale(trans, glm::abs(select2-select)+glm::vec3(1.0));
-        picker.shaderColorPick.setVec3("un_Color", hoverColorBlock);
-        picker.shaderColorPick.setMat4("mvp", projection*camera*picker.model);
-      }
-      else{
-        picker.model = glm::translate(glm::mat4(1.0f), select-viewPos);
-        picker.shaderColorPick.setVec3("un_Color", clickColorBlock);
-        picker.shaderColorPick.setMat4("mvp", projection*camera*picker.model);
-      }
-      glBindVertexArray(picker.vao);
-      glDrawArrays(GL_LINE_STRIP, 0, 16);
-    }
-
-    //Character Sprites
-    spriteShader.useProgram();
-    spriteShader.setInt("spriteTexture", 0);
-
-    //Loop over all Sprites
-    for(unsigned int i = 0; i < population.bots.size(); i++){
-      //Check for No-Render Condition
-      if(population.bots[i].dead) continue;
-      if(!helper::inModRange(population.bots[i].pos, viewPos, renderDistance, world.chunkSize)) continue;
-
-      //Set the Position of the Sprite relative to the player
-      population.bots[i].sprite.resetModel();
-      population.bots[i].sprite.model = glm::translate(population.bots[i].sprite.model, population.bots[i].pos-viewPos);
-      population.bots[i].sprite.model = glm::rotate(population.bots[i].sprite.model, glm::radians(45.0f), glm::vec3(0, 1, 0));
-      population.bots[i].sprite.model = glm::rotate(population.bots[i].sprite.model, glm::radians(-rotation), glm::vec3(0, 1, 0));
-
-      //Setup the Uniforms
-      spriteShader.setMat4("mvp", projection*camera*population.bots[i].sprite.model);
-      spriteShader.setFloat("nframe", (float)(population.bots[i].sprite.animation.nframe % population.bots[i].sprite.animation.frames));
-      spriteShader.setFloat("animation", (float)population.bots[i].sprite.animation.ID);
-      spriteShader.setFloat("width", (float)population.bots[i].sprite.animation.w);
-      spriteShader.setFloat("height", (float)population.bots[i].sprite.animation.h);
-      spriteShader.setFloat("lightStrength", lightStrength);
-
-      //Render the Sprite Billboard
-      population.bots[i].sprite.render();
-    }
-
-    //Item Sprites
-    itemShader.useProgram();
-    itemShader.setInt("spriteTexture", 0);
-
-    //Loop over all Sprites
-    for(unsigned int i = 0; i < world.drops.size(); i++){
-      //Check for No-Render Condition
-      if(!helper::inModRange(world.drops[i].pos, viewPos, renderDistance, world.chunkSize)) continue;
-
-      //Set the Position of the Sprite relative to the player
-      world.drops[i].sprite.resetModel();
-      world.drops[i].sprite.model = glm::translate(world.drops[i].sprite.model, world.drops[i].pos-viewPos);
-      world.drops[i].sprite.model = glm::rotate(world.drops[i].sprite.model, glm::radians(45.0f), glm::vec3(0, 1, 0));
-      world.drops[i].sprite.model = glm::rotate(world.drops[i].sprite.model, glm::radians(-rotation), glm::vec3(0, 1, 0));
-
-      //Setup the Shader
-      itemShader.setFloat("index", (float)world.drops[i]._type);
-      itemShader.setMat4("mvp", projection*camera*world.drops[i].sprite.model);
-
-      //Draw the drops!
-      world.drops[i].sprite.render();
-    }
-
-
-    //Render Temp to Screen with a horizontal blur shader
-    glBindFramebuffer(GL_FRAMEBUFFER, temp1.fbo);
-    blurShader.useProgram();
-    blurShader.setFloat("mousex", focus.x);
-    blurShader.setFloat("mousey", focus.y);
-    blurShader.setFloat("width", SCREEN_WIDTH);
-    blurShader.setFloat("height", SCREEN_HEIGHT);
-    blurShader.setBool("vert", false);
-    blurShader.setBool("_fog", fog);
-    blurShader.setInt("_blur", blur);
-    blurShader.setVec3("fogColor", fogColor);
-    glActiveTexture(GL_TEXTURE0+0);
-    glBindTexture(GL_TEXTURE_2D, image.texture);
-    blurShader.setInt("imageTexture", 0);
-    glActiveTexture(GL_TEXTURE0+1);
-    glBindTexture(GL_TEXTURE_2D, image.depthTexture);
-    blurShader.setInt("depthTexture", 1);
-    glBindVertexArray(image.vao);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-    //Render screen to monitor with vertical blur shader
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glActiveTexture(GL_TEXTURE0+0);
-    glBindTexture(GL_TEXTURE_2D, temp1.texture);
-    blurShader.setInt("imageTexture", 0);
-    glActiveTexture(GL_TEXTURE0+1);
-    glBindTexture(GL_TEXTURE_2D, image.depthTexture);
-    blurShader.setInt("depthTexture", 1);
-    blurShader.setBool("vert", true);
-    glBindVertexArray(temp1.vao);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-
-*/
+    cubeShader.uniform("model", world.fullmodel.model);
+    world.fullmodel.render();
 
 	};
 

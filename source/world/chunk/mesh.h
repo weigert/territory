@@ -11,6 +11,8 @@ using namespace std;
 
 function<void(Model* , Chunk*)> greedy = [](Model* m, Chunk* c){
 
+  c->quadsize = 0;
+
 //  Blueprint temp;
   int LOD = scene::LOD;
   int CHLOD = CHUNKSIZE/LOD;
@@ -118,6 +120,7 @@ function<void(Model* , Chunk*)> greedy = [](Model* m, Chunk* c){
 //          int N = m->positions.size()/3;
 
           if(n < 0){
+
             //Add m->indices
             m->indices.push_back(m->positions.size()/3+0);
             m->indices.push_back(m->positions.size()/3+2);
@@ -142,8 +145,10 @@ function<void(Model* , Chunk*)> greedy = [](Model* m, Chunk* c){
             m->positions.push_back((p.x+x[0]+dv[0]-0.5)*(float)LOD);
             m->positions.push_back((p.y+x[1]+dv[1]-0.5)*(float)LOD);
             m->positions.push_back((p.z+x[2]+dv[2]-0.5)*(float)LOD);
+
           }
           else{
+
             //Add m->indices
             m->indices.push_back(m->positions.size()/3+0);
             m->indices.push_back(m->positions.size()/3+2);
@@ -168,6 +173,7 @@ function<void(Model* , Chunk*)> greedy = [](Model* m, Chunk* c){
             m->positions.push_back((p.x+x[0]+dv[0]-0.5+y[0])*(float)LOD);
             m->positions.push_back((p.y+x[1]+dv[1]-0.5+y[1])*(float)LOD);
             m->positions.push_back((p.z+x[2]+dv[2]-0.5+y[2])*(float)LOD);
+
           }
 
           color = block::getColor(current, color::hashrand(helper::getIndex(glm::vec3(x[0], x[1], x[2]), vec3(16))));
@@ -176,6 +182,8 @@ function<void(Model* , Chunk*)> greedy = [](Model* m, Chunk* c){
             m->add(m->colors, color);
             m->add(m->normals, vec3(q[0], q[1], q[2]));
           }
+
+          c->quadsize++;
 
           //Next Quad
         }
@@ -197,12 +205,26 @@ function<void(Model* , Chunk*)> greedy = [](Model* m, Chunk* c){
   //Finish!
 };
 
-/*
 function<void(Model*, vector<Chunk>*)> greedycollective = [](Model* m, vector<Chunk>* chunks){
   for(size_t i = 0; i < chunks->size(); i++){
-    greedy(m, &(*chunks)[i]);
+
+    if(i == 0) (*chunks)[i].quadstart = 0;
+    else (*chunks)[i].quadstart = (*chunks)[i-1].quadstart+(*chunks)[i-1].quadsize;
+
+    if(!(*chunks)[i].remesh) continue;
+
+    greedy(m, &(*chunks)[i]);     //Quadsize is set here!
+    (*chunks)[i].remesh = false;
+
+  //  std::cout<<"CHUNK: "<<i<<" "<<(*chunks)[i].quadstart<<" "<<(*chunks)[i].quadsize<<std::endl;
+  //  std::cout<<"MESH: "<<m->indices.size()<<" "<<m->positions.size()<<" "<<m->colors.size()<<" "<<m->normals.size()<<std::endl;
+
+/*
+  greedy(m, &(*chunks)[i]);     //Quadsize is set here!
+  (*chunks)[i].remesh = false;
+*/
+
   }
 };
-*/
 
 }
