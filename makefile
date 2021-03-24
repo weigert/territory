@@ -1,8 +1,13 @@
-OBJS = source/territory.cpp source/include/imgui/imgui.cpp source/include/imgui/imgui_demo.cpp source/include/imgui/imgui_draw.cpp source/include/imgui/imgui_widgets.cpp source/include/imgui/imgui_impl_opengl3.cpp source/include/imgui/imgui_impl_sdl.cpp
+# Territory Makefile
 
-CC = g++ -std=c++17
-COMPILER_FLAGS = -Wfatal-errors -O
-LINKER_FLAGS = -I/usr/local/include -L/usr/local/lib -lX11 -lpthread -lSDL2 -lnoise -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lGL -lGLEW -lboost_serialization -lboost_system -lboost_filesystem
-OBJ_NAME = territory
-all: $(OBJS)
-			$(CC) $(OBJS) $(COMPILER_FLAGS) $(LINKER_FLAGS) -o $(OBJ_NAME)
+CC = g++-10 -std=c++20
+CF = -Wall -O3
+#CF = -Wfatal -O
+LF = -I/usr/local/include -L/usr/local/lib
+
+# TinyEngine Linking Libraries
+TINYLINK = -lX11 -lpthread -lSDL2 -lnoise -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lGL -lGLEW -lboost_serialization -lboost_system -lboost_filesystem
+
+# Make Rule
+all: source/territory.cpp
+			$(CC) source/territory.cpp $(CF) $(LF) -lTinyEngine $(TINYLINK) -o territory
