@@ -188,13 +188,10 @@ bool World::evaluateBlueprint(Blueprint& print){
 
 void World::buffer(){
 
-  timer::benchmark<std::chrono::milliseconds>([&](){
-
   logg::deb("Buffering Chunks...");
 
   lock = true;
   evaluateBlueprint(blueprint);
-
 
   stack<int> remove;                      //Chunks to Remove
   vector<ivec3> load;                     //Chunks to Load
@@ -202,57 +199,57 @@ void World::buffer(){
   vec3 min = floor(cam::look/vec3(chunkSize))-scene::renderdist;  //Extent of Loaded Region
   vec3 max = floor(cam::look/vec3(chunkSize))+scene::renderdist;
 
-  if(any(lessThan(max, vec3(0))) || any(greaterThan(min, dim-vec3(1)))){
-
-    min = clamp(min, vec3(0), dim-vec3(1));
-    max = clamp(max, vec3(0), dim-vec3(1));
-
-  }
-  else{
-
-    min = clamp(min, vec3(0), dim-vec3(1));
-    max = clamp(max, vec3(0), dim-vec3(1));
-
-    for(int i = min.x; i <= max.x; i++)    //All Indices in Region
-    for(int j = min.y; j <= max.y; j++)
-    for(int k = min.z; k <= max.z; k++)
-      load.push_back(ivec3(i, j, k));
-
-  }
+  min = clamp(min, vec3(0), dim-vec3(1));
+  max = clamp(max, vec3(0), dim-vec3(1));
 
   /*
-      Goal: Find the chunks which are to be removed and the ones to be loaded.
-      This is currently slow (the slowest part!) because I compare all chunks.
-
-      This should be done faster.
+      Note: Sorting makes this much faster and more consistent!
   */
 
-  /*
-      Remove: All out of the slice.
-      Add: All in the slice.
-  */
+  //Sorting Indices
+  vector<int> ind(chunks.size());
+  for(size_t i = 0; i < chunks.size(); i++)
+    ind[i] = i;
 
-  std::cout<<"Chunk Iteration ";
-  timer::benchmark<std::chrono::milliseconds>([&](){
-
-  for(unsigned int i = 0; i < chunks.size(); i++){
-
-    if(any(lessThan(chunks[i].pos, (ivec3)min))        //Remove Out-of-Bounds Chunks
-    || any(greaterThanEqual(chunks[i].pos, (ivec3)max))){
-      remove.push(i);
-      continue;
-    }
-
-    for(size_t j = 0; j < load.size(); j++){
-      if(all(equal(load[j], chunks[i].pos))){
-        load.erase(load.begin()+j);
-        j--;
-      }
-    }                 //Don't Re-Load Existing Chunks
-
-  }
-
+  //Sort Indices using Chunk-Order
+  sort(ind.begin(), ind.end(),
+  [&](const int& a, const int& b) {
+    return (chunks[a] > chunks[b]);
   });
+
+  //Sort Models
+  sort(chunks.begin(), chunks.end(), greater<Chunk>());
+  vector<Model*> modelperm;
+  for(size_t i = 0; i < models.size(); i++)
+    modelperm.push_back(models[ind[i]]);
+  swap(models, modelperm);
+
+  //Potential Improvement:
+  //  More precise iteration on min, max, minchunk, maxchunk
+
+  for(int i = min.x; i <= max.x; i++)    //All Indices in Region
+  for(int j = min.y; j <= max.y; j++)
+  for(int k = min.z; k <= max.z; k++){
+    vec3 c = vec3(i,j,k);
+    if(any(greaterThan(c, maxchunk)) || any(lessThan(c, minchunk)))
+      load.push_back(c);
+  }
+
+  //Potential Improvement:
+  //  Remove only chunks on the remove slice with a precise iteration!
+  //  The chunks are sorted by their position so this works
+
+  for(size_t i = 0; i < chunks.size(); i++)
+  if(any(lessThan((vec3)chunks[i].pos, min)) || any(greaterThan((vec3)chunks[i].pos, max)))
+    remove.push(i);
+
+  minchunk = min;
+  maxchunk = max;
+
+
+
+
+
 
 
   logg::deb("Unloading ", remove.size(), " chunks");
@@ -312,6 +309,7 @@ void World::buffer(){
 
         Chunk chunk;
         chunk.pos = load.back();
+        chunk.remesh = true;
         int newn = helper::getIndex(mod((vec3)chunk.pos, dimr), dimr);
 
     //    fseek(inFile, 16*16*16*(newn-oldn), SEEK_CUR);
@@ -333,13 +331,21 @@ void World::buffer(){
 
   lock = false;
 
+
+
+  logg::deb("Meshing Chunks...");
+  timer::benchmark<std::chrono::milliseconds>([&](){
+
+  for(unsigned int i = 0; i < chunks.size(); i++){
+
+    if(i == models.size()) models.push_back(new Model());
+    if(chunks[i].remesh) models[i]->construct(chunkmesh::greedy, &chunks[i]);
+    chunks[i].remesh = false;
+    models[i]->move((vec3)(chunks[i].pos)*vec3(chunkSize));
+
+  }
+
   });
-
-
-//  timer::benchmark<std::chrono::milliseconds>([&](){
-    mesh();
-//  });
-
 
 }
 
@@ -351,20 +357,6 @@ void World::buffer(){
 
 void World::mesh(){
 
-  logg::deb("Meshing Chunks...");
-
-  for(unsigned int i = 0; i < chunks.size(); i++){
-
-    if(i == models.size()){
-      Model* model = new Model(chunkmesh::greedy, &chunks[i]);
-      models.push_back(model);
-      chunks[i].remesh = false;
-    }
-
-    models[i]->move((vec3)(chunks[i].pos)*vec3(chunkSize));
-  }
-
-  updateLOD = false;
 
 }
 

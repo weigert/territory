@@ -147,7 +147,7 @@ int main( int argc, char* args[] ) {
 	//Define the rendering pieeline
 	Tiny::view.pipeline = [&](){
 
-//    timer::benchmark<std::chrono::milliseconds>([&](){
+    timer::benchmark<std::chrono::milliseconds>([&](){
 
     mat4 back = translate(mat4(1), -cam::look);
 
@@ -157,10 +157,16 @@ int main( int argc, char* args[] ) {
 
     depthShader.use();
     depthShader.uniform("dvp", scene::dvp);
+
+  //  cubeShader.uniform("model", world.fullmodel.model);
+  //  world.fullmodel.render();
+
+
     for(unsigned int i = 0; i < world.models.size(); i++){
       depthShader.uniform("model", back*world.models[i]->model);
       world.models[i]->render();
     }
+
 
     // Regular View
 
@@ -186,12 +192,18 @@ int main( int argc, char* args[] ) {
     //    cubeShader.uniform("volPosA", vec3(0));
     //    cubeShader.uniform("volPosB", vec3(0));
 
+//    cubeShader.uniform("model", world.fullmodel.model);
+//    world.fullmodel.render();
+
     for(unsigned int i = 0; i < world.models.size(); i++){
-      cubeShader.uniform("model", world.models[i]->model);
+      cubeShader.uniform("model", glm::mat4(1));
       world.models[i]->render();
     }
 
-//  });
+
+    glFlush();
+
+  });
 
 /*
     billboardShader.use();

@@ -255,6 +255,7 @@ void World::buffer(){
   logg::deb("Unloading ", remove.size(), " chunks");
 
   while(!remove.empty()){                               //Delete Chunks
+    delete[] chunks[remove.top()].data;
     chunks.erase(chunks.begin()+remove.top());
     delete models[remove.top()];
     models.erase(models.begin()+remove.top());
@@ -312,11 +313,9 @@ void World::buffer(){
         chunk.remesh = true;
         int newn = helper::getIndex(mod((vec3)chunk.pos, dimr), dimr);
 
-    //    fseek(inFile, 16*16*16*(newn-oldn), SEEK_CUR);
-        fseek(inFile, 16*16*16*newn, SEEK_SET);
+        if(newn > oldn) fseek(inFile, 16*16*16*(newn-oldn-1), SEEK_CUR);
         if(fread(chunk.data, sizeof(unsigned char), 16*16*16, inFile) < 16*16*16)
           logg::err("Read Fail");
-    //    fseek(inFile, -16*16*16, SEEK_CUR);
         oldn = newn;
 
         chunks.push_back(chunk);
@@ -328,6 +327,7 @@ void World::buffer(){
 
     }
   }
+
 
   lock = false;
 
@@ -341,6 +341,8 @@ void World::buffer(){
     models[i]->move((vec3)(chunks[i].pos)*vec3(chunkSize));
 
   }
+
+//  fullmodel.construct(chunkmesh::greedycollective, &chunks);
 
 }
 

@@ -1,7 +1,7 @@
 #ifndef TERRITORY_BLOCK
 #define TERRITORY_BLOCK
 
-enum BlockType{
+enum BlockType: unsigned char {
   BLOCK_AIR,
   BLOCK_GRASS,
   BLOCK_DIRT,

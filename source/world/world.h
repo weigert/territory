@@ -42,6 +42,7 @@ vector<Chunk> chunks;                 //Loaded Chunks
 int sealevel = 16;
 
 vector<Model*> models;                 //Models for Rendering
+//Model fullmodel;
 void mesh();
 void remesh();
 

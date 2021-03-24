@@ -25,6 +25,12 @@ public:
     pos = _pos; biome = type;
   }
 
+/*
+  ~Chunk(){
+    delete[] data;
+  }
+  */
+
   //Position information and CHUNKSIZE information
   ivec3 pos = ivec3(0);
   BiomeType biome;

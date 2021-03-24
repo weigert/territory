@@ -17,6 +17,10 @@ struct bufferObject {
   bufferObject(vec3 p, BlockType t){
     set(p, t);
   }
+  bufferObject(ivec3 c){
+    cpos = c;
+    rpos = floor((vec3)cpos/rdim);
+  }
 
   void set(vec3 p, BlockType t){
     pos = p; type = t;
@@ -24,10 +28,10 @@ struct bufferObject {
     rpos = floor((vec3)cpos/rdim);
   }
 
-  ivec3 pos;      //Block Position in Chunk
-  ivec3 cpos;     //Block Position in Chunk
-  ivec3 rpos;     //Chunk Position in Region
-  BlockType type; //Metadata
+  ivec3 pos = vec3(0);        //Block Position in Chunk
+  ivec3 cpos = vec3(0);       //Block Position in Chunk
+  ivec3 rpos = vec3(0);       //Chunk Position in Region
+  BlockType type = BLOCK_AIR; //Metadata
 
   static vec3 rdim;
   static vec3 wdim;
