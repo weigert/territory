@@ -62,9 +62,9 @@ bool World::init(std::string savefile){
   blueprint::eval = &World::evaluateBlueprint;
 
   //Hydrological Terrain
-  Terrain terrain(SEED, ivec3(256, 80, 256));
-  terrain.rescale = vec3(4,3,4);
-  terrain.generate();
+  Terrain terrain(SEED, ivec3(512, 120, 512));
+  terrain.rescale = vec3(4,4,4);
+  terrain.generate(4500);
 
   //Perlin Terrain
 //  Terrain terrain(SEED, dim*(float)chunkSize);
@@ -224,7 +224,7 @@ void World::buffer(){
   for(size_t i = 0; i < models.size(); i++)
     modelperm.push_back(models[ind[i]]);
   swap(models, modelperm);
-*/
+  */
 
   //Potential Improvement:
   //  More precise iteration on min, max, minchunk, maxchunk
@@ -251,8 +251,12 @@ void World::buffer(){
   logg::deb("Unloading ", remove.size(), " chunks");
 
   while(!remove.empty()){                               //Delete Chunks
+
+  //  fullmodel.extend(chunkmesh::slicechunk, &chunks[remove.top()]);
+
     delete[] chunks[remove.top()].data;
     chunks.erase(chunks.begin()+remove.top());
+
     delete models[remove.top()];
     models.erase(models.begin()+remove.top());
     remove.pop();
@@ -261,6 +265,9 @@ void World::buffer(){
   //This is where we should remove chunks that don't deserve loading
 
   logg::deb("Loading ", load.size(), " chunks");
+
+  std::cout<<"Chunk Loading ";
+  timer::benchmark<std::chrono::microseconds>([&](){
 
   if(!load.empty()){                                    //Load New Chunks
 
@@ -324,6 +331,9 @@ void World::buffer(){
     }
   }
 
+  });
+
+
   lock = false;
 
 }
@@ -343,21 +353,29 @@ void World::mesh(){
     if(i == models.size())
       models.push_back(new Model());
 
-    if(chunks[i].remesh)
-      models[i]->construct(chunkmesh::greedy, &chunks[i]);
+    if(chunks[i].remesh){
+      std::cout<<"Chunk Meshing ";
+      timer::benchmark<std::chrono::microseconds>([&](){
+        models[i]->construct(chunkmesh::greedy, &chunks[i]);
+      });
+
+    }
+    models[i]->indexed = false;
 
     chunks[i].remesh = false;
 
   }
 
+
+  logg::deb("Constructing Full Model...");
+
   fullmodel.construct([&](Model* m){
-    for(size_t i = 0; i < models.size(); i++){
-      for(size_t j = 0; j < models[i]->indices.size(); j++){
-        m->indices.push_back(models[i]->indices[j]+m->positions.size()/3);
-      }
-      m->positions.insert(m->positions.end(), models[i]->positions.begin(), models[i]->positions.end());
-      m->colors.insert(m->colors.end(), models[i]->colors.begin(), models[i]->colors.end());
-      m->normals.insert(m->normals.end(), models[i]->normals.begin(), models[i]->normals.end());
+    for(auto model: models){
+      for(size_t j = 0; j < model->indices.size(); j++)
+        m->indices.push_back(model->indices[j]+m->positions.size()/3);
+      m->positions.insert(m->positions.end(), model->positions.begin(), model->positions.end());
+      m->colors.insert(m->colors.end(), model->colors.begin(), model->colors.end());
+      m->normals.insert(m->normals.end(), model->normals.begin(), model->normals.end());
     }
   });
 

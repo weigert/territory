@@ -25,10 +25,11 @@ World(string savefile, int _SEED){
     logg::err("Couldn't Initialize World");
   }
   logg::deb("Initialized World");
+  fullmodel.indexed = false;
 }
 
 int SEED = 0;                         //World Seed
-vec3 dim = vec3(64, 16, 64);          //Spatial Information (Size in Chunks)
+vec3 dim = vec3(128, 32, 128);          //Spatial Information (Size in Chunks)
 vec3 dimr = vec3(16, 16, 16);         //Chunks Per Region
 int chunkSize = CHUNKSIZE;
 
@@ -43,6 +44,7 @@ int sealevel = 16;
 
 vector<Model*> models;
 Model fullmodel;
+
 void mesh();
 void remesh();
 

@@ -40,7 +40,7 @@ struct bufferObject {
 };
 
 vec3 bufferObject::rdim = vec3(16,16,16);
-vec3 bufferObject::wdim = vec3(64,16,64);
+vec3 bufferObject::wdim = vec3(128,32,128);
 vec3 bufferObject::cdim = vec3(16,16,16);
 
 bool operator > (const bufferObject& a, const bufferObject& b) {
@@ -107,7 +107,7 @@ public:
 };
 
 int Blueprint::chunkSize = CHUNKSIZE;
-glm::vec3 Blueprint::dim = glm::vec3(64,16,64);
+glm::vec3 Blueprint::dim = glm::vec3(128,32,128);
 
 /*
 ================================================================================

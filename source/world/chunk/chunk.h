@@ -21,26 +21,25 @@ public:
     data = new unsigned char[CHUNKVOL];
     for(int i = 0; i < CHUNKVOL; i++) data[i] = 0;
   }
+
   Chunk(vec3 _pos, BiomeType type):Chunk(){
-    pos = _pos; biome = type;
+    pos = _pos;// biome = type;
   }
 
-/*
   ~Chunk(){
-    delete[] data;
+  //  if(data != NULL) delete[] data;
   }
-  */
 
   //Position information and CHUNKSIZE information
   ivec3 pos = ivec3(0);
-  BiomeType biome;
+//  BiomeType biome;
 
-  unsigned char* data;
+  unsigned char* data = NULL;
 
   bool remesh = true;
 
-  int quadstart = 0;
   int quadsize = 0;
+  int quadstart = 0;
 
   //Get the Flat-Array Index
   int getIndex(vec3 _p);
@@ -100,7 +99,6 @@ template<class Archive>
 void serialize(Archive & ar, Chunk & _chunk, const unsigned int version)
 {
   ar & _chunk.pos;
-  ar & _chunk.biome;
   ar & _chunk.data;
 }
 

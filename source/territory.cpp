@@ -18,10 +18,16 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/array.hpp>
 
+#include "helper/bundle.cpp"
+
 namespace fs = boost::filesystem;
 
 fs::path rootdir;                   //Savefile Information
 fs::path savedir;
+
+#define WDIM glm::vec3(128,32,128)
+#define RDIM glm::vec3(16,16,16)
+#define CDIM glm::vec3(16,16,16)
 
 #include "helper/volume.h"
 #include "helper/graph.h"
@@ -49,6 +55,7 @@ int main( int argc, char* args[] ) {
 
   //Load the World
   Tiny::view.vsync = false;
+  Tiny::benchmark = true;
   Tiny::window("Territory", 1200, 800);
 
   cam::near = -500.0f;
@@ -69,7 +76,7 @@ int main( int argc, char* args[] ) {
 
   Billboard shadow(2000, 2000, false);
 
-  logg::debug = false;
+  logg::debug = true;
 
 	World world((std::string)args[1], SEED);
   world.buffer();
@@ -111,21 +118,22 @@ int main( int argc, char* args[] ) {
       std::cout<<"Changed Zoom State "<<zoomstate<<std::endl;
 
       if(zoomstate == 2){
-         scene::renderdist = vec3(20);
-         scene::dproj = ortho<float>(-250,250,-250,250,-300,300);
+         scene::renderdist = vec3(15, 10, 15);
+         scene::dproj = ortho<float>(-400,400,-400,400,-300,300);
          scene::dvp = scene::dproj*scene::dview;
       }
       if(zoomstate == 1){
-         scene::renderdist = vec3(10);
-         scene::dproj = ortho<float>(-150,150,-150,150,-200,200);
+         scene::renderdist = vec3(10, 5, 10);
+         scene::dproj = ortho<float>(-300,300,-300,300,-300,300);
          scene::dvp = scene::dproj*scene::dview;
       }
       if(zoomstate == 0){
          scene::renderdist = vec3(5);
-         scene::dproj = ortho<float>(-100,100,-100,100,-300,300);
+         scene::dproj = ortho<float>(-200,200,-200,200,-300,300);
          scene::dvp = scene::dproj*scene::dview;
       }
 
+      world.fullmodel.construct([](Model* m){});
       for(size_t i = 0; i < world.chunks.size(); i++)
         world.chunks[i].remesh = true;
 
@@ -138,10 +146,6 @@ int main( int argc, char* args[] ) {
       oldzoomstate = zoomstate;
     }
 
-
-
-  //  scene::depthCamera = lookAt(scene::lightpos+cam::look, cam::look, vec3(0,1,0));
-
 	};
 
   Square2D flat;
@@ -153,18 +157,21 @@ int main( int argc, char* args[] ) {
 	//Define the rendering pieeline
 	Tiny::view.pipeline = [&](){
 
-  //  timer::benchmark<std::chrono::milliseconds>([&](){
-
     mat4 back = translate(mat4(1), -cam::look);
 
     // Shadow Mapping
 
-    shadow.target();
+    shadow.target(color::black);
     depthShader.use();
     depthShader.uniform("dvp", scene::dvp);
 
-    depthShader.uniform("model", back*world.fullmodel.model);
-    world.fullmodel.render();
+  //  depthShader.uniform("model", back*world.fullmodel.model);
+  ///  world.fullmodel.render();
+
+   for(size_t i = 0; i < world.models.size(); i++){
+      depthShader.uniform("model", back*world.models[i]->model);
+      world.models[i]->render();
+    }
 
     // Regular View
 
@@ -182,16 +189,22 @@ int main( int argc, char* args[] ) {
     cubeShader.uniform("lightpos", scene::lightpos);
     cubeShader.uniform("lookdir", cam::pos);
 
-    cubeShader.uniform("grain", scene::grain);  //Texture Grain
-    cubeShader.uniform("fog", scene::fog);  //Texture Grain
-    cubeShader.uniform("fogcolor", scene::fogcolor);  //Texture Grain
+    cubeShader.uniform("grain", scene::grain);          //Texture Grain
+    cubeShader.uniform("fog", scene::fog);              //Fog
+    cubeShader.uniform("fogcolor", scene::fogcolor);    //
+    cubeShader.uniform("shading", true);                  //Shading
 
-    //    cubeShader.uniform("transparent", false); //Fix Later
-    //    cubeShader.uniform("volPosA", vec3(0));
-    //    cubeShader.uniform("volPosB", vec3(0));
+//     cubeShader.uniform("transparent", false); //Fix Later
+//     cubeShader.uniform("volPosA", vec3(0));
+//     cubeShader.uniform("volPosB", vec3(0));
 
-    cubeShader.uniform("model", world.fullmodel.model);
-    world.fullmodel.render();
+//     cubeShader.uniform("model", world.fullmodel.model);
+//     world.fullmodel.render();
+
+    for(size_t i = 0; i < world.models.size(); i++){
+      cubeShader.uniform("model", world.models[i]->model);
+      world.models[i]->render();
+    }
 
 	};
 
@@ -205,7 +218,7 @@ int main( int argc, char* args[] ) {
     scene::dvp = scene::dproj*scene::dview;
   //  scene::lightstrength = 1.4*ease::quartic(scene::daytime)+0.1;
 
-    scene::fogcolor = glm::vec4(ease::quartic(scene::daytime), ease::quartic(scene::daytime), ease::quartic(scene::daytime), 1.0);
+  //  scene::fogcolor = glm::vec4(ease::quartic(scene::daytime), ease::quartic(scene::daytime), ease::quartic(scene::daytime), 1.0);
 
 
 

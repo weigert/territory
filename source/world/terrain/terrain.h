@@ -45,7 +45,7 @@ public:
 
   float steepness = 0.6;
 
-  void generate();
+  void generate(int ncycles);
   //
   void perlin(int SEED, vec3 dim, bool(World::*f)(Blueprint& print), World* w);
 
@@ -148,7 +148,7 @@ void Terrain::grow(){
 
 
 //Generate the terrain
-void Terrain::generate(){
+void Terrain::generate(int ncycles){
 
   //Initialize
   logg::out("Initializing Terrain");
@@ -162,7 +162,6 @@ void Terrain::generate(){
 
   //Do a number of cycles...
   logg::out("Executing Erosion and Growth Steps");
-  int ncycles = 1500;
   for(int i = 0; i < ncycles; i++){
     erode(250);
     grow();

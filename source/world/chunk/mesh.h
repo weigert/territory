@@ -120,7 +120,7 @@ function<void(Model* , Chunk*)> greedy = [](Model* m, Chunk* c){
 //          int N = m->positions.size()/3;
 
           if(n < 0){
-
+/*
             //Add m->indices
             m->indices.push_back(m->positions.size()/3+0);
             m->indices.push_back(m->positions.size()/3+2);
@@ -145,10 +145,34 @@ function<void(Model* , Chunk*)> greedy = [](Model* m, Chunk* c){
             m->positions.push_back((p.x+x[0]+dv[0]-0.5)*(float)LOD);
             m->positions.push_back((p.y+x[1]+dv[1]-0.5)*(float)LOD);
             m->positions.push_back((p.z+x[2]+dv[2]-0.5)*(float)LOD);
+            */
 
+            m->positions.push_back((p.x+x[0]-0.5)*(float)LOD);
+            m->positions.push_back((p.y+x[1]-0.5)*(float)LOD);
+            m->positions.push_back((p.z+x[2]-0.5)*(float)LOD);
+            
+            m->positions.push_back((p.x+x[0]+du[0]+dv[0]-0.5)*(float)LOD);
+            m->positions.push_back((p.y+x[1]+du[1]+dv[1]-0.5)*(float)LOD);
+            m->positions.push_back((p.z+x[2]+du[2]+dv[2]-0.5)*(float)LOD);
+
+            m->positions.push_back((p.x+x[0]+du[0]-0.5)*(float)LOD);
+            m->positions.push_back((p.y+x[1]+du[1]-0.5)*(float)LOD);
+            m->positions.push_back((p.z+x[2]+du[2]-0.5)*(float)LOD);
+
+            m->positions.push_back((p.x+x[0]+dv[0]-0.5)*(float)LOD);
+            m->positions.push_back((p.y+x[1]+dv[1]-0.5)*(float)LOD);
+            m->positions.push_back((p.z+x[2]+dv[2]-0.5)*(float)LOD);
+
+            m->positions.push_back((p.x+x[0]+du[0]+dv[0]-0.5)*(float)LOD);
+            m->positions.push_back((p.y+x[1]+du[1]+dv[1]-0.5)*(float)LOD);
+            m->positions.push_back((p.z+x[2]+du[2]+dv[2]-0.5)*(float)LOD);
+
+            m->positions.push_back((p.x+x[0]-0.5)*(float)LOD);
+            m->positions.push_back((p.y+x[1]-0.5)*(float)LOD);
+            m->positions.push_back((p.z+x[2]-0.5)*(float)LOD);
           }
           else{
-
+/*
             //Add m->indices
             m->indices.push_back(m->positions.size()/3+0);
             m->indices.push_back(m->positions.size()/3+2);
@@ -156,7 +180,6 @@ function<void(Model* , Chunk*)> greedy = [](Model* m, Chunk* c){
             m->indices.push_back(m->positions.size()/3+1);
             m->indices.push_back(m->positions.size()/3+3);
             m->indices.push_back(m->positions.size()/3+0);
-
             //Vertex 0
             m->positions.push_back((p.x+x[0]-0.5+y[0])*(float)LOD);
             m->positions.push_back((p.y+x[1]-0.5+y[1])*(float)LOD);
@@ -174,11 +197,35 @@ function<void(Model* , Chunk*)> greedy = [](Model* m, Chunk* c){
             m->positions.push_back((p.y+x[1]+dv[1]-0.5+y[1])*(float)LOD);
             m->positions.push_back((p.z+x[2]+dv[2]-0.5+y[2])*(float)LOD);
 
+            */
+            m->positions.push_back((p.x+x[0]-0.5+y[0])*(float)LOD);
+            m->positions.push_back((p.y+x[1]-0.5+y[1])*(float)LOD);
+            m->positions.push_back((p.z+x[2]-0.5+y[2])*(float)LOD);
+
+            m->positions.push_back((p.x+x[0]+du[0]-0.5+y[0])*(float)LOD);
+            m->positions.push_back((p.y+x[1]+du[1]-0.5+y[1])*(float)LOD);
+            m->positions.push_back((p.z+x[2]+du[2]-0.5+y[2])*(float)LOD);
+
+            m->positions.push_back((p.x+x[0]+du[0]+dv[0]-0.5+y[0])*(float)LOD);
+            m->positions.push_back((p.y+x[1]+du[1]+dv[1]-0.5+y[1])*(float)LOD);
+            m->positions.push_back((p.z+x[2]+du[2]+dv[2]-0.5+y[2])*(float)LOD);
+
+            m->positions.push_back((p.x+x[0]+du[0]+dv[0]-0.5+y[0])*(float)LOD);
+            m->positions.push_back((p.y+x[1]+du[1]+dv[1]-0.5+y[1])*(float)LOD);
+            m->positions.push_back((p.z+x[2]+du[2]+dv[2]-0.5+y[2])*(float)LOD);
+
+            m->positions.push_back((p.x+x[0]+dv[0]-0.5+y[0])*(float)LOD);
+            m->positions.push_back((p.y+x[1]+dv[1]-0.5+y[1])*(float)LOD);
+            m->positions.push_back((p.z+x[2]+dv[2]-0.5+y[2])*(float)LOD);
+
+            m->positions.push_back((p.x+x[0]-0.5+y[0])*(float)LOD);
+            m->positions.push_back((p.y+x[1]-0.5+y[1])*(float)LOD);
+            m->positions.push_back((p.z+x[2]-0.5+y[2])*(float)LOD);
           }
 
           color = block::getColor(current, color::hashrand(helper::getIndex(glm::vec3(x[0], x[1], x[2]), vec3(16))));
 
-          for(int l = 0; l < 4; l++){
+          for(int l = 0; l < 6; l++){
             m->add(m->colors, color);
             m->add(m->normals, vec3(q[0], q[1], q[2]));
           }
@@ -203,6 +250,18 @@ function<void(Model* , Chunk*)> greedy = [](Model* m, Chunk* c){
   }
   */
   //Finish!
+};
+
+/*
+      This needs a technique to slice out
+*/
+
+function<void(Model*, Chunk*)> slicechunk = [](Model* m, Chunk* chunk){
+
+  m->positions.erase(m->positions.begin()+chunk->quadstart*18, m->positions.begin()+(chunk->quadstart+chunk->quadsize)*18);
+  m->normals.erase(m->normals.begin()+chunk->quadstart*18, m->normals.begin()+(chunk->quadstart+chunk->quadsize)*18);
+  m->colors.erase(m->colors.begin()+chunk->quadstart*24, m->colors.begin()+(chunk->quadstart+chunk->quadsize)*24);
+
 };
 
 function<void(Model*, vector<Chunk>*)> greedycollective = [](Model* m, vector<Chunk>* chunks){

@@ -17,10 +17,10 @@ uniform float lightstrength;
 
 in vec4 ex_ScreenPos;
 
+uniform bool shading;
 uniform bool grain;
 uniform bool fog;
 uniform vec3 fogcolor;
-
 
 /*
 
@@ -36,9 +36,8 @@ uniform sampler2D shadowMap;
 uniform mat4 dbmvp;
 
 float rand(vec2 co){
-    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+  return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
 }
-
 
 float gridSample(int size){
 
@@ -55,9 +54,10 @@ float gridSample(int size){
           shadow += currentDepth-bias > pcfDepth ? 1.0 : 0.0;
       }
   }
-  //Normalize
+
   shadow/=((2*size+1)*(2*size+1)*2.0);
   return shadow;
+
 }
 
 vec4 shade(){
@@ -69,29 +69,28 @@ vec4 shade(){
   return vec4(vec3(1.0f-shadow), 1.0f);
 }
 
-float linearize_depth(float d,float zNear,float zFar)
-{
-    float z_n = 2.0 * d - 1.0;
-    return 2.0 * zNear * zFar / (zFar + zNear - z_n * (zFar - zNear));
-}
-
 void main(void) {
 
-  fragColor = ex_Color;     //Original Color
+  fragColor = ex_Color;
 
+  //Shading
 
-  fragColor = shade()*fragColor;
+  if(shading)
+    fragColor = shade()*fragColor;
 
   //Fog Effect
 
   if(fog){
     float fogmix = ex_ScreenPos.z/ex_ScreenPos.w*0.5+0.5;///ex_ScreenPos.w;////texture(shadowMap, ex_Position).x;
-  //  fogmix = (fogmix-0.25)*2;
-    fragColor = mix(fragColor, vec4(fogcolor,1), fogmix);
+    fogmix = (fogmix-0.3)/(1.0-0.3);
+    fogmix = 1.0-(1.0-fogmix)*(1.0-fogmix);
+    vec3 fogcolor2 = vec3(1);
+    fragColor = mix(fragColor, vec4(fogcolor2,1), fogmix);
   }
 
+  //Transparency Cancel
+
   /*
-  //Check for Transparency Window
   if(transparent){
     if(all(greaterThanEqual(ex_FragPos+0.5, min(volPosA, volPosB))) && all(lessThanEqual(ex_FragPos-0.5, max(volPosA, volPosB)))){
       discard; return;
@@ -100,6 +99,7 @@ void main(void) {
 */
 
   //Texture Grain
-  if(grain) fragColor += 0.1*vec4(rand(ex_Position.xy)*vec3(1.0f), 1.0f);
+  if(grain)
+    fragColor += 0.1*vec4(rand(ex_Position.xy)*vec3(1.0f), 1.0f);
 
 }
