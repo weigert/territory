@@ -96,7 +96,7 @@ void World::blank(){
     for(int j = 0; j < dim.y; j++){
       for(int k = 0; k < dim.z; k++){
 
-        Chunk chunk(vec3(i, j, k), BIOME_VOID);
+        Chunk chunk(vec3(i, j, k), tempchunk);
         string savefile = "world.region"+regionString(chunk.pos);
         if(savefile != oldsavefile){
           oldsavefile = savefile;
@@ -136,10 +136,12 @@ bool World::evaluateBlueprint(Blueprint& print){
   sort(print.edits.begin(), print.edits.end(), greater<bufferObject>());
 
   Chunk chunk;
+  chunk.data = tempchunk;
 
   while(!print.edits.empty()){
 
-    string savefile = "world.region"+regionString(print.edits.back().cpos);
+    ivec3 rpos = print.edits.back().rpos;
+    string savefile = "world.region"+regionString(print.edits.back().cpos);;
 
     FILE* inFile = fopen((savedir/savefile).string().c_str(), "rb");
     if(inFile == NULL){
@@ -157,17 +159,18 @@ bool World::evaluateBlueprint(Blueprint& print){
 
     while(n < N){  //Region Size
 
-      if(fread(chunk.data, sizeof(unsigned char), CHUNKVOL, inFile) < CHUNKVOL)
+      if(fread(chunk.data, sizeof(BlockType), CHUNKVOL, inFile) < CHUNKVOL)
         logg::err("Read Error");
 
       chunk.pos = helper::getPos(n, dimr) + (vec3)print.edits.back().rpos*dimr;
 
-      while(!print.edits.empty() && all(equal(chunk.pos, print.edits.back().cpos))){
+      while(!print.edits.empty() && all(equal(chunk.pos, print.edits.back().cpos)) && all(equal(rpos, print.edits.back().rpos))){
         chunk.setPosition(mod((vec3)print.edits.back().pos, vec3(chunkSize)), print.edits.back().type);
         print.edits.pop_back();
       }
 
-      fwrite(chunk.data, sizeof(unsigned char), CHUNKVOL, outFile);
+      if(fwrite(chunk.data, sizeof(BlockType), CHUNKVOL, outFile) < CHUNKVOL)
+        logg::err("Write Error");
 
       n++;
 
@@ -199,9 +202,6 @@ void World::buffer(){
   vec3 min = floor(cam::look/vec3(chunkSize))-scene::renderdist;  //Extent of Loaded Region
   vec3 max = floor(cam::look/vec3(chunkSize))+scene::renderdist;
 
-  min = clamp(min, vec3(0), dim-vec3(1));
-  max = clamp(max, vec3(0), dim-vec3(1));
-
   /*
       Note: Sorting makes this much faster and more consistent!
   */
@@ -229,38 +229,81 @@ void World::buffer(){
   //Potential Improvement:
   //  More precise iteration on min, max, minchunk, maxchunk
 
-  for(int i = min.x; i <= max.x; i++)    //All Indices in Region
-  for(int j = min.y; j <= max.y; j++)
-  for(int k = min.z; k <= max.z; k++){
-    vec3 c = vec3(i,j,k);
-    if(any(greaterThan(c, maxchunk)) || any(lessThan(c, minchunk)))
-      load.push_back(c);
-  }
 
   //Potential Improvement:
   //  Remove only chunks on the remove slice with a precise iteration!
   //  The chunks are sorted by their position so this works
 
+/*
+
   for(size_t i = 0; i < chunks.size(); i++)
   if(any(lessThan((vec3)chunks[i].pos, min)) || any(greaterThan((vec3)chunks[i].pos, max)))
     remove.push(i);
 
+  min = clamp(min, vec3(0), dim-vec3(1-1));
+  max = clamp(max, vec3(0-1), dim-vec3(1));
+
+  for(int i = min.x; i < max.x+1; i++)    //All Indices in Region
+  for(int j = min.y; j < max.y+1; j++)
+  for(int k = min.z; k < max.z+1; k++){
+    vec3 c = vec3(i,j,k);
+    if(any(greaterThan(c, maxchunk)) || any(lessThan(c, minchunk)))
+      load.push_back(c);
+  }
+
   minchunk = min;
   maxchunk = max;
+
+*/
+
+  //Only Load / Unload in Multiples of LOD
+  min -= mod(min, vec3(scene::LOD));
+  max += ((float)scene::LOD-mod(max, vec3(scene::LOD)));
+
+  min = clamp(min, vec3(0), dim-vec3(1-1));
+  max = clamp(max, vec3(0-1), dim-vec3(1));
+
+  for(size_t i = 0; i < chunks.size(); i++)
+  if(any(lessThan((vec3)chunks[i].pos, min)) || any(greaterThan((vec3)chunks[i].pos, max)))
+    remove.push(i);
+
+
+  for(int i = min.x; i < max.x+1; i++)    //All Indices in Region
+  for(int j = min.y; j < max.y+1; j++)
+  for(int k = min.z; k < max.z+1; k++){
+    vec3 c = vec3(i,j,k);
+    if(any(greaterThan(c, maxchunk)) || any(lessThan(c, minchunk)))
+      load.push_back(c);
+  }
+
+  minchunk = min;
+  maxchunk = max;
+
+
+
+
+
+
+
 
   logg::deb("Unloading ", remove.size(), " chunks");
 
   while(!remove.empty()){                               //Delete Chunks
 
-  //  fullmodel.extend(chunkmesh::slicechunk, &chunks[remove.top()]);
+    free.push_front(chunks[remove.top()].data);         //Return Chunk Pointer
 
-    delete[] chunks[remove.top()].data;
-    chunks.erase(chunks.begin()+remove.top());
+    if(!chunks[remove.top()].firstmesh)
+    for(int d = 0; d < 6; d++)
+      vertexpool.unsection(chunks[remove.top()].faces[d]);
 
-    delete models[remove.top()];
-    models.erase(models.begin()+remove.top());
+    swap(chunks[remove.top()], chunks.back());
+    chunks.pop_back();
+
     remove.pop();
+
   }
+
+
 
   //This is where we should remove chunks that don't deserve loading
 
@@ -298,30 +341,30 @@ void World::buffer(){
 
     while(!load.empty()){
 
+      ivec3 rpos = load.back()/(ivec3)RDIM;
       string savefile = "world.region"+regionString(load.back());
 
       FILE* inFile = fopen((savedir/savefile).string().c_str(), "rb");
       if(inFile == NULL){
         logg::err("Failed to open region file "+savefile);
+        load.pop_back();
         continue;
       }
 
       int oldn = helper::getIndex(mod((vec3)load.back(), dimr), dimr);
-      fseek(inFile, 16*16*16*oldn, SEEK_SET);
+      fseek(inFile, CHUNKVOL*oldn, SEEK_SET);
 
-      while(savefile == "world.region"+regionString(load.back())){
+      while(rpos == load.back()/(ivec3)RDIM){
 
-        Chunk chunk;
-        chunk.pos = load.back();
-        chunk.remesh = true;
-        int newn = helper::getIndex(mod((vec3)chunk.pos, dimr), dimr);
+        chunks.emplace_back(load.back(), getChunkPointer());
 
-        if(newn > oldn) fseek(inFile, 16*16*16*(newn-oldn-1), SEEK_CUR);
-        if(fread(chunk.data, sizeof(unsigned char), 16*16*16, inFile) < 16*16*16)
+        int newn = helper::getIndex(mod((vec3)chunks.back().pos, dimr), dimr);
+
+        if(newn > oldn) fseek(inFile, CHUNKVOL*(newn-oldn-1), SEEK_CUR);
+        if(fread(chunks.back().data, sizeof(unsigned char), CHUNKVOL, inFile) < CHUNKVOL)
           logg::err("Read Fail");
         oldn = newn;
 
-        chunks.push_back(chunk);
         load.pop_back();
 
       }
@@ -332,7 +375,6 @@ void World::buffer(){
   }
 
   });
-
 
   lock = false;
 
@@ -346,38 +388,160 @@ void World::buffer(){
 
 void World::mesh(){
 
+  sort(chunks.begin(), chunks.end(), less<Chunk>());
+
+  //What I create chunks which represent merged chunks?
+
   logg::deb("Meshing Chunks...");
 
-  for(unsigned int i = 0; i < chunks.size(); i++){
+  if(scene::LOD == 1){
 
-    if(i == models.size())
-      models.push_back(new Model());
+    std::cout<<"Chunk Meshing ";
+    timer::benchmark<std::chrono::microseconds>([&](){
 
-    if(chunks[i].remesh){
-      std::cout<<"Chunk Meshing ";
-      timer::benchmark<std::chrono::microseconds>([&](){
-        models[i]->construct(chunkmesh::greedy, &chunks[i]);
-      });
+    for(auto& chunk: chunks){
 
+      if(chunk.remesh){
+
+        if(!chunk.firstmesh)
+          for(int d = 0; d < 6; d++)
+            vertexpool.unsection(chunk.faces[d]);
+
+        chunkmesh::greedypool(&chunk, &vertexpool);
+        //chunkmesh::occlusionpool(&chunk, &vertexpool);
+        chunk.remesh = false;
+        chunk.firstmesh = false;
+
+      }
     }
-    models[i]->indexed = false;
 
-    chunks[i].remesh = false;
+    });
+
+  }
+
+  else if(scene::LOD == 2){
+
+    vec3 effchunk = maxchunk-minchunk;
+    vec3 base = glm::mod(minchunk, vec3(2));
+
+    for(size_t i = base.x; i < effchunk.x; i += 2){
+      for(size_t j = base.y; j < effchunk.y; j += 2){
+        for(size_t k = base.z; k < effchunk.z; k += 2){
+
+          //Identify the 8 chunks we need
+          Chunk* basechunk = &chunks[helper::getIndex(vec3(i, j, k), effchunk+1.0f)];
+
+          if(!basechunk->remesh) continue;
+
+          if(!basechunk->firstmesh){
+            for(int d = 0; d < 6; d++)
+              vertexpool.unsection(basechunk->faces[d]);
+          }
+
+          const int CH = CHUNKSIZE;
+          const int CHLOD = CHUNKSIZE/2;
+
+          //Merge the Data of these Chunks into a Super Chunk
+          for(size_t x = 0; x < CHLOD; x++)
+          for(size_t y = 0; y < CHLOD; y++)
+          for(size_t z = 0; z < CHLOD; z++){
+
+            //Offset Stuff
+
+            for(size_t ox = 0; ox < 2; ox++)
+            for(size_t oy = 0; oy < 2; oy++)
+            for(size_t oz = 0; oz < 2; oz++){
+
+              Chunk* cur = &chunks[helper::getIndex(vec3(i, j, k)+vec3(ox, oy, oz), effchunk+1.0f)];
+              tempchunk[(x+ox*CHLOD)*CH*CH+(y+oy*CHLOD)*CH+(z+oz*CHLOD)] = cur->data[2*x*CH*CH+2*y*CH+2*z];
+              cur->remesh = false;
+
+            }
+
+          }
+
+          Chunk newchunk(basechunk->pos, tempchunk);
+
+          scene::LOD = 1;
+          scene::SCALE = 2;
+          chunkmesh::greedypool(&newchunk, &vertexpool);
+          scene::LOD = 2;
+          scene::SCALE = 1;
+
+          basechunk->faces = newchunk.faces;
+          basechunk->firstmesh = false;
+
+        }
+      }
+    }
+
+
+  }
+
+  else if(scene::LOD == 4){
+
+    vec3 effchunk = maxchunk-minchunk;
+    vec3 base = glm::mod(minchunk, vec3(4));
+
+    for(size_t i = base.x; i < effchunk.x-3; i += 4){    //Don't iterate too far, but also increase by a factor of two here
+      for(size_t j = base.y; j < effchunk.y-3; j += 4){
+        for(size_t k = base.z; k < effchunk.z-3; k += 4){
+
+          //Identify the 8 chunks we need
+          Chunk* basechunk = &chunks[helper::getIndex(vec3(i, j, k), effchunk+1.0f)];
+
+          if(!basechunk->remesh) continue;
+
+          const int CH = CHUNKSIZE;
+          const int CHLOD = CHUNKSIZE/4;
+
+          //Merge the Data of these Chunks into a Super Chunk
+          for(size_t x = 0; x < CHLOD; x++)
+          for(size_t y = 0; y < CHLOD; y++)
+          for(size_t z = 0; z < CHLOD; z++){
+
+            //Offset Stuff
+
+            for(size_t ox = 0; ox < 4; ox++)
+            for(size_t oy = 0; oy < 4; oy++)
+            for(size_t oz = 0; oz < 4; oz++){
+
+              Chunk* cur = &chunks[helper::getIndex(vec3(i, j, k)+vec3(ox, oy, oz), effchunk+1.0f)];
+              tempchunk[(x+ox*CHLOD)*CH*CH+(y+oy*CHLOD)*CH+(z+oz*CHLOD)] = cur->data[4*x*CH*CH+4*y*CH+4*z];
+              cur->remesh = false;
+
+            }
+
+          }
+
+          Chunk newchunk(basechunk->pos, tempchunk);
+
+          if(!basechunk->firstmesh){
+            for(int d = 0; d < 6; d++)
+              vertexpool.unsection(basechunk->faces[d]);
+          }
+
+          scene::LOD = 1;
+          scene::SCALE = 4;
+          chunkmesh::greedypool(&newchunk, &vertexpool);
+          scene::LOD = 4;
+          scene::SCALE = 1;
+
+          basechunk->faces = newchunk.faces;
+          basechunk->firstmesh = false;
+
+        }
+      }
+    }
+
+
+
+
 
   }
 
 
-  logg::deb("Constructing Full Model...");
-
-  fullmodel.construct([&](Model* m){
-    for(auto model: models){
-      for(size_t j = 0; j < model->indices.size(); j++)
-        m->indices.push_back(model->indices[j]+m->positions.size()/3);
-      m->positions.insert(m->positions.end(), model->positions.begin(), model->positions.end());
-      m->colors.insert(m->colors.end(), model->colors.begin(), model->colors.end());
-      m->normals.insert(m->normals.end(), model->normals.begin(), model->normals.end());
-    }
-  });
+  vertexpool.update();
 
 
 }

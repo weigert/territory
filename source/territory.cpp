@@ -18,16 +18,20 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/array.hpp>
 
-#include "helper/bundle.cpp"
+#define CHUNKSIZE 16
+#define CHUNKVOL (CHUNKSIZE*CHUNKSIZE*CHUNKSIZE)
+#define WDIM glm::vec3(128,32,128)
+#define RDIM glm::vec3(16,16,16)
+#define CDIM glm::vec3(CHUNKSIZE)
+
+#include "render/vertexpool.cpp"
 
 namespace fs = boost::filesystem;
 
 fs::path rootdir;                   //Savefile Information
 fs::path savedir;
 
-#define WDIM glm::vec3(128,32,128)
-#define RDIM glm::vec3(16,16,16)
-#define CDIM glm::vec3(16,16,16)
+
 
 #include "helper/volume.h"
 #include "helper/graph.h"
@@ -37,6 +41,10 @@ fs::path savedir;
 int main( int argc, char* args[] ) {
 
   //Parse Commandline Options
+
+
+
+
 
   parse::get(argc, args);
 
@@ -53,33 +61,63 @@ int main( int argc, char* args[] ) {
     SEED = std::stoi(parse::option["s"]);
   logg::deb("SEED: ", SEED);
 
-  //Load the World
+
+
+
+
   Tiny::view.vsync = false;
-  Tiny::benchmark = true;
+  Tiny::view.antialias = 0;
+//  Tiny::benchmark = true;
   Tiny::window("Territory", 1200, 800);
 
   cam::near = -500.0f;
   cam::far = 500.0f;
   cam::rad = 1.0f;
-  cam::look = vec3(32,0,32);
+
+
+//  cam::look = CDIM*WDIM/2.0f;
+  //cam::look.y = CDIM.y*WDIM.y/4.0f;
+
+  cam::moved = true;
   cam::init(5, cam::ORTHO);
 
-  //Load Shaders
-  Shader cubeShader({"source/shader/default.vs", "source/shader/default.fs"}, {"in_Position, in_Normal, in_Color"});
-  Shader reflectShader({"source/shader/reflect.vs", "source/shader/reflect.fs"}, {"in_Position, in_Normal, in_Color"});
-  Shader depthShader({"source/shader/depth.vs", "source/shader/depth.fs"}, {"in_Position"});
-  Shader spriteDepthShader({"source/shader/spritedepth.vs", "source/shader/spritedepth.fs"}, {"in_Quad, in_Tex"});
-  Shader spriteShader({"source/shader/sprite.vs", "source/shader/sprite.fs"}, {"in_Quad, in_Tex"});
-  Shader itemShader({"source/shader/item.vs", "source/shader/item.fs"}, {"in_Quad, in_Tex"});
-  Shader blurShader({"source/shader/dof.vs", "source/shader/dof.fs"}, {"in_Quad, in_Tex"});
-  Shader billboardShader({"source/shader/billboard.vs", "source/shader/billboard.fs"}, {"in_Quad, in_Tex"});
 
-  Billboard shadow(2000, 2000, false);
+   scene::renderdist = vec3(5, 4, 5);
+   scene::dproj = ortho<float>(-200,200,-200,200,-300,300);
+   scene::dvp = scene::dproj*scene::dview;
+
+   scene::QUAD = 2400;
+   scene::MAXBUCKET = 18*18*18*8;
+
+
+
+  //Load Shaders
+  Shader cubeShader({"source/shader/default.vs", "source/shader/default.fs"}, {"in_Position", "in_Normal", "in_Color"});
+  Shader depthShader({"source/shader/depth.vs", "source/shader/depth.fs"}, {"in_Position"});
+	Shader effectShader({"source/shader/effect.vs", "source/shader/effect.fs"}, {"in_Quad", "in_Tex"});
+
+  Billboard shadow(1000, 1000, false);
+  Billboard image(1200, 800);
+
+  Square2D flat;
 
   logg::debug = true;
 
 	World world((std::string)args[1], SEED);
   world.buffer();
+  world.mesh();
+
+  std::unordered_set<int> groups;
+  groups.clear();
+  if(cam::pos.x < 0) groups.insert(0);
+  if(cam::pos.x > 0) groups.insert(1);
+  if(cam::pos.y < 0) groups.insert(2);
+  if(cam::pos.y > 0) groups.insert(3);
+  if(cam::pos.z < 0) groups.insert(4);
+  if(cam::pos.z > 0) groups.insert(5);
+  world.vertexpool.mask([&](DAIC& cmd){
+    return groups.contains(cmd.group);
+  });
 
   timer::Timer<std::chrono::milliseconds> worldUpdateTimer;
   worldUpdateTimer.set_interval(&world.tickLength, [&](){
@@ -87,75 +125,156 @@ int main( int argc, char* args[] ) {
   });
 
   vec3 prelookpos = floor(cam::look/vec3(world.chunkSize));
+  vec3 oldpos;
+  vec3 newpos;
 
-  int zoomstate = 0;
-  int oldzoomstate = 0;
+  oldpos.x = (cam::pos.x > 0)?1:-1;
+  oldpos.y = (cam::pos.y > 0)?1:-1;
+  oldpos.z = (cam::pos.z > 0)?1:-1;
+  if(cam::pos.x == 0) oldpos.x = 0;
+  if(cam::pos.y == 0) oldpos.y = 0;
+  if(cam::pos.z == 0) oldpos.z = 0;
 
 	//Add the Event Handler
 	Tiny::event.handler = [&](){
 
+    if(cam::moved){
+
+      if(!all(equal(floor(cam::look/vec3(world.chunkSize)), prelookpos))){
+        prelookpos = floor(cam::look/vec3(world.chunkSize));
+        std::cout<<"Buffering ";
+        timer::benchmark<std::chrono::milliseconds>([&](){
+          world.buffer();
+        });
+        std::cout<<"Meshing ";
+        timer::benchmark<std::chrono::milliseconds>([&](){
+          world.mesh();
+        });
+      }
+
+      //Bound the Zoom-State
+      if(cam::rad <= 2.0f) cam::rad = 2.0f;
+
+      if(cam::rad >= 5.0f) scene::zoomstate = 0;
+      else if(cam::rad >= 3.5f) scene::zoomstate = 1;
+      else scene::zoomstate = 2;
+
+      if(scene::zoomstate != scene::oldzoomstate){
+        std::cout<<"Changed Zoom State "<<scene::zoomstate<<std::endl;
+
+        if(scene::zoomstate == 2){
+
+          scene::renderdist = vec3(24, 8, 24);
+          scene::dproj = ortho<float>(-400,400,-400,400,-300,300);
+          scene::dvp = scene::dproj*scene::dview;
+
+          world.vertexpool.clear();
+
+        }
+        if(scene::zoomstate == 1){
+
+          scene::renderdist = vec3(12, 6, 12);
+          scene::dproj = ortho<float>(-300,300,-300,300,-300,300);
+          scene::dvp = scene::dproj*scene::dview;
+
+          world.vertexpool.clear();
+
+        }
+        if(scene::zoomstate == 0){
+
+          scene::renderdist = vec3(6, 4, 6);
+          scene::dproj = ortho<float>(-200,200,-200,200,-300,300);
+          scene::dvp = scene::dproj*scene::dview;
+
+          world.vertexpool.clear();
+
+        }
+
+        for(size_t i = 0; i < world.chunks.size(); i++){
+          world.chunks[i].remesh = true;
+          world.chunks[i].firstmesh = true;
+        }
+
+        scene::LOD = pow(2,scene::zoomstate);
+        cam::moverate = scene::LOD;
+
+        world.buffer();
+        world.mesh();
+
+        scene::oldzoomstate = scene::zoomstate;
+
+        std::cout<<"MASKING"<<std::endl;
+
+      world.vertexpool.mask([&](DAIC& cmd){
+        return groups.contains(cmd.group);
+      });
+
+      world.vertexpool.order([&](const DAIC& a, const DAIC& b){
+        if(dot(b.pos - a.pos, cam::pos) < 0) return true;
+        if(dot(b.pos - a.pos, cam::pos) > 0) return false;
+        return (a.baseVert < b.baseVert);
+      });
+
+      std::cout<<"DONE"<<std::endl;
+
+
+      world.vertexpool.update();
+
+      std::cout<<"DONE"<<std::endl;
+
+      }
+
+			newpos.x = (cam::pos.x > 0)?1:-1;
+			newpos.y = (cam::pos.y > 0)?1:-1;
+			newpos.z = (cam::pos.z > 0)?1:-1;
+			if(cam::pos.x == 0) newpos.x = 0;
+			if(cam::pos.y == 0) newpos.y = 0;
+			if(cam::pos.z == 0) newpos.z = 0;
+
+			if(!all(equal(oldpos, newpos))){
+
+				groups.clear();
+				if(cam::pos.x < 0) groups.insert(0);
+				if(cam::pos.x > 0) groups.insert(1);
+				if(cam::pos.y < 0) groups.insert(2);
+				if(cam::pos.y > 0) groups.insert(3);
+				if(cam::pos.z < 0) groups.insert(4);
+				if(cam::pos.z > 0) groups.insert(5);
+
+				world.vertexpool.mask([&](DAIC& cmd){
+					return groups.contains(cmd.group);
+				});
+
+        world.vertexpool.order([&](const DAIC& a, const DAIC& b){
+          if(dot(b.pos - a.pos, cam::pos) < 0) return true;
+          if(dot(b.pos - a.pos, cam::pos) > 0) return false;
+          return (a.baseVert < b.baseVert);
+        });
+
+				world.vertexpool.update();
+
+			}
+
+			oldpos = newpos;
+
+    }
+
     cam::handler();
 
-    if(!all(equal(floor(cam::look/vec3(world.chunkSize)), prelookpos))){
-      prelookpos = floor(cam::look/vec3(world.chunkSize));
-      std::cout<<"Buffering ";
-      timer::benchmark<std::chrono::milliseconds>([&](){
-        world.buffer();
-      });
-      std::cout<<"Meshing ";
-      timer::benchmark<std::chrono::milliseconds>([&](){
-        world.mesh();
-      });
-    }
-
-    if(cam::rad <= 1.0f) cam::rad = 1.0f;
-
-    if(cam::rad >= 6.0f) zoomstate = 0;
-    else if(cam::rad >= 3.0f) zoomstate = 1;
-    else if(cam::rad >= 1.5f) zoomstate = 2;
-
-    if(zoomstate != oldzoomstate){
-      std::cout<<"Changed Zoom State "<<zoomstate<<std::endl;
-
-      if(zoomstate == 2){
-         scene::renderdist = vec3(15, 10, 15);
-         scene::dproj = ortho<float>(-400,400,-400,400,-300,300);
-         scene::dvp = scene::dproj*scene::dview;
-      }
-      if(zoomstate == 1){
-         scene::renderdist = vec3(10, 5, 10);
-         scene::dproj = ortho<float>(-300,300,-300,300,-300,300);
-         scene::dvp = scene::dproj*scene::dview;
-      }
-      if(zoomstate == 0){
-         scene::renderdist = vec3(5);
-         scene::dproj = ortho<float>(-200,200,-200,200,-300,300);
-         scene::dvp = scene::dproj*scene::dview;
-      }
-
-      world.fullmodel.construct([](Model* m){});
-      for(size_t i = 0; i < world.chunks.size(); i++)
-        world.chunks[i].remesh = true;
-
-      scene::LOD = pow(2,zoomstate);
-      cam::moverate = scene::LOD;
-
-      world.buffer();
-      world.mesh();
-
-      oldzoomstate = zoomstate;
-    }
-
 	};
-
-  Square2D flat;
 
 	//Set up an ImGUI Interface here
 	Tiny::view.interface = [&](){
 	};
 
+  auto _old = std::chrono::high_resolution_clock::now();
+
 	//Define the rendering pieeline
 	Tiny::view.pipeline = [&](){
+
+    auto _new = std::chrono::high_resolution_clock::now();
+    std::cout<<"TIME: "<<std::chrono::duration_cast<std::chrono::microseconds>(_new - _old).count()<<std::endl;
+    _old = std::chrono::high_resolution_clock::now();
 
     mat4 back = translate(mat4(1), -cam::look);
 
@@ -163,19 +282,13 @@ int main( int argc, char* args[] ) {
 
     shadow.target(color::black);
     depthShader.use();
+    depthShader.uniform("model", back);
     depthShader.uniform("dvp", scene::dvp);
-
-  //  depthShader.uniform("model", back*world.fullmodel.model);
-  ///  world.fullmodel.render();
-
-   for(size_t i = 0; i < world.models.size(); i++){
-      depthShader.uniform("model", back*world.models[i]->model);
-      world.models[i]->render();
-    }
+    world.vertexpool.render();
 
     // Regular View
 
-    Tiny::view.target(scene::skycol);
+    image.target(scene::skycol);
 
     cubeShader.use();
     cubeShader.texture("shadowMap", shadow.depth);
@@ -189,22 +302,26 @@ int main( int argc, char* args[] ) {
     cubeShader.uniform("lightpos", scene::lightpos);
     cubeShader.uniform("lookdir", cam::pos);
 
-    cubeShader.uniform("grain", scene::grain);          //Texture Grain
-    cubeShader.uniform("fog", scene::fog);              //Fog
-    cubeShader.uniform("fogcolor", scene::fogcolor);    //
     cubeShader.uniform("shading", true);                  //Shading
 
 //     cubeShader.uniform("transparent", false); //Fix Later
 //     cubeShader.uniform("volPosA", vec3(0));
 //     cubeShader.uniform("volPosB", vec3(0));
 
-//     cubeShader.uniform("model", world.fullmodel.model);
-//     world.fullmodel.render();
+     cubeShader.uniform("model", glm::mat4(1));
+     world.vertexpool.render();
 
-    for(size_t i = 0; i < world.models.size(); i++){
-      cubeShader.uniform("model", world.models[i]->model);
-      world.models[i]->render();
-    }
+     Tiny::view.target(color::black);
+
+     effectShader.use();
+     effectShader.texture("imageTexture", image.texture);
+     effectShader.texture("depthTexture", image.depth);
+     effectShader.uniform("grain", scene::grain);          //Texture Grain
+     effectShader.uniform("fog", scene::fog);              //Fog
+     effectShader.uniform("fogcolor", scene::fogcolor);    //
+
+     effectShader.uniform("model", glm::mat4(1));
+     flat.render();
 
 	};
 
@@ -219,8 +336,6 @@ int main( int argc, char* args[] ) {
   //  scene::lightstrength = 1.4*ease::quartic(scene::daytime)+0.1;
 
   //  scene::fogcolor = glm::vec4(ease::quartic(scene::daytime), ease::quartic(scene::daytime), ease::quartic(scene::daytime), 1.0);
-
-
 
 	});
 

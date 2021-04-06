@@ -4,41 +4,49 @@
 ================================================================================
 */
 
-#include <functional>
-
 namespace chunkmesh {
 using namespace std;
 
-function<void(Model* , Chunk*)> greedy = [](Model* m, Chunk* c){
+function<void(Chunk*, Vertexpool<Vertex>*)> greedypool = [](Chunk* c, Vertexpool<Vertex>* vertpool){
 
-  c->quadsize = 0;
-
-//  Blueprint temp;
   int LOD = scene::LOD;
+  int QUAD = scene::QUAD;
   int CHLOD = CHUNKSIZE/LOD;
   vec3 p = c->pos*ivec3(CHUNKSIZE/LOD);
 
+  int u, v, w;
+  int n;
+
+  BlockType* mask = new BlockType[CHUNKSIZE*CHUNKSIZE/LOD/LOD];
+  BlockType current, facing;
+  int s;
+
+  uint* section;
+
+  int quads = 0;
+
   for(int d = 0; d < 6; d++){
 
-    int u = (d/2+0)%3;  //u = 0, 0, 1, 1, 2, 2      //Dimension m->indices
-    int v = (d/2+1)%3;  //v = 1, 1, 2, 2, 0, 0
-    int w = (d/2+2)%3;  //w = 2, 2, 0, 0, 1, 1
+  //  std::cout<<"Chunk D-Loop ";
+  //  timer::benchmark<std::chrono::microseconds>([&](){
+
+    u = (d/2+0)%3;  //u = 0, 0, 1, 1, 2, 2      //Dimension m->indices
+    v = (d/2+1)%3;  //v = 1, 1, 2, 2, 0, 0
+    w = (d/2+2)%3;  //w = 2, 2, 0, 0, 1, 1
 
     int x[3] = {0};
     int q[3] = {0};
     int y[3] = {0};
 
-    int n = 2*(d%2)-1;  //Normal Direction
+    n = 2*(d%2)-1;  //Normal Direction
     q[u] = n;           //Normal Vector
     y[u] = 1;           //Simple Vector
 
-    BlockType* mask = new BlockType[16*16/LOD/LOD];
-    BlockType current, facing;
-    int s;
+    c->quadsize = 0;
+
+    section = vertpool->section(QUAD, d, (vec3)c->pos + vec3(0.5, 0.5, 0.5)*vec3(q[0], q[1], q[2]));
 
     for(x[u] = 0; x[u] < CHLOD; x[u]++){       //Loop Over Depth
-
-    //  bool foundmask = false;
 
       for(x[v] = 0; x[v] < CHLOD; x[v]++){     //Loop Over Slice
         for(x[w] = 0; x[w] < CHLOD; x[w]++){
@@ -50,18 +58,10 @@ function<void(Model* , Chunk*)> greedy = [](Model* m, Chunk* c){
 
           if(current == BLOCK_AIR) continue;
 
-          //Skip Non-Cubic Elements in the Chunk! (every iteration)
-        //  if(!block::isCubic(atPos)){
-            //If it is our first pass, also add it to the meshing editBuffer.
-            //IGNORE THIS FOR LARGE LOD
-        //    if(d == 0) temp.add(vec3(x[0], x[1], x[2]), atPos, false);
-      //      continue;
-        //  }
-
           //Basically, we are facing out of the chunk, so we do take over the surface.
+          //  if(x[u] + q[u] < 0 || x[u] + q[u] >= CHLOD){
           if(x[u] + q[u] < 0 || x[u] + q[u] >= CHLOD){
             mask[s] = current;
-  //          foundmask = true;
             continue;
           }
 
@@ -69,39 +69,36 @@ function<void(Model* , Chunk*)> greedy = [](Model* m, Chunk* c){
           facing = c->getPosition((float)LOD*vec3(x[0]+q[0],x[1]+q[1],x[2]+q[2]));
 
           //Make sure that the facing block can be air or non-cubic!
-          if(facing == BLOCK_AIR || !block::isCubic(facing)){
+          if(facing == BLOCK_AIR)
             mask[s] = current;
-  //          foundmask = true;
-          }
+          // else mask[s] = BLOCK_ANY;
 
         }
       }
 
-  //    if(!foundmask) continue;
-
       int width = 1, height = 1;
       bool quaddone;
-      vec4 color;
+      vec3 color;
 
       for(x[v] = 0; x[v] < CHLOD; x[v]++){            //Evaluate Mask
-        for(x[w] = 0; x[w] < CHLOD; x[w]+=width){   //Permissible Skip
+        for(x[w] = 0; x[w] < CHLOD; x[w] += width){   //Permissible Skip
 
           width = height = 1;       //Current Quad Dimensions
 
           s = x[w] + x[v]*CHLOD;    //Current Slice Index
           current = mask[s];        //Current Block Type
 
-          if(current == BLOCK_AIR)  //We don't mesh air
+          if(current == BLOCK_AIR /* || current == BLOCK_ANY */ )  //We don't mesh air
             continue;
 
-          while(mask[s+width] == current && x[w] + width < CHLOD)
+          while(x[w] + width < CHLOD && (mask[s+width] == current /* || mask[s+width] == BLOCK_ANY */ ))
             width++;
 
           quaddone = false;
           for(height = 1; x[v] + height < CHLOD; height++){   //Find Height
 
             for(int k = 0; k < width; k++){                   //Iterate Over Width
-              if(mask[s+k+height*CHLOD] != current) {
+              if(mask[s+k+height*CHLOD] != current /* && mask[s+k+height*CHLOD] != BLOCK_ANY */ ) {
                 quaddone = true;
                 break;
               }
@@ -113,177 +110,88 @@ function<void(Model* , Chunk*)> greedy = [](Model* m, Chunk* c){
           for(int k = x[w]; k < x[w] + width; k++)
             mask[k+l*CHLOD] = BLOCK_AIR;
 
+        //  vec3 px = p+vec3(x[0], x[1], x[2]);
+          vec3 qq = vec3(q[0], q[1], q[2]);
+
           int du[3] = {0}; du[v] = height;
           int dv[3] = {0}; dv[w] = width;
 
-          //Add Quad to Model
-//          int N = m->positions.size()/3;
+          color = block::getColor(current, 0.0f);
 
           if(n < 0){
-/*
-            //Add m->indices
-            m->indices.push_back(m->positions.size()/3+0);
-            m->indices.push_back(m->positions.size()/3+2);
-            m->indices.push_back(m->positions.size()/3+1);
-            m->indices.push_back(m->positions.size()/3+3);
-            m->indices.push_back(m->positions.size()/3+2);
-            m->indices.push_back(m->positions.size()/3+0);
 
-            //Some need to go clock-wise, others need to go counterclockwise.
-            m->positions.push_back((p.x+x[0]-0.5)*(float)LOD);
-            m->positions.push_back((p.y+x[1]-0.5)*(float)LOD);
-            m->positions.push_back((p.z+x[2]-0.5)*(float)LOD);
-            //Vertex 2
-            m->positions.push_back((p.x+x[0]+du[0]-0.5)*(float)LOD);
-            m->positions.push_back((p.y+x[1]+du[1]-0.5)*(float)LOD);
-            m->positions.push_back((p.z+x[2]+du[2]-0.5)*(float)LOD);
-            //Vertex 3
-            m->positions.push_back((p.x+x[0]+du[0]+dv[0]-0.5)*(float)LOD);
-            m->positions.push_back((p.y+x[1]+du[1]+dv[1]-0.5)*(float)LOD);
-            m->positions.push_back((p.z+x[2]+du[2]+dv[2]-0.5)*(float)LOD);
-            //Vertex 4
-            m->positions.push_back((p.x+x[0]+dv[0]-0.5)*(float)LOD);
-            m->positions.push_back((p.y+x[1]+dv[1]-0.5)*(float)LOD);
-            m->positions.push_back((p.z+x[2]+dv[2]-0.5)*(float)LOD);
-            */
+            vertpool->fill(section, c->quadsize*4+0,
+              vec3( (p.x-0.5+scene::SCALE*(x[0]))*(float)LOD,
+                    (p.y-0.5+scene::SCALE*(x[1]))*(float)LOD,
+                    (p.z-0.5+scene::SCALE*(x[2]))*(float)LOD),
+              qq, color);
 
-            m->positions.push_back((p.x+x[0]-0.5)*(float)LOD);
-            m->positions.push_back((p.y+x[1]-0.5)*(float)LOD);
-            m->positions.push_back((p.z+x[2]-0.5)*(float)LOD);
-            
-            m->positions.push_back((p.x+x[0]+du[0]+dv[0]-0.5)*(float)LOD);
-            m->positions.push_back((p.y+x[1]+du[1]+dv[1]-0.5)*(float)LOD);
-            m->positions.push_back((p.z+x[2]+du[2]+dv[2]-0.5)*(float)LOD);
+            vertpool->fill(section, c->quadsize*4+1,
+              vec3( (p.x-0.5+scene::SCALE*(x[0]+du[0]+dv[0]))*(float)LOD,
+                    (p.y-0.5+scene::SCALE*(x[1]+du[1]+dv[1]))*(float)LOD,
+                    (p.z-0.5+scene::SCALE*(x[2]+du[2]+dv[2]))*(float)LOD),
+              qq, color);
 
-            m->positions.push_back((p.x+x[0]+du[0]-0.5)*(float)LOD);
-            m->positions.push_back((p.y+x[1]+du[1]-0.5)*(float)LOD);
-            m->positions.push_back((p.z+x[2]+du[2]-0.5)*(float)LOD);
+            vertpool->fill(section, c->quadsize*4+2,
+              vec3( (p.x-0.5+scene::SCALE*(x[0]+du[0]))*(float)LOD,
+                    (p.y-0.5+scene::SCALE*(x[1]+du[1]))*(float)LOD,
+                    (p.z-0.5+scene::SCALE*(x[2]+du[2]))*(float)LOD),
+              qq, color);
 
-            m->positions.push_back((p.x+x[0]+dv[0]-0.5)*(float)LOD);
-            m->positions.push_back((p.y+x[1]+dv[1]-0.5)*(float)LOD);
-            m->positions.push_back((p.z+x[2]+dv[2]-0.5)*(float)LOD);
+            vertpool->fill(section, c->quadsize*4+3,
+              vec3( (p.x-0.5+scene::SCALE*(x[0]+dv[0]))*(float)LOD,
+                    (p.y-0.5+scene::SCALE*(x[1]+dv[1]))*(float)LOD,
+                    (p.z-0.5+scene::SCALE*(x[2]+dv[2]))*(float)LOD),
+              qq, color);
 
-            m->positions.push_back((p.x+x[0]+du[0]+dv[0]-0.5)*(float)LOD);
-            m->positions.push_back((p.y+x[1]+du[1]+dv[1]-0.5)*(float)LOD);
-            m->positions.push_back((p.z+x[2]+du[2]+dv[2]-0.5)*(float)LOD);
-
-            m->positions.push_back((p.x+x[0]-0.5)*(float)LOD);
-            m->positions.push_back((p.y+x[1]-0.5)*(float)LOD);
-            m->positions.push_back((p.z+x[2]-0.5)*(float)LOD);
           }
           else{
-/*
-            //Add m->indices
-            m->indices.push_back(m->positions.size()/3+0);
-            m->indices.push_back(m->positions.size()/3+2);
-            m->indices.push_back(m->positions.size()/3+1);
-            m->indices.push_back(m->positions.size()/3+1);
-            m->indices.push_back(m->positions.size()/3+3);
-            m->indices.push_back(m->positions.size()/3+0);
-            //Vertex 0
-            m->positions.push_back((p.x+x[0]-0.5+y[0])*(float)LOD);
-            m->positions.push_back((p.y+x[1]-0.5+y[1])*(float)LOD);
-            m->positions.push_back((p.z+x[2]-0.5+y[2])*(float)LOD);
-            //Vertex 1
-            m->positions.push_back((p.x+x[0]+du[0]+dv[0]-0.5+y[0])*(float)LOD);
-            m->positions.push_back((p.y+x[1]+du[1]+dv[1]-0.5+y[1])*(float)LOD);
-            m->positions.push_back((p.z+x[2]+du[2]+dv[2]-0.5+y[2])*(float)LOD);
-            //Vertex 2
-            m->positions.push_back((p.x+x[0]+du[0]-0.5+y[0])*(float)LOD);
-            m->positions.push_back((p.y+x[1]+du[1]-0.5+y[1])*(float)LOD);
-            m->positions.push_back((p.z+x[2]+du[2]-0.5+y[2])*(float)LOD);
-            //Vertex 3
-            m->positions.push_back((p.x+x[0]+dv[0]-0.5+y[0])*(float)LOD);
-            m->positions.push_back((p.y+x[1]+dv[1]-0.5+y[1])*(float)LOD);
-            m->positions.push_back((p.z+x[2]+dv[2]-0.5+y[2])*(float)LOD);
 
-            */
-            m->positions.push_back((p.x+x[0]-0.5+y[0])*(float)LOD);
-            m->positions.push_back((p.y+x[1]-0.5+y[1])*(float)LOD);
-            m->positions.push_back((p.z+x[2]-0.5+y[2])*(float)LOD);
+            vertpool->fill(section, c->quadsize*4+0,
+              vec3( (p.x-0.5+scene::SCALE*(x[0]+y[0]))*(float)LOD,
+                    (p.y-0.5+scene::SCALE*(x[1]+y[1]))*(float)LOD,
+                    (p.z-0.5+scene::SCALE*(x[2]+y[2]))*(float)LOD),
+              qq, color);
 
-            m->positions.push_back((p.x+x[0]+du[0]-0.5+y[0])*(float)LOD);
-            m->positions.push_back((p.y+x[1]+du[1]-0.5+y[1])*(float)LOD);
-            m->positions.push_back((p.z+x[2]+du[2]-0.5+y[2])*(float)LOD);
+            vertpool->fill(section, c->quadsize*4+1,
+              vec3( (p.x-0.5+scene::SCALE*(x[0]+du[0]+dv[0]+y[0]))*(float)LOD,
+                    (p.y-0.5+scene::SCALE*(x[1]+du[1]+dv[1]+y[1]))*(float)LOD,
+                    (p.z-0.5+scene::SCALE*(x[2]+du[2]+dv[2]+y[2]))*(float)LOD),
+              qq, color);
 
-            m->positions.push_back((p.x+x[0]+du[0]+dv[0]-0.5+y[0])*(float)LOD);
-            m->positions.push_back((p.y+x[1]+du[1]+dv[1]-0.5+y[1])*(float)LOD);
-            m->positions.push_back((p.z+x[2]+du[2]+dv[2]-0.5+y[2])*(float)LOD);
+            vertpool->fill(section, c->quadsize*4+2,
+              vec3( (p.x-0.5+scene::SCALE*(x[0]+du[0]+y[0]))*(float)LOD,
+                    (p.y-0.5+scene::SCALE*(x[1]+du[1]+y[1]))*(float)LOD,
+                    (p.z-0.5+scene::SCALE*(x[2]+du[2]+y[2]))*(float)LOD),
+              qq, color);
 
-            m->positions.push_back((p.x+x[0]+du[0]+dv[0]-0.5+y[0])*(float)LOD);
-            m->positions.push_back((p.y+x[1]+du[1]+dv[1]-0.5+y[1])*(float)LOD);
-            m->positions.push_back((p.z+x[2]+du[2]+dv[2]-0.5+y[2])*(float)LOD);
+            vertpool->fill(section, c->quadsize*4+3,
+              vec3( (p.x-0.5+scene::SCALE*(x[0]+dv[0]+y[0]))*(float)LOD,
+                    (p.y-0.5+scene::SCALE*(x[1]+dv[1]+y[1]))*(float)LOD,
+                    (p.z-0.5+scene::SCALE*(x[2]+dv[2]+y[2]))*(float)LOD),
+              qq, color);
 
-            m->positions.push_back((p.x+x[0]+dv[0]-0.5+y[0])*(float)LOD);
-            m->positions.push_back((p.y+x[1]+dv[1]-0.5+y[1])*(float)LOD);
-            m->positions.push_back((p.z+x[2]+dv[2]-0.5+y[2])*(float)LOD);
-
-            m->positions.push_back((p.x+x[0]-0.5+y[0])*(float)LOD);
-            m->positions.push_back((p.y+x[1]-0.5+y[1])*(float)LOD);
-            m->positions.push_back((p.z+x[2]-0.5+y[2])*(float)LOD);
-          }
-
-          color = block::getColor(current, color::hashrand(helper::getIndex(glm::vec3(x[0], x[1], x[2]), vec3(16))));
-
-          for(int l = 0; l < 6; l++){
-            m->add(m->colors, color);
-            m->add(m->normals, vec3(q[0], q[1], q[2]));
           }
 
           c->quadsize++;
-
           //Next Quad
         }
       }
       //Next Slice
     }
-    //Next Surface Orientation
-    delete[] mask;
+
+    vertpool->resize(section, c->quadsize*6);
+    c->faces[d] = section;
+    quads += c->quadsize;
+  //  });
+
+  //Next Surface Orientation
   }
 
-/*
-  //Mesh all the guys that could not be meshed greedily with large quads.
-  while(!temp.edits.empty()){
-    //For now, we add cubes
-  //  addIrregular(temp.edits.back().pos, temp.edits.back().type);
-    temp.edits.pop_back();
-  }
-  */
-  //Finish!
-};
+//  std::cout<<"QUADS: "<<quads<<std::endl;
 
-/*
-      This needs a technique to slice out
-*/
+  delete[] mask;
 
-function<void(Model*, Chunk*)> slicechunk = [](Model* m, Chunk* chunk){
-
-  m->positions.erase(m->positions.begin()+chunk->quadstart*18, m->positions.begin()+(chunk->quadstart+chunk->quadsize)*18);
-  m->normals.erase(m->normals.begin()+chunk->quadstart*18, m->normals.begin()+(chunk->quadstart+chunk->quadsize)*18);
-  m->colors.erase(m->colors.begin()+chunk->quadstart*24, m->colors.begin()+(chunk->quadstart+chunk->quadsize)*24);
-
-};
-
-function<void(Model*, vector<Chunk>*)> greedycollective = [](Model* m, vector<Chunk>* chunks){
-  for(size_t i = 0; i < chunks->size(); i++){
-
-    if(i == 0) (*chunks)[i].quadstart = 0;
-    else (*chunks)[i].quadstart = (*chunks)[i-1].quadstart+(*chunks)[i-1].quadsize;
-
-    if(!(*chunks)[i].remesh) continue;
-
-    greedy(m, &(*chunks)[i]);     //Quadsize is set here!
-    (*chunks)[i].remesh = false;
-
-  //  std::cout<<"CHUNK: "<<i<<" "<<(*chunks)[i].quadstart<<" "<<(*chunks)[i].quadsize<<std::endl;
-  //  std::cout<<"MESH: "<<m->indices.size()<<" "<<m->positions.size()<<" "<<m->colors.size()<<" "<<m->normals.size()<<std::endl;
-
-/*
-  greedy(m, &(*chunks)[i]);     //Quadsize is set here!
-  (*chunks)[i].remesh = false;
-*/
-
-  }
 };
 
 }

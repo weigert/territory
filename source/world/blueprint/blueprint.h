@@ -39,9 +39,9 @@ struct bufferObject {
 
 };
 
-vec3 bufferObject::rdim = vec3(16,16,16);
-vec3 bufferObject::wdim = vec3(128,32,128);
-vec3 bufferObject::cdim = vec3(16,16,16);
+vec3 bufferObject::rdim = RDIM;
+vec3 bufferObject::wdim = WDIM;
+vec3 bufferObject::cdim = CDIM;
 
 bool operator > (const bufferObject& a, const bufferObject& b) {
 
@@ -107,7 +107,7 @@ public:
 };
 
 int Blueprint::chunkSize = CHUNKSIZE;
-glm::vec3 Blueprint::dim = glm::vec3(128,32,128);
+glm::vec3 Blueprint::dim = WDIM;
 
 /*
 ================================================================================
@@ -140,7 +140,7 @@ void Blueprint::clean(bool later){
     bool duplicate = false;
 
     for(unsigned int j = 0; j < newprint.edits.size(); j++){
-      if(!all(equal(buf->pos+buf->cpos*ivec3(16), newprint.edits[j].pos+newprint.edits[j].cpos*ivec3(16))))
+      if(!all(equal(buf->pos+buf->cpos*ivec3(CHUNKSIZE), newprint.edits[j].pos+newprint.edits[j].cpos*ivec3(CHUNKSIZE))))
         continue;
       duplicate = true;
       break;

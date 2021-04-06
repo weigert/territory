@@ -10,6 +10,18 @@ using namespace glm;
 float daytime = 0;
 
 int LOD = 1;
+int SCALE = 1;
+
+
+
+int QUAD = 2400;
+int MAXBUCKET = 20*20*10*8;
+
+
+
+
+int zoomstate = 0;
+int oldzoomstate = 0;
 
 vec3 skycol = vec3(0.6, 0.9f, 0.8f);
 
@@ -26,7 +38,6 @@ int blur = 0; //Degree of Blur
 bool fog = true;
 bool grain = false;
 vec3 fogcolor = vec3(1.0f);
-
 
 //Rotation and View
 int lookstate = 3;

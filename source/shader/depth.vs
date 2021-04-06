@@ -6,6 +6,5 @@ uniform mat4 model;
 uniform mat4 dvp;
 
 void main(void) {
-	vec3 ex_FragPos = (model * vec4(in_Position, 1.0f)).xyz;
-	gl_Position = dvp * vec4(ex_FragPos, 1.0f);
+	gl_Position = dvp * model * vec4(in_Position, 1.0f);
 }

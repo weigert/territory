@@ -18,9 +18,6 @@ uniform float lightstrength;
 in vec4 ex_ScreenPos;
 
 uniform bool shading;
-uniform bool grain;
-uniform bool fog;
-uniform vec3 fogcolor;
 
 /*
 
@@ -61,6 +58,7 @@ float gridSample(int size){
 }
 
 vec4 shade(){
+
   float shadow = 0.0f;
 
   if(greaterThanEqual(ex_Shadow.xy, vec2(0.0f)) == bvec2(true) && lessThanEqual(ex_Shadow.xy, vec2(1.0f)) == bvec2(true))
@@ -74,32 +72,7 @@ void main(void) {
   fragColor = ex_Color;
 
   //Shading
-
   if(shading)
-    fragColor = shade()*fragColor;
-
-  //Fog Effect
-
-  if(fog){
-    float fogmix = ex_ScreenPos.z/ex_ScreenPos.w*0.5+0.5;///ex_ScreenPos.w;////texture(shadowMap, ex_Position).x;
-    fogmix = (fogmix-0.3)/(1.0-0.3);
-    fogmix = 1.0-(1.0-fogmix)*(1.0-fogmix);
-    vec3 fogcolor2 = vec3(1);
-    fragColor = mix(fragColor, vec4(fogcolor2,1), fogmix);
-  }
-
-  //Transparency Cancel
-
-  /*
-  if(transparent){
-    if(all(greaterThanEqual(ex_FragPos+0.5, min(volPosA, volPosB))) && all(lessThanEqual(ex_FragPos-0.5, max(volPosA, volPosB)))){
-      discard; return;
-    }
-  }
-*/
-
-  //Texture Grain
-  if(grain)
-    fragColor += 0.1*vec4(rand(ex_Position.xy)*vec3(1.0f), 1.0f);
+    fragColor = shade()*ex_Color;
 
 }

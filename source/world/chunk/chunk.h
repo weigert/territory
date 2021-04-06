@@ -1,15 +1,6 @@
 #ifndef TERRITORY_CHUNK
 #define TERRITORY_CHUNK
 
-#define CHUNKSIZE 16
-#define CHUNKVOL CHUNKSIZE*CHUNKSIZE*CHUNKSIZE
-
-enum BiomeType{
-  BIOME_VOID = 0,
-  BIOME_DESERT = 1,
-  BIOME_FOREST = 2,
-};
-
 using namespace glm;
 
 #include "block.h"
@@ -17,29 +8,28 @@ using namespace glm;
 class Chunk{
 public:
 
-  Chunk(){
-    data = new unsigned char[CHUNKVOL];
-    for(int i = 0; i < CHUNKVOL; i++) data[i] = 0;
+  Chunk(){}
+
+  Chunk(vec3 _pos, BlockType* ndata){
+    pos = _pos;
+    data = ndata;
   }
 
-  Chunk(vec3 _pos, BiomeType type):Chunk(){
-    pos = _pos;// biome = type;
-  }
-
-  ~Chunk(){
-  //  if(data != NULL) delete[] data;
-  }
-
-  //Position information and CHUNKSIZE information
   ivec3 pos = ivec3(0);
-//  BiomeType biome;
+  BlockType* data;
 
-  unsigned char* data = NULL;
+
+  BlockType* neighbor[6]{NULL};
+
+
+
 
   bool remesh = true;
+  bool firstmesh = true;
 
   int quadsize = 0;
   int quadstart = 0;
+  array<uint*, 6> faces;
 
   //Get the Flat-Array Index
   int getIndex(vec3 _p);
@@ -64,6 +54,20 @@ bool operator > (const Chunk& a, const Chunk& b) {
 
 }
 
+bool operator < (const Chunk& a, const Chunk& b) {
+
+  if(a.pos.x < b.pos.x) return true;    //Sort by Position
+  if(a.pos.x > b.pos.x) return false;
+
+  if(a.pos.y < b.pos.y) return true;    //Sort by Position
+  if(a.pos.y > b.pos.y) return false;
+
+  if(a.pos.z < b.pos.z) return true;    //Sort by Position
+  if(a.pos.z > b.pos.z) return false;
+
+  return false;
+}
+
 int Chunk::getIndex(vec3 _p){
   //Return the Correct Index
   if(all(lessThan(_p, vec3(CHUNKSIZE)))){
@@ -73,15 +77,15 @@ int Chunk::getIndex(vec3 _p){
 }
 
 void Chunk::setPosition(vec3 _p, BlockType _type){
-  data[getIndex(_p)] = (int)_type;
+  data[getIndex(_p)] = _type;
 }
 
 BlockType Chunk::getPosition(vec3 _p){
-  return (BlockType)data[getIndex(_p)];
+  return data[getIndex(_p)];
 }
 
 BlockType Chunk::getPosition(int* p){
-  return (BlockType)data[p[0]*CHUNKSIZE*CHUNKSIZE+p[1]*CHUNKSIZE+p[2]];
+  return data[p[0]*CHUNKSIZE*CHUNKSIZE+p[1]*CHUNKSIZE+p[2]];
 }
 
 namespace boost {

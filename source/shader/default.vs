@@ -2,7 +2,7 @@
 
 layout (location = 0) in vec3 in_Position;
 layout (location = 1) in vec3 in_Normal;
-layout (location = 2) in vec4 in_Color;
+layout (location = 2) in vec3 in_Color;
 
 //Uniforms
 uniform mat4 model;
@@ -40,7 +40,7 @@ void main(void) {
 	float ambient = 0.1;
 	float specular = 0.1*pow(max(dot(normalize(lookdir), normalize(reflect(lightpos, in_Normal))), 0.0), 16);
 
-	ex_OrgColor = in_Color;
-	ex_Color = in_Color*vec4(lightcol*lightstrength*(diffuse + ambient + specular), 1.0f);
+	ex_OrgColor = vec4(in_Color, 1.0);
+	ex_Color = vec4(in_Color, 1.0)*vec4(lightcol*lightstrength*(diffuse + ambient + specular), 1.0f);
 
 }

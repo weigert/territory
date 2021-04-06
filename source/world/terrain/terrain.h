@@ -27,7 +27,7 @@ public:
 
   Blueprint blueprint;
 
-  int SEED;
+  int SEED = 0;
   ivec3 D;
 
   glm::ivec2 dim;                       //Size of the heightmap array
@@ -152,7 +152,6 @@ void Terrain::generate(int ncycles){
 
   //Initialize
   logg::out("Initializing Terrain");
-  if(SEED == 0) SEED = time(NULL);
   srand(SEED);
 
   logg::out("Seed: ", SEED);
@@ -181,7 +180,7 @@ void Terrain::generate(int ncycles){
       float sx = (float)(x%rescale.x)/rescale.x;    //Remainder in World-Space
       float sy = (float)(y%rescale.z)/rescale.z;
 
-      if(i < dim.x && i < dim.y){                   //Check Boundaries
+      if(i < dim.x && k < dim.y){                   //Check Boundaries
         height =  (1.0-sy)*(1.0-sx)*rescale.y*scale*heightmap[i*dim.y+k];
         height += (1.0-sy)*(sx)*rescale.y*scale*heightmap[(i+1)*dim.y+k];
         height += (sy)*(1.0-sx)*rescale.y*scale*heightmap[i*dim.y+k+1];
@@ -245,7 +244,7 @@ void Terrain::generate(int ncycles){
       double height, stream;
       float sx = (float)(x%rescale.x)/rescale.x;
       float sy = (float)(y%rescale.z)/rescale.z;
-      if(i < dim.x && i < dim.y){
+      if(i < dim.x && k < dim.y){
         height =  (1.0-sy)*(1.0-sx)*rescale.y*scale*heightmap[i*dim.y+k];
         height += (1.0-sy)*(sx)*rescale.y*scale*heightmap[(i+1)*dim.y+k];
         height += (sy)*(1.0-sx)*rescale.y*scale*heightmap[i*dim.y+k+1];
@@ -303,7 +302,7 @@ void Terrain::generate(int ncycles){
     double height;
     float sx = (float)(p[0]%rescale.x)/rescale.x;
     float sy = (float)(p[1]%rescale.z)/rescale.z;
-    if(i < dim.x && i < dim.y){
+    if(i < dim.x && k < dim.y){
       height =  (1.0-sy)*(1.0-sx)*rescale.y*scale*heightmap[i*dim.y+k];
       height += (1.0-sy)*(sx)*rescale.y*scale*heightmap[(i+1)*dim.y+k];
       height += (sy)*(1.0-sx)*rescale.y*scale*heightmap[i*dim.y+k+1];
