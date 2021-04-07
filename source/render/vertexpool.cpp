@@ -410,26 +410,4 @@ void render(const GLenum mode = GL_TRIANGLES, size_t first = 0, size_t length = 
 
 }
 
-/*
-===
-
-Question: Is there anyway I can simplify the contents of the vertexpool?
-Basically by moving memory around?
-
-For instance, if two things belong to the same group, they will have the same indexing structure.
-
-If the bucket is insufficiently filled, I could merge two buckets and reduce the number of draw calls.
-How do I do that intelligently?
-
-I would have to copy the memory of one bucket to the end of another bucket.
-
-The guy whos memory I copied to now needs to have an extended draw call.
-
-Then, the guy whos memory got copied needs to be not drawn. but still keep track of that location.
-
-
-
-
-*/
-
 };
