@@ -56,7 +56,7 @@ int main( int argc, char* args[] ) {
   else worldname = parse::val[0];
   logg::deb("Worldname: ", worldname);
 
-  int SEED = 0;
+  int SEED = time(NULL);
   if(parse::option.contains("s"))
     SEED = std::stoi(parse::option["s"]);
   logg::deb("SEED: ", SEED);
@@ -164,8 +164,8 @@ int main( int argc, char* args[] ) {
 
         if(scene::zoomstate == 2){
 
-          scene::renderdist = vec3(24, 8, 24);
-          scene::dproj = ortho<float>(-400,400,-400,400,-300,300);
+          scene::renderdist = vec3(24, 12, 24);
+          scene::dproj = ortho<float>(-500,500,-500,500,-300,300);
           scene::dvp = scene::dproj*scene::dview;
 
           world.vertexpool.clear();
@@ -173,7 +173,7 @@ int main( int argc, char* args[] ) {
         }
         if(scene::zoomstate == 1){
 
-          scene::renderdist = vec3(12, 6, 12);
+          scene::renderdist = vec3(12, 8, 12);
           scene::dproj = ortho<float>(-300,300,-300,300,-300,300);
           scene::dvp = scene::dproj*scene::dview;
 
@@ -265,6 +265,7 @@ int main( int argc, char* args[] ) {
 
 	//Set up an ImGUI Interface here
 	Tiny::view.interface = [&](){
+
 	};
 
   auto _old = std::chrono::high_resolution_clock::now();
@@ -329,13 +330,12 @@ int main( int argc, char* args[] ) {
 	Tiny::loop([&](){
 
     scene::daytime = (double)world.time/(60.0*24.0);
-  //  scene::skycol = color::bezier(ease::cubic(scene::daytime), color::skycolors);
+    scene::skycol = color::bezier(ease::cubic(scene::daytime), color::skycolors);
     scene::lightpos = vec3(-10.0f, ease::quadratic(scene::daytime)*20.0f+10.0f, -10.0f+scene::daytime*20.0f);
     scene::dview = lookAt(scene::lightpos, vec3(0), glm::vec3(0,1,0));
     scene::dvp = scene::dproj*scene::dview;
-  //  scene::lightstrength = 1.4*ease::quartic(scene::daytime)+0.1;
-
-  //  scene::fogcolor = glm::vec4(ease::quartic(scene::daytime), ease::quartic(scene::daytime), ease::quartic(scene::daytime), 1.0);
+    scene::lightstrength = 1.4*ease::quartic(scene::daytime)+0.1;
+    scene::fogcolor = glm::vec4(ease::quartic(scene::daytime), ease::quartic(scene::daytime), ease::quartic(scene::daytime), 1.0);
 
 	});
 

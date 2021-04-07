@@ -16,6 +16,7 @@ class World{
 public:
 
 World(string savefile, int _SEED){
+
   SEED = _SEED;
   dimr = min(dim, dimr); //Edge Case
 
@@ -23,14 +24,12 @@ World(string savefile, int _SEED){
 
   tempchunk = new BlockType[CHUNKVOL]{BLOCK_AIR};
 
-  if(!init(savefile)){
+  if(!init(savefile))
     logg::err("Couldn't Initialize World");
-  }
   logg::deb("Initialized World");
 
   vertexpool.reserve(scene::QUAD, scene::MAXBUCKET);
   vertexpool.index();
-
 
   //Reserve Chunkpool Data
   const size_t Nchunks = 32*32*32*4;
@@ -50,8 +49,8 @@ vec3 dim = WDIM;        //Spatial Information (Size in Chunks)
 vec3 dimr = RDIM;         //Chunks Per Region
 int chunkSize = CHUNKSIZE;
 
-vec3 minchunk = vec3(-1);
-vec3 maxchunk = vec3(-1);
+ivec3 minchunk = ivec3(-1);
+ivec3 maxchunk = ivec3(-1);
 
 
 
@@ -80,12 +79,14 @@ void returnChunkPoiner(BlockType* freechunk){
 Blueprint blueprint;
 Blueprint remeshbuf;
 vector<Chunk> chunks;                 //Loaded Chunks
-Vertexpool<Vertex> vertexpool;//(3600, 2*scene::renderdist);
+Vertexpool<Vertex> vertexpool;
+
+
+
 
 int sealevel = 16;
 
 void mesh();
-void remesh();
 
 volatile int time = 0;  //Is set in a separate timed thread.
 chrono::milliseconds tickLength = chrono::milliseconds(100);
@@ -99,8 +100,6 @@ string regionString(vec3 cpos);
 
 bool lock = false;
 void buffer();
-
-void assignneighbors();
 
 };
 

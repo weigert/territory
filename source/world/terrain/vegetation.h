@@ -1,3 +1,4 @@
+#define SIZE 512
 
 struct Plant{
   Plant(int i, glm::ivec2 d){
@@ -29,6 +30,7 @@ struct Plant{
   };
 };
 
+
 void Plant::grow(){
   size += rate*(maxsize-size);
 };
@@ -40,29 +42,29 @@ void Plant::root(double* density, glm::ivec2 dim, double f){
 
   if(pos.x > 0){
     //
-    density[index - dim.x] += f*0.6;      //(-1, 0)
+    density[index - SIZE] += f*0.6;      //(-1, 0)
 
     if(pos.y > 0)
-      density[index - dim.x-1] += f*0.4;    //(-1, -1)
+      density[index - SIZE-1] += f*0.4;    //(-1, -1)
 
-    if(pos.y < dim.x-1)
-      density[index - dim.x+1] += f*0.4;    //(-1, 1)
+    if(pos.y < SIZE-1)
+      density[index - SIZE+1] += f*0.4;    //(-1, 1)
   }
 
-  if(pos.x < dim.x-1){
+  if(pos.x < SIZE-1){
     //
-    density[index + dim.x] += f*0.6;    //(1, 0)
+    density[index + SIZE] += f*0.6;    //(1, 0)
 
     if(pos.y > 0)
-      density[index + dim.x-1] += f*0.4;    //(1, -1)
+      density[index + SIZE-1] += f*0.4;    //(1, -1)
 
-    if(pos.y < dim.x-1)
-      density[index + dim.x+1] += f*0.4;    //(1, 1)
+    if(pos.y < SIZE-1)
+      density[index + SIZE+1] += f*0.4;    //(1, 1)
   }
 
   if(pos.y > 0)
     density[index - 1]   += f*0.6;    //(0, -1)
 
-  if(pos.y < dim.x-1)
+  if(pos.y < SIZE-1)
     density[index + 1]   += f*0.6;    //(0, 1)
 }

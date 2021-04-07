@@ -116,7 +116,7 @@ function<void(Chunk*, Vertexpool<Vertex>*)> greedypool = [](Chunk* c, Vertexpool
           int du[3] = {0}; du[v] = height;
           int dv[3] = {0}; dv[w] = width;
 
-          color = block::getColor(current, 0.0f);
+          color = block::getColor(current, color::hashrand(helper::getIndex(vec3(x[0], x[1], x[2]), vec3(16))));
 
           if(n < 0){
 
