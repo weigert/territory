@@ -32,7 +32,9 @@ World(string savefile, int _SEED){
   vertexpool.index();
 
   //Reserve Chunkpool Data
+  
   const size_t Nchunks = 32*32*32*4;
+
   chunkpool = new BlockType[CHUNKVOL*Nchunks]{BLOCK_AIR}; //This needs deleting
   for(size_t i = 0; i < Nchunks; i++)
     free.push_front(chunkpool+i*CHUNKVOL);
@@ -53,6 +55,7 @@ ivec3 minchunk = ivec3(-1);
 ivec3 maxchunk = ivec3(-1);
 
 
+std::unordered_set<int> groups;
 
 
 BlockType* chunkpool;
@@ -87,6 +90,7 @@ Vertexpool<Vertex> vertexpool;
 int sealevel = 16;
 
 void mesh();
+void mask();
 
 volatile int time = 0;  //Is set in a separate timed thread.
 chrono::milliseconds tickLength = chrono::milliseconds(100);

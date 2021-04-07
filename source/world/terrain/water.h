@@ -3,7 +3,7 @@ struct Drop{
   Drop(glm::vec2 _pos){ pos = _pos; }
   Drop(glm::vec2 _p, glm::ivec2 dim, double v){
     pos = _p;
-    int index = _p.x*dim.y+_p.y;
+    index = _p.x*dim.y+_p.y;
     volume = v;
   }
 

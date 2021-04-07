@@ -218,7 +218,7 @@ void World::buffer(){
     remove.push(i);
 
   min = clamp(min, ivec3(0), (ivec3)dim-ivec3(1-1));
-  max = clamp(max, ivec3(0-1),(ivec3) dim-ivec3(1));
+  max = clamp(max, ivec3(0-1), (ivec3)dim-ivec3(1));
 
   for(int i = min.x; i <= max.x; i++)    //All Indices in Region
   for(int j = min.y; j <= max.y; j++)
@@ -429,6 +429,27 @@ void World::mesh(){
 
   }
 
-  vertexpool.update();
+  mask();
 
+}
+
+void World::mask(){
+  groups.clear();
+  if(cam::pos.x < 0) groups.insert(0);
+  if(cam::pos.x > 0) groups.insert(1);
+  if(cam::pos.y < 0) groups.insert(2);
+  if(cam::pos.y > 0) groups.insert(3);
+  if(cam::pos.z < 0) groups.insert(4);
+  if(cam::pos.z > 0) groups.insert(5);
+  vertexpool.mask([&](DAIC& cmd){
+    return groups.contains(cmd.group);
+  });
+
+  vertexpool.order([&](const DAIC& a, const DAIC& b){
+    if(dot(b.pos - a.pos, cam::pos) < 0) return true;
+    if(dot(b.pos - a.pos, cam::pos) > 0) return false;
+    return (a.baseVert < b.baseVert);
+  });
+
+  vertexpool.update();
 }

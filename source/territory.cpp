@@ -6,7 +6,6 @@
 #include <TinyEngine/image>
 
 #include "helper/arraymath.h"
-#include "render/scene.h"
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -18,9 +17,12 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/array.hpp>
 
+#include "render/scene.h"
+
+
 #define CHUNKSIZE 16
 #define CHUNKVOL (CHUNKSIZE*CHUNKSIZE*CHUNKSIZE)
-#define WDIM glm::vec3(128,32,128)
+#define WDIM glm::vec3(128,48,128)
 #define RDIM glm::vec3(16,16,16)
 #define CDIM glm::vec3(CHUNKSIZE)
 
@@ -66,12 +68,13 @@ int main( int argc, char* args[] ) {
 
 
   Tiny::view.vsync = false;
-  Tiny::view.antialias = 0;
+  Tiny::view.antialias = 16;
+
 //  Tiny::benchmark = true;
   Tiny::window("Territory", 1200, 800);
 
-  cam::near = -500.0f;
-  cam::far = 500.0f;
+  cam::near = -800.0f;
+  cam::far = 800.0f;
   cam::rad = 1.0f;
 
 
@@ -107,18 +110,6 @@ int main( int argc, char* args[] ) {
   world.buffer();
   world.mesh();
 
-  std::unordered_set<int> groups;
-  groups.clear();
-  if(cam::pos.x < 0) groups.insert(0);
-  if(cam::pos.x > 0) groups.insert(1);
-  if(cam::pos.y < 0) groups.insert(2);
-  if(cam::pos.y > 0) groups.insert(3);
-  if(cam::pos.z < 0) groups.insert(4);
-  if(cam::pos.z > 0) groups.insert(5);
-  world.vertexpool.mask([&](DAIC& cmd){
-    return groups.contains(cmd.group);
-  });
-
   timer::Timer<std::chrono::milliseconds> worldUpdateTimer;
   worldUpdateTimer.set_interval(&world.tickLength, [&](){
     world.time = (world.time+1)%(60*24);
@@ -140,6 +131,13 @@ int main( int argc, char* args[] ) {
 
     if(cam::moved){
 
+      //Bounds on Camera Movement
+
+      if(cam::roty > 90.0f - cam::turnrate) cam::roty = 90.0f - cam::turnrate;
+      if(cam::rad <= 1.5f) cam::rad = 1.5f;
+
+      //Rebuffer Condition
+
       if(!all(equal(floor(cam::look/vec3(world.chunkSize)), prelookpos))){
         prelookpos = floor(cam::look/vec3(world.chunkSize));
         std::cout<<"Buffering ";
@@ -153,74 +151,20 @@ int main( int argc, char* args[] ) {
       }
 
       //Bound the Zoom-State
-      if(cam::rad <= 2.0f) cam::rad = 2.0f;
 
-      if(cam::rad >= 5.0f) scene::zoomstate = 0;
-      else if(cam::rad >= 3.5f) scene::zoomstate = 1;
-      else scene::zoomstate = 2;
+      if(scene::changezoomstate(cam::rad)){
 
-      if(scene::zoomstate != scene::oldzoomstate){
-        std::cout<<"Changed Zoom State "<<scene::zoomstate<<std::endl;
-
-        if(scene::zoomstate == 2){
-
-          scene::renderdist = vec3(24, 12, 24);
-          scene::dproj = ortho<float>(-500,500,-500,500,-300,300);
-          scene::dvp = scene::dproj*scene::dview;
-
-          world.vertexpool.clear();
-
-        }
-        if(scene::zoomstate == 1){
-
-          scene::renderdist = vec3(12, 8, 12);
-          scene::dproj = ortho<float>(-300,300,-300,300,-300,300);
-          scene::dvp = scene::dproj*scene::dview;
-
-          world.vertexpool.clear();
-
-        }
-        if(scene::zoomstate == 0){
-
-          scene::renderdist = vec3(6, 4, 6);
-          scene::dproj = ortho<float>(-200,200,-200,200,-300,300);
-          scene::dvp = scene::dproj*scene::dview;
-
-          world.vertexpool.clear();
-
-        }
+        world.vertexpool.clear();
 
         for(size_t i = 0; i < world.chunks.size(); i++){
           world.chunks[i].remesh = true;
           world.chunks[i].firstmesh = true;
         }
 
-        scene::LOD = pow(2,scene::zoomstate);
         cam::moverate = scene::LOD;
 
         world.buffer();
         world.mesh();
-
-        scene::oldzoomstate = scene::zoomstate;
-
-        std::cout<<"MASKING"<<std::endl;
-
-      world.vertexpool.mask([&](DAIC& cmd){
-        return groups.contains(cmd.group);
-      });
-
-      world.vertexpool.order([&](const DAIC& a, const DAIC& b){
-        if(dot(b.pos - a.pos, cam::pos) < 0) return true;
-        if(dot(b.pos - a.pos, cam::pos) > 0) return false;
-        return (a.baseVert < b.baseVert);
-      });
-
-      std::cout<<"DONE"<<std::endl;
-
-
-      world.vertexpool.update();
-
-      std::cout<<"DONE"<<std::endl;
 
       }
 
@@ -233,25 +177,7 @@ int main( int argc, char* args[] ) {
 
 			if(!all(equal(oldpos, newpos))){
 
-				groups.clear();
-				if(cam::pos.x < 0) groups.insert(0);
-				if(cam::pos.x > 0) groups.insert(1);
-				if(cam::pos.y < 0) groups.insert(2);
-				if(cam::pos.y > 0) groups.insert(3);
-				if(cam::pos.z < 0) groups.insert(4);
-				if(cam::pos.z > 0) groups.insert(5);
-
-				world.vertexpool.mask([&](DAIC& cmd){
-					return groups.contains(cmd.group);
-				});
-
-        world.vertexpool.order([&](const DAIC& a, const DAIC& b){
-          if(dot(b.pos - a.pos, cam::pos) < 0) return true;
-          if(dot(b.pos - a.pos, cam::pos) > 0) return false;
-          return (a.baseVert < b.baseVert);
-        });
-
-				world.vertexpool.update();
+        world.mask();
 
 			}
 
@@ -330,12 +256,9 @@ int main( int argc, char* args[] ) {
 	Tiny::loop([&](){
 
     scene::daytime = (double)world.time/(60.0*24.0);
-    scene::skycol = color::bezier(ease::cubic(scene::daytime), color::skycolors);
-    scene::lightpos = vec3(-10.0f, ease::quadratic(scene::daytime)*20.0f+10.0f, -10.0f+scene::daytime*20.0f);
-    scene::dview = lookAt(scene::lightpos, vec3(0), glm::vec3(0,1,0));
-    scene::dvp = scene::dproj*scene::dview;
-    scene::lightstrength = 1.4*ease::quartic(scene::daytime)+0.1;
-    scene::fogcolor = glm::vec4(ease::quartic(scene::daytime), ease::quartic(scene::daytime), ease::quartic(scene::daytime), 1.0);
+    scene::lightpos = vec3(-10.0f, ease::quadratic(0.1)*20.0f+10.0f, -10.0f+0.1*20.0f);
+
+    scene::computelighting(scene::daytime);
 
 	});
 
