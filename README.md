@@ -3,7 +3,7 @@
 
 C++ homebrew voxel engine for intelligent agent-driven (NPC) procedural generation / world simulation.
 
-Blog: https://weigert.vsos.ethz.ch/
+Blog: https://nickmcd.me
 
 ## Compiling
 
