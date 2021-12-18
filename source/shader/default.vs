@@ -25,6 +25,16 @@ out vec4 ex_ScreenPos;
 out vec2 ex_Position;
 out vec4 ex_Shadow;
 
+vec4 gouraud(){
+
+	float diffuse = clamp(dot(in_Normal, normalize(lightpos)), 0.1,  0.7);
+	float ambient = 0.1;
+	float specular = 0.2*pow(max(dot(normalize(lookdir), normalize(reflect(lightpos, in_Normal))), 0.0), 16);
+
+	return vec4(lightcol*lightstrength*(diffuse + ambient + specular), 1.0f);
+
+}
+
 void main(void) {
 
 	ex_FragPos = (model * vec4(in_Position, 1.0f)).xyz;
@@ -36,11 +46,8 @@ void main(void) {
 	ex_Shadow = dbmvp * back * vec4(ex_FragPos, 1.0f);
 	ex_Position = ((gl_Position.xyz / gl_Position.w).xy * 0.5 + 0.5 );
 
-	float diffuse = clamp(dot(in_Normal, normalize(lightpos)), 0.1,  0.7);
-	float ambient = 0.1;
-	float specular = 0.1*pow(max(dot(normalize(lookdir), normalize(reflect(lightpos, in_Normal))), 0.0), 16);
 
 	ex_OrgColor = vec4(in_Color, 1.0);
-	ex_Color = vec4(in_Color, 1.0)*vec4(lightcol*lightstrength*(diffuse + ambient + specular), 1.0f);
+	ex_Color = vec4(in_Color, 1.0)*gouraud();
 
 }

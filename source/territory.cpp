@@ -5,40 +5,24 @@
 #include <TinyEngine/camera>
 #include <TinyEngine/image>
 
-#include "helper/arraymath.h"
-
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/array.hpp>
-
-#include "render/scene.h"
-
-
-#define CHUNKSIZE 16
-#define CHUNKVOL (CHUNKSIZE*CHUNKSIZE*CHUNKSIZE)
-#define WDIM glm::vec3(128,48,128)
-#define RDIM glm::vec3(16,16,16)
-#define CDIM glm::vec3(CHUNKSIZE)
-
-#include "render/vertexpool.cpp"
-
 namespace fs = boost::filesystem;
-
-fs::path rootdir;                   //Savefile Information
+fs::path rootdir;
 fs::path savedir;
 
+#include "math.h"
 
+//#include "bot/task.h"
+//#include "bot/bot.h"
 
-#include "helper/volume.h"
-#include "helper/graph.h"
+#include "render/scene.h"
+#include "render/vertexpool.cpp"
 
-#include "world/world.cpp"
+#include "world/voxel.h"
+#include "world/blueprint.h"
+#include "world/world.h"
 
 int main( int argc, char* args[] ) {
 
@@ -69,29 +53,38 @@ int main( int argc, char* args[] ) {
 
   Tiny::view.vsync = false;
   Tiny::view.antialias = 16;
-
-//  Tiny::benchmark = true;
   Tiny::window("Territory", 1200, 800);
+
+  /*
+
+  cam::near = 0.1f;
+  cam::far = 800.0f;
+  cam::FOV = 0.5f;
+  cam::moved = true;
+  cam::zoomrate = 25.0f;
+  cam::look = vec3(900, 250, 450);
+  cam::init(5, cam::PROJ);
+
+  cam::roty = 45.0f;
+  cam::rad = 100.0f;
+  cam::update();
+
+  */
 
   cam::near = -800.0f;
   cam::far = 800.0f;
   cam::rad = 1.0f;
-
-
-//  cam::look = CDIM*WDIM/2.0f;
-  //cam::look.y = CDIM.y*WDIM.y/4.0f;
-
   cam::moved = true;
+  cam::look = vec3(0, 0, 0);
   cam::init(5, cam::ORTHO);
 
 
-   scene::renderdist = vec3(5, 4, 5);
-   scene::dproj = ortho<float>(-200,200,-200,200,-300,300);
-   scene::dvp = scene::dproj*scene::dview;
+  scene::renderdist = vec3(5, 4, 5);
+  scene::dproj = ortho<float>(-200,200,-200,200,-300,300);
+  scene::dvp = scene::dproj*scene::dview;
 
-   scene::QUAD = 2400;
-   scene::MAXBUCKET = 18*18*18*8;
-
+  scene::QUAD = 2400;
+  scene::MAXBUCKET = 18*18*18*8;
 
 
   //Load Shaders
@@ -99,10 +92,14 @@ int main( int argc, char* args[] ) {
   Shader depthShader({"source/shader/depth.vs", "source/shader/depth.fs"}, {"in_Position"});
 	Shader effectShader({"source/shader/effect.vs", "source/shader/effect.fs"}, {"in_Quad", "in_Tex"});
 
+  Shader spriteShader({"source/shader/sprite.vs", "source/shader/sprite.fs"}, {"in_Quad", "in_Tex"});
+  Texture cowboyfull(image::load("resource/sprite/cowboyfull.png"));
+
   Billboard shadow(1000, 1000, false);
   Billboard image(1200, 800);
 
   Square2D flat;
+  Square3D flat3;
 
   logg::debug = true;
 
@@ -115,7 +112,7 @@ int main( int argc, char* args[] ) {
     world.time = (world.time+1)%(60*24);
   });
 
-  vec3 prelookpos = floor(cam::look/vec3(world.chunkSize));
+  vec3 prelookpos = floor(cam::look/vec3(world.CHUNKSIZE));
   vec3 oldpos;
   vec3 newpos;
 
@@ -125,6 +122,12 @@ int main( int argc, char* args[] ) {
   if(cam::pos.x == 0) oldpos.x = 0;
   if(cam::pos.y == 0) oldpos.y = 0;
   if(cam::pos.z == 0) oldpos.z = 0;
+
+
+//  vector<Bot> bots;
+//  bots.emplace_back(vec3(0,316,0)); //Place a Bot
+
+
 
 	//Add the Event Handler
 	Tiny::event.handler = [&](){
@@ -138,8 +141,8 @@ int main( int argc, char* args[] ) {
 
       //Rebuffer Condition
 
-      if(!all(equal(floor(cam::look/vec3(world.chunkSize)), prelookpos))){
-        prelookpos = floor(cam::look/vec3(world.chunkSize));
+      if(!all(equal(floor(cam::look/vec3(world.CHUNKSIZE)), prelookpos))){
+        prelookpos = floor(cam::look/vec3(world.CHUNKSIZE));
         std::cout<<"Buffering ";
         timer::benchmark<std::chrono::milliseconds>([&](){
           world.buffer();
@@ -194,14 +197,10 @@ int main( int argc, char* args[] ) {
 
 	};
 
-  auto _old = std::chrono::high_resolution_clock::now();
+  //auto _old = std::chrono::high_resolution_clock::now();
 
 	//Define the rendering pieeline
 	Tiny::view.pipeline = [&](){
-
-    auto _new = std::chrono::high_resolution_clock::now();
-    std::cout<<"TIME: "<<std::chrono::duration_cast<std::chrono::microseconds>(_new - _old).count()<<std::endl;
-    _old = std::chrono::high_resolution_clock::now();
 
     mat4 back = translate(mat4(1), -cam::look);
 
@@ -238,6 +237,32 @@ int main( int argc, char* args[] ) {
      cubeShader.uniform("model", glm::mat4(1));
      world.vertexpool.render();
 
+     //Draw the Bots
+
+     /*
+
+     spriteShader.use();
+     for(auto& bot: bots){
+       spriteShader.uniform("width", 4.0f);
+       spriteShader.uniform("height", 4.0f);
+       spriteShader.uniform("nframe", 0.0f);
+       spriteShader.uniform("animation", 0.0f);
+       spriteShader.texture("spriteTexture", cowboyfull);
+
+       glm::mat4 model = glm::mat4(1.0f);
+       model = glm::translate(model, bot.pos + vec3(0,0.5,0));
+       model = glm::scale(model, glm::vec3(0.5,1,0.5));
+       model = glm::rotate(model, glm::radians(90.0f-cam::rot), glm::vec3(0,1,0));
+
+       spriteShader.uniform("model", model);
+       spriteShader.uniform("vp", cam::vp);
+
+       flat3.render();
+     }
+
+     */
+
+
      Tiny::view.target(color::black);
 
      effectShader.use();
@@ -256,9 +281,12 @@ int main( int argc, char* args[] ) {
 	Tiny::loop([&](){
 
     scene::daytime = (double)world.time/(60.0*24.0);
-    scene::lightpos = vec3(-10.0f, ease::quadratic(0.1)*20.0f+10.0f, -10.0f+0.1*20.0f);
+    scene::lightpos = vec3(-10.0f, 20.0f+10.0f, -10.0f+0.1*20.0f);
 
     scene::computelighting(scene::daytime);
+
+//    for(auto& bot: bots)
+//      bot.execute();
 
 	});
 

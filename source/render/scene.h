@@ -61,9 +61,16 @@ int zoomstate = 0;
 bool changezoomstate(float camrad){
 
   //Get Current Zoomstate!
-  if(camrad >= 5.0f)    zoomstate = 0;
-  else if(camrad >= 2.5f)  zoomstate = 1;
-  else                  zoomstate = 2;
+  if(cam::type == cam::ORTHO){
+    if(camrad >= 5.0f)    zoomstate = 0;
+    else if(camrad >= 2.5f)  zoomstate = 1;
+    else                  zoomstate = 2;
+  }
+  else{
+    if(camrad <= 600.0f)        zoomstate = 0;
+    else if(camrad <= 1200.0f)  zoomstate = 1;
+    else                        zoomstate = 2;
+  }
 
   if(zoomstate == oldzoomstate) return false;
 
@@ -74,21 +81,21 @@ bool changezoomstate(float camrad){
   //Change Render Parameters
   if(zoomstate == 2){
 
-    renderdist = vec3(32, 12, 32);
+    renderdist = vec3(16, 12, 16);
     dproj = ortho<float>(-800,800,-800,800,-600,600);
     dvp = dproj*dview;
 
   }
   if(scene::zoomstate == 1){
 
-    renderdist = vec3(16, 8, 16);
+    renderdist = vec3(10, 8, 10);
     dproj = ortho<float>(-300,300,-300,300,-300,300);
     dvp = dproj*dview;
 
   }
   if(scene::zoomstate == 0){
 
-    renderdist = vec3(8, 4, 8);
+    renderdist = vec3(6, 4, 6);
     dproj = ortho<float>(-200,200,-200,200,-300,300);
     dvp = dproj*dview;
 
@@ -102,16 +109,11 @@ bool changezoomstate(float camrad){
 //Rotation and View
 int lookstate = 3;
 
-
-
 vec3 clickColorBlock = vec3(0.0f, 1.0f, 0.0f);
 vec3 hoverColorBlock = vec3(1.0f, 0.0, 0.0f);
 
-
-//EFFECT PROPERTIES (MAKE STUFF LOOK NICE)
-
 int blur = 0; //Degree of Blur
-bool fog = true;
-bool grain = false;
+bool fog = false;
+bool grain = true;
 
 }

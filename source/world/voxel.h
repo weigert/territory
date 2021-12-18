@@ -1,13 +1,213 @@
 /*
 ================================================================================
-                          Chunk Meshing Algorithms
+                          Territory Voxel System
 ================================================================================
 */
 
-namespace chunkmesh {
-using namespace std;
+#ifndef TERRITORY_VOXEL
+#define TERRITORY_VOXEL
 
-function<void(Chunk*, Vertexpool<Vertex>*)> greedypool = [](Chunk* c, Vertexpool<Vertex>* vertpool){
+namespace voxel {
+using namespace std;
+using namespace glm;
+
+unsigned int CHUNKSIZE = 16;
+unsigned int CVOL = 16*16*16;
+ivec3 CDIM = ivec3(16, 16, 16);
+
+// Block-Types
+
+enum block: unsigned char {
+  BLOCK_AIR,
+  BLOCK_GRASS,
+  BLOCK_DIRT,
+  BLOCK_SAND,
+  BLOCK_CLAY,
+  BLOCK_GRAVEL,
+  BLOCK_SANDSTONE,
+  BLOCK_STONE,
+  BLOCK_WATER,
+  BLOCK_LEAVES,
+  BLOCK_WOOD,
+  BLOCK_PUMPKIN,
+  BLOCK_CACTUS,
+  BLOCK_PLANKS,
+  BLOCK_GLASS,
+  BLOCK_VOID,
+  BLOCK_CACTUSFLOWER
+};
+
+const vector<vec4> skycolors{
+  vec4(0.1, 0.1, 0.1, 1.0),            //Dark Grey
+  vec4(0.00, 1.00, 1.00, 1.0),         //Blue
+  vec4(1.00, 1.00, 1.00, 1.0),         //White
+  vec4(0.1, 0.1, 0.1, 1.0)             //Dark Grey
+};
+
+const vector<vec4> sandcolors{
+  vec4(1.00, 0.75, 0.35, 1.0),
+  vec4(0.84, 0.21, 0.21, 1.0),
+  vec4(0.93, 0.91, 0.38, 1.0)
+};
+
+const vector<vec4> grasscolors{
+  vec4(0.65, 0.72, 0.34, 1.0),
+  vec4(0.19, 0.45, 0.34, 1.0),
+  vec4(0.54, 0.70, 0.34, 1.0)
+};
+
+const vector<vec4> stonecolors{
+  vec4(0.5, 0.5, 0.5, 1.0),
+  vec4(0.6, 0.6, 0.6, 1.0),
+  vec4(0.7, 0.7, 0.7, 1.0)
+};
+
+const vector<vec4> gravelcolors{
+  vec4(0.9, 0.9, 0.9, 1.0),
+  vec4(0.8, 0.8, 0.8, 1.0),
+  vec4(0.7, 0.7, 0.7, 1.0)
+};
+
+const vector<vec4> autumncolors{
+  vec4(0.17, 0.40, 0.26, 0.8),
+  vec4(1.00, 0.75, 0.35, 1.0),
+  vec4(0.84, 0.21, 0.21, 1.0)
+};
+
+const vector<vec4> leafcolors{
+  vec4(0.16, 0.44, 0.27, 1.0),
+  vec4(0.05, 0.31, 0.22, 1.0),
+  vec4(0.35, 0.43, 0.13, 1.0)
+};
+
+const vector<vec4> claycolors{
+  vec4(0.97f, 0.5f, 0.44f, 1.0f),
+  vec4(0.75, 0.30, 0.30, 1.0),
+};
+
+vec4 get(block type, double hash){
+  //Switch the value and return a vector
+  switch(type){
+    case BLOCK_GRASS:
+      return color::bezier(hash, grasscolors);
+      break;
+    case BLOCK_DIRT:
+      return vec4(0.74f, 0.5f, 0.36f, 1.0f);
+      break;
+    case BLOCK_WATER:
+      return vec4(0.3f, 0.57f, 0.67f, 0.8f); //Semi Transparent!
+      break;
+    case BLOCK_SAND:
+      return color::bezier(hash, sandcolors);
+      break;
+    case BLOCK_CLAY:
+      return color::bezier(hash, claycolors);
+      break;
+    case BLOCK_STONE:
+      return color::bezier(hash, stonecolors);
+      break;
+    case BLOCK_LEAVES:
+      return color::bezier(hash, leafcolors);
+      break;
+    case BLOCK_WOOD:
+      return vec4(0.6f, 0.375f, 0.14f, 1.0f);
+      break;
+    case BLOCK_GRAVEL:
+    return color::bezier(hash, gravelcolors);
+      break;
+    case BLOCK_SANDSTONE:
+      return vec4(0.8f, 0.75f, 0.64f, 1.0f);
+      break;
+    case BLOCK_PUMPKIN:
+      return vec4(1.0f, 0.5f, 0.0f, 1.0f);
+      break;
+    case BLOCK_CACTUS:
+      return vec4(0.0f, 0.44f, 0.3f, 1.0f);
+      break;
+    case BLOCK_PLANKS:
+      return vec4(0.75f, 0.6f, 0.28f, 1.0f);
+      break;
+    case BLOCK_GLASS:
+      return vec4(0.8f, 0.9f, 0.95f, 0.2f);
+      break;
+    default:
+      return vec4(1.0f, 1.0f, 1.0f, 0.5f);
+      break;
+  }
+}
+
+// Chunks and Chunk Management
+
+class Chunk{
+public:
+
+  Chunk(){
+    data = new voxel::block[CVOL]{BLOCK_AIR};
+  }
+  Chunk(ivec3 p){
+    pos = p;
+  }
+  Chunk(ivec3 p, voxel::block* ndata){
+    data = ndata;
+    pos = p;
+  }
+
+  voxel::block* data;
+  ivec3 pos = ivec3(0);
+
+  bool remesh = true;
+  bool firstmesh = true;
+
+  int quadsize = 0;
+  int quadstart = 0;
+  array<uint*, 6> faces;
+
+  void set(ivec3 p, block t){
+    data[math::flatten(p, CDIM)] = t;
+  }
+
+  block get(ivec3 p){
+    return data[math::flatten(p, CDIM)];
+  }
+
+  block get(int* p){
+    return data[math::flatten(ivec3(p[0], p[1], p[2]), CDIM)];
+  }
+
+};
+
+bool operator > (const Chunk& a, const Chunk& b) {
+
+  if(a.pos.x > b.pos.x) return true;    //Sort by Position
+  if(a.pos.x < b.pos.x) return false;
+
+  if(a.pos.y > b.pos.y) return true;    //Sort by Position
+  if(a.pos.y < b.pos.y) return false;
+
+  if(a.pos.z > b.pos.z) return true;    //Sort by Position
+  if(a.pos.z < b.pos.z) return false;
+
+  return false;
+
+}
+
+bool operator < (const Chunk& a, const Chunk& b) {
+
+  if(a.pos.x < b.pos.x) return true;    //Sort by Position
+  if(a.pos.x > b.pos.x) return false;
+
+  if(a.pos.y < b.pos.y) return true;    //Sort by Position
+  if(a.pos.y > b.pos.y) return false;
+
+  if(a.pos.z < b.pos.z) return true;    //Sort by Position
+  if(a.pos.z > b.pos.z) return false;
+
+  return false;
+}
+
+// Meshing
+
+void mesh(Chunk* c, Vertexpool<Vertex>* vertpool){
 
   int LOD = scene::LOD;
   int QUAD = scene::QUAD;
@@ -17,8 +217,8 @@ function<void(Chunk*, Vertexpool<Vertex>*)> greedypool = [](Chunk* c, Vertexpool
   int u, v, w;
   int n;
 
-  BlockType* mask = new BlockType[CHUNKSIZE*CHUNKSIZE/LOD/LOD];
-  BlockType current, facing;
+  voxel::block* mask = new voxel::block[CHUNKSIZE*CHUNKSIZE/LOD/LOD];
+  voxel::block current, facing;
   int s;
 
   uint* section;
@@ -54,7 +254,7 @@ function<void(Chunk*, Vertexpool<Vertex>*)> greedypool = [](Chunk* c, Vertexpool
           s = x[w] + x[v]*CHLOD;                                    //Slice Index
           mask[s] = BLOCK_AIR;                                                  //Set to Air
 
-          current = c->getPosition((float)LOD*vec3(x[0],x[1],x[2]));   //Position at one corner!
+          current = c->get(LOD*ivec3(x[0],x[1],x[2]));   //Position at one corner!
 
           if(current == BLOCK_AIR) continue;
 
@@ -66,7 +266,7 @@ function<void(Chunk*, Vertexpool<Vertex>*)> greedypool = [](Chunk* c, Vertexpool
           }
 
           //Now see if we should remove this mask element or not, i.e. not visible!
-          facing = c->getPosition((float)LOD*vec3(x[0]+q[0],x[1]+q[1],x[2]+q[2]));
+          facing = c->get(LOD*ivec3(x[0]+q[0],x[1]+q[1],x[2]+q[2]));
 
           //Make sure that the facing block can be air or non-cubic!
           if(facing == BLOCK_AIR)
@@ -116,7 +316,7 @@ function<void(Chunk*, Vertexpool<Vertex>*)> greedypool = [](Chunk* c, Vertexpool
           int du[3] = {0}; du[v] = height;
           int dv[3] = {0}; dv[w] = width;
 
-          color = block::getColor(current, color::hashrand(helper::getIndex(vec3(x[0], x[1], x[2]), vec3(16))));
+          color = voxel::get(current, color::hashrand(math::flatten(ivec3(x[0], x[1], x[2]), ivec3(16))));
 
           if(n < 0){
 
@@ -185,6 +385,7 @@ function<void(Chunk*, Vertexpool<Vertex>*)> greedypool = [](Chunk* c, Vertexpool
     quads += c->quadsize;
   //  });
 
+
   //Next Surface Orientation
   }
 
@@ -192,6 +393,8 @@ function<void(Chunk*, Vertexpool<Vertex>*)> greedypool = [](Chunk* c, Vertexpool
 
   delete[] mask;
 
-};
+}
 
 }
+
+#endif

@@ -67,6 +67,17 @@ vec4 shade(){
   return vec4(vec3(1.0f-shadow), 1.0f);
 }
 
+vec4 phong(){
+
+	float diffuse = 0.3*clamp(dot(ex_Normal, normalize(lightpos)), 0.1,  0.7);
+	float ambient = 0.2;
+	float specular = 0.5*pow(max(dot(normalize(lookdir), normalize(reflect(-lightpos, ex_Normal))), 0.0), 16);
+
+	return vec4(lightcol*lightstrength*(diffuse + ambient + specular), 1.0f);
+
+}
+
+
 void main(void) {
 
   fragColor = ex_Color;
