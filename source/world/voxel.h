@@ -163,15 +163,15 @@ public:
   array<uint*, 6> faces;
 
   void set(ivec3 p, block t){
-    data[math::flatten(p, CDIM)] = t;
+    data[math::cflatten(p, CDIM)] = t;
   }
 
   block get(ivec3 p){
-    return data[math::flatten(p, CDIM)];
+    return data[math::cflatten(p, CDIM)];
   }
 
   block get(int* p){
-    return data[math::flatten(ivec3(p[0], p[1], p[2]), CDIM)];
+    return data[math::cflatten(ivec3(p[0], p[1], p[2]), CDIM)];
   }
 
 };
@@ -204,6 +204,62 @@ bool operator < (const Chunk& a, const Chunk& b) {
 
   return false;
 }
+
+// Chunk Pooling
+
+class Chunkpool {
+public:
+
+  voxel::block* data = NULL;
+  deque<voxel::block*> free;
+  size_t SIZE = 0;
+
+  Chunkpool(){}
+  Chunkpool(size_t _SIZE){
+    reserve(_SIZE);
+  }
+  ~Chunkpool(){
+    if(data != NULL)
+      delete[] data;
+  }
+
+  void reserve(size_t _SIZE){
+
+    SIZE = _SIZE;
+    if(data != NULL)
+      delete[] data;
+
+    data = new voxel::block[CVOL*SIZE]{voxel::BLOCK_AIR}; //This needs deleting
+    for(size_t i = 0; i < SIZE; i++)
+      free.push_front(data+i*CVOL);
+
+  }
+
+  voxel::block* get(){
+
+    if(free.empty()){
+      std::cout<<"CAN'T ALLOCATE CHUNK: OUT OF MEMORY"<<std::endl;
+      return NULL;
+    }
+
+    voxel::block* freechunk = free.back();
+    free.pop_back();
+    return freechunk;
+
+  }
+
+  void remove(voxel::block* chunk){
+
+    if((chunk - data) < 0 || (size_t)(chunk - data) >= CVOL*SIZE){
+      cout<<"TRYING TO FREE OUT OF POOL MEMORY"<<endl;
+      return;
+    }
+
+    free.push_front(chunk);
+
+  }
+
+};
 
 // Meshing
 
@@ -316,7 +372,7 @@ void mesh(Chunk* c, Vertexpool<Vertex>* vertpool){
           int du[3] = {0}; du[v] = height;
           int dv[3] = {0}; dv[w] = width;
 
-          color = voxel::get(current, color::hashrand(math::flatten(ivec3(x[0], x[1], x[2]), ivec3(16))));
+          color = voxel::get(current, color::hashrand(math::cflatten(ivec3(x[0], x[1], x[2]), ivec3(16))));
 
           if(n < 0){
 
@@ -392,6 +448,107 @@ void mesh(Chunk* c, Vertexpool<Vertex>* vertpool){
 //  std::cout<<"QUADS: "<<quads<<std::endl;
 
   delete[] mask;
+
+}
+
+/*
+
+  Compression Methods
+
+*/
+
+/*
+
+  RLE Morton Chunk
+
+*/
+
+/*
+
+  First I should write a method for simply translating all chunks into a compressed format.
+
+  Convert all chunks to a compressed format???
+
+  Need to also unconvert...
+
+*/
+
+
+
+
+struct RLEMElem {
+
+  voxel::block type;
+  unsigned int length = 1;
+
+};
+
+voxel::block* mortondata = new voxel::block[CVOL];
+
+void uncompress(RLEMElem* elem, size_t N, voxel::block* data){
+
+  // Data in Morton Order
+
+  /*
+
+  size_t R = 0;
+  for(size_t n = 0; n < N; n++){
+    for(size_t r = 0; r < elem[n].length; r++)
+      mortondata[R+r] = elem[n].type;
+    R += elem[n].length;
+  }
+
+  for(size_t i = 0; i < CVOL; i++)
+    data[math::flatten(unflatten(i), CDIM)] = mortondata[i];
+
+  */
+
+  size_t R = 0;
+  for(size_t n = 0; n < N; n++){
+    for(size_t r = 0; r < elem[n].length; r++)
+      data[R+r] = elem[n].type;
+    //  data[math::flatten(unflatten(R+r), CDIM)] = elem[n].type;
+    R += elem[n].length;
+  }
+
+}
+
+vector<RLEMElem> compress(voxel::block* data){
+
+  // Data in Morton Order
+
+  for(size_t i = 0; i < CVOL; i++){
+
+    ivec3 p = math::unflatten(i, CDIM);
+    size_t j = libmorton::morton3D_32_encode(p.x, p.y, p.z);
+    mortondata[j] = data[i];
+
+  }
+
+  RLEMElem elem;
+  elem.type = mortondata[0];
+
+  vector<RLEMElem> RLEM;
+
+  for(size_t j = 1; j < CVOL; j++){
+
+    if(mortondata[j] == elem.type)
+      elem.length++;
+
+    else {
+      RLEM.push_back(elem);
+      elem.type = mortondata[j];
+      elem.length = 1;
+    }
+
+  }
+
+  RLEM.push_back(elem);
+
+  //for(auto& e: RLEM)
+  //  cout<<"elem: "<<(int)(e.type)<<" "<<e.length<<endl;
+
+  return RLEM;
 
 }
 

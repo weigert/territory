@@ -10,122 +10,102 @@
 using namespace std;
 using namespace glm;
 
+unsigned int CHUNKSIZE = 16;
+ivec3 WDIM = ivec3(16,16,16);        //Spatial Information (Size in Chunks)
+ivec3 RDIM = min(WDIM, ivec3(16,16,16));         //Chunks Per Region
+ivec3 CDIM = ivec3(CHUNKSIZE);
+unsigned int CVOL = (CDIM.x*CDIM.y*CDIM.z);
+unsigned int RVOL = (RDIM.x*RDIM.y*RDIM.z);
+unsigned int WVOL = (WDIM.x*WDIM.y*WDIM.z);
+
 class World{
 public:
 
-World(string savefile, int _SEED){
+  string name;
+  int SEED = 0;                         //World Seed
 
-  SEED = _SEED;
-  savename = savefile;
+  bool compressed = false;
 
-  RDIM = min(WDIM, RDIM); //Edge Case
-  blueprint::RDIM = RDIM;
+  int AGE = 0;
+  volatile int time = 0;  //Is set in a separate timed thread.
+  chrono::milliseconds tickLength = chrono::milliseconds(100);
 
-  if(!init(savefile))
-    logg::err("Couldn't Initialize World");
-  logg::deb("Initialized World");
+  voxel::Chunkpool chunkpool;
+  vector<voxel::Chunk> chunks;                 //Loaded Chunks
 
-  RDIM = min(WDIM, RDIM); //Edge Case
-  blueprint::RDIM = RDIM;
+  ivec3 minchunk = ivec3(-1);
+  ivec3 maxchunk = ivec3(-1);
 
-  vertexpool.reserve(scene::QUAD, scene::MAXBUCKET);
-  vertexpool.index();
+  Vertexpool<Vertex> vertexpool;
+  std::unordered_set<int> groups;
 
-  //Reserve Chunkpool Data
+  blueprint::Blueprint blueprint;
+  blueprint::Blueprint remeshbuf;
 
-  const size_t Nchunks = 32*32*32*4;
+  World(string _name, int _SEED){
 
-  chunkpool = new voxel::block[CVOL*Nchunks]{voxel::BLOCK_AIR}; //This needs deleting
-  for(size_t i = 0; i < Nchunks; i++)
-    free.push_front(chunkpool+i*CVOL);
+    SEED = _SEED;
+    name = _name;
 
-}
+    //Reserve Vertexpool Data
+    vertexpool.reserve(scene::QUAD, scene::MAXBUCKET);
+    vertexpool.index();
 
-~World(){
-  delete[] chunkpool;
-}
+    //Reserve Chunkpool Data
+    chunkpool.reserve(32*32*32*4);
 
-int SEED = 0;                         //World Seed
-int AGE = 0;
-string savename;
+    if(!init())
+      logg::err("Couldn't Initialize World");
+    logg::deb("Initialized World");
 
-static ivec3 WDIM;        //Spatial Information (Size in Chunks)
-static ivec3 RDIM;         //Chunks Per Region
-static ivec3 CDIM;
-static unsigned int CHUNKSIZE;
-static unsigned int CVOL;
-static unsigned int RVOL;
-static unsigned int WVOL;
+  }
 
-ivec3 minchunk = ivec3(-1);
-ivec3 maxchunk = ivec3(-1);
+  bool init();
+  bool loadmeta();
+  bool savemeta();
 
+  bool lock = false;
+  void buffer();
+  void mesh();
+  void mask();
 
-std::unordered_set<int> groups;
+  void blank();
 
-
-voxel::block* chunkpool;
-deque<voxel::block*> free;
-
-
-
-voxel::block* getChunkPointer(){
-  if(free.empty()) std::cout<<"CAN'T ALLOCATE CHUNK: OUT OF MEMORY"<<std::endl;
-  voxel::block* freechunk = free.back();
-  free.pop_back();
-  return freechunk;
-}
-
-void returnChunkPoiner(voxel::block* freechunk){
-  free.push_front(freechunk);
-}
-
-
-
-
-
-blueprint::Blueprint blueprint;
-blueprint::Blueprint remeshbuf;
-vector<voxel::Chunk> chunks;                 //Loaded Chunks
-Vertexpool<Vertex> vertexpool;
-
-
-
-
-int sealevel = 16;
-
-void mesh();
-void mask();
-
-volatile int time = 0;  //Is set in a separate timed thread.
-chrono::milliseconds tickLength = chrono::milliseconds(100);
-
-bool init(std::string savefile);
-
-void blank();
-
-bool lock = false;
-void buffer();
-
-bool loadmeta(fs::path);
-bool savemeta(fs::path, string);
+  void compress();
 
 };
 
-unsigned int World::CHUNKSIZE = 16;
-ivec3 World::WDIM = glm::ivec3(16,16,16);        //Spatial Information (Size in Chunks)
-ivec3 World::RDIM = glm::ivec3(16,16,16);         //Chunks Per Region
-ivec3 World::CDIM = glm::ivec3(World::CHUNKSIZE);
-unsigned int World::CVOL = (World::CDIM.x*World::CDIM.y*World::CDIM.z);
-unsigned int World::RVOL = (World::RDIM.x*World::RDIM.y*World::RDIM.z);
-unsigned int World::WVOL = (World::WDIM.x*World::WDIM.y*World::WDIM.z);
 
-#endif
+bool World::init(){
 
+  rootdir = fs::path(fs::current_path() / "save");
+  if(!fs::exists(rootdir))
+    fs::create_directory(rootdir);
+  savedir = rootdir/name;
 
-using namespace std;
+  //Load World
+  if(fs::exists(savedir)){
+    logg::deb("Found Savefile ", name);
+    return loadmeta();
+  }
 
-bool World::loadmeta(fs::path savedir){
+  //Generate World
+  logg::deb("Generating New World ", name);
+  fs::create_directory(savedir);
+  savemeta();
+
+  //Generate the Blank Region Files
+  logg::deb("Generating Blank Region Files");
+  blank();
+
+  //Optional: Run some terrain generation algorithm here...
+  logg::deb("Finished Initializing World");
+
+  return true;
+
+}
+
+bool World::loadmeta(){
 
   ifstream in((savedir/"world.meta").string());
   if(!in.is_open()){
@@ -190,7 +170,7 @@ bool World::loadmeta(fs::path savedir){
 
 }
 
-bool World::savemeta(fs::path savedir, string savename){
+bool World::savemeta(){
 
   ofstream out((savedir/"world.meta").string());
   if(!out.is_open()){
@@ -201,7 +181,7 @@ bool World::savemeta(fs::path savedir, string savename){
   cout<<"Generating Meta File..."<<endl;
 
   out<<"# territory world meta file"<<endl;
-  out<<"WORLD "<<savename<<endl;
+  out<<"WORLD "<<name<<endl;
   out<<"SEED "<<SEED<<endl;
   out<<"AGE "<<AGE<<endl;
   out<<"WDIM "<<WDIM.x<<" "<<WDIM.y<<" "<<WDIM.z<<endl;
@@ -214,35 +194,6 @@ bool World::savemeta(fs::path savedir, string savename){
 
 }
 
-bool World::init(std::string savefile){
-
-  rootdir = fs::path(fs::current_path() / "save");
-  if(!fs::exists(rootdir)){
-    fs::create_directory(rootdir);
-  }
-  savedir = rootdir/savefile;
-
-  //Load World
-
-  if(fs::exists(savedir)){
-    logg::deb("Found Savefile ", savefile);
-    return loadmeta(savedir);
-  }
-
-  //Generate World
-
-  logg::deb("Generating New World ", savefile);
-  fs::create_directory(savedir);
-  savemeta(savedir, savefile);
-
-  //Generate the Blank Region Files
-  logg::deb("Generating Blank Region Files");
-  blank();
-  logg::deb("Finished Initializing World");
-
-  return true;
-
-}
 
 void World::blank(){
 
@@ -251,29 +202,29 @@ void World::blank(){
 
   voxel::Chunk chunk;
 
-  for(int i = 0; i < WDIM.x; i++){
-    for(int j = 0; j < WDIM.y; j++){
-      for(int k = 0; k < WDIM.z; k++){
+  ivec3 RPOS = chunk.pos/RDIM;
+  string savefile = "world.region"+math::tostring(RPOS);
 
-        chunk.pos = ivec3(i, j, k);
+  for(int i = 0; i < WDIM.x; i++)
+  for(int j = 0; j < WDIM.y; j++)
+  for(int k = 0; k < WDIM.z; k++){
 
-        string savefile = "world.region"+math::tostring(chunk.pos/RDIM);
-        if(savefile != oldsavefile){
-          oldsavefile = savefile;
-          if(pFile != NULL){
-             fclose(pFile);
-             pFile = NULL;
-          }
-          pFile = fopen((savedir/savefile).string().c_str(), "a+b");
-          if(pFile == NULL){
-            logg::err("Failed to open region file "+savefile);
-            return;
-          }
-        }
-        fwrite(chunk.data, sizeof(unsigned char), CVOL, pFile);
+    chunk.pos = ivec3(i, j, k);
 
+    if(!all(equal(RPOS, chunk.pos/RDIM))){
+      RPOS = chunk.pos/RDIM;
+      savefile = "world.region"+math::tostring(RPOS);
+
+      fclose(pFile);
+      pFile = fopen((savedir/savefile).string().c_str(), "a+b");
+      if(pFile == NULL){
+        logg::err("Failed to open region file "+savefile);
+        return;
       }
     }
+
+    fwrite(chunk.data, sizeof(unsigned char), CVOL, pFile);
+
   }
 
   fclose(pFile);
@@ -285,7 +236,7 @@ void World::buffer(){
   logg::deb("Buffering Chunks...");
 
   lock = true;
-  blueprint.write(savename);
+  blueprint.write(name);
 
   stack<int> remove;                      //Chunks to Remove
   vector<ivec3> load;                     //Chunks to Load
@@ -318,18 +269,11 @@ void World::buffer(){
   minchunk = min;
   maxchunk = max;
 
-
-
-
-
-
-
-
   logg::deb("Unloading ", remove.size(), " chunks");
 
   while(!remove.empty()){                               //Delete Chunks
 
-    free.push_front(chunks[remove.top()].data);         //Return Chunk Pointer
+    chunkpool.remove(chunks[remove.top()].data);         //Return Chunk Pointer
 
     if(!chunks[remove.top()].firstmesh)
     for(int d = 0; d < 6; d++)
@@ -342,11 +286,6 @@ void World::buffer(){
 
   }
 
-
-
-
-
-
   if(!load.empty()){                                    //Load New Chunks
 
     logg::deb("Loading ", load.size(), " chunks");
@@ -358,14 +297,16 @@ void World::buffer(){
     sort(load.begin(), load.end(),                      //Sort Load-Order
     [](const ivec3& a, const ivec3& b) {
 
-      if(a.x >> RDIM.x > b.x >> RDIM.x) return true;    //Sort by Region (Divide by 16)
-      if(a.x >> RDIM.x < b.x >> RDIM.x) return false;
+      // Divide by Region Size
 
-      if(a.y >> RDIM.y > b.y >> RDIM.y) return true;
-      if(a.y >> RDIM.y < b.y >> RDIM.y) return false;
+      if(a.x / RDIM.x > b.x / RDIM.x) return true;
+      if(a.x / RDIM.x < b.x / RDIM.x) return false;
 
-      if(a.z >> RDIM.z > b.z >> RDIM.z) return true;
-      if(a.z >> RDIM.z < b.z >> RDIM.z) return false;
+      if(a.y / RDIM.y > b.y / RDIM.y) return true;
+      if(a.y / RDIM.y < b.y / RDIM.y) return false;
+
+      if(a.z / RDIM.z > b.z / RDIM.z) return true;
+      if(a.z / RDIM.z < b.z / RDIM.z) return false;
 
       if(a.x > b.x) return true;
       if(a.x < b.x) return false;
@@ -377,8 +318,11 @@ void World::buffer(){
       if(a.z < b.z) return false;
 
       return false;
+
     });
 
+
+    if(!compressed)
     while(!load.empty()){
 
       ivec3 rpos = load.back()/RDIM;
@@ -397,11 +341,12 @@ void World::buffer(){
 
       while(rpos == load.back()/RDIM){
 
-        chunks.emplace_back(load.back(), getChunkPointer());
+        chunks.emplace_back(load.back(), chunkpool.get());
 
         newn = math::flatten(mod((vec3)chunks.back().pos, (vec3)RDIM), RDIM);
 
         if(newn > oldn) fseek(inFile, CVOL*(newn-oldn-1), SEEK_CUR);
+
         if(fread(chunks.back().data, sizeof(unsigned char), CVOL, inFile) < CVOL)
           logg::err("Read Fail");
         oldn = newn;
@@ -414,6 +359,70 @@ void World::buffer(){
 
     }
 
+    else {
+
+      voxel::RLEMElem rdata[CVOL];
+
+      while(!load.empty()){
+
+        ivec3 rpos = load.back()/RDIM;
+        string savefile = "world.region"+math::tostring(rpos);
+
+        FILE* inFile = fopen((savedir/savefile).string().c_str(), "rb");
+        if(inFile == NULL){
+          logg::err("Failed to open region file "+savefile);
+          load.pop_back();
+          continue;
+        }
+
+        // Current Chunk Index, Next Chunk Index (In Region)
+
+        int cind = 0;
+        int nind = math::flatten(mod((vec3)load.back(), (vec3)RDIM), RDIM);
+
+        // Seek-Operation
+
+        size_t n;
+
+        while(cind < nind){
+          if( fread(&n, sizeof(size_t), 1, inFile) < 1 ) break;
+          fseek(inFile, n*sizeof(voxel::RLEMElem), SEEK_CUR);
+          //if( fread(&rdata[0], sizeof(voxel::RLEMElem), n, inFile) < n) break;
+          cind++;
+        }
+
+        //fseek(inFile, CVOL*oldn, SEEK_SET);
+
+        while(rpos == load.back()/RDIM){
+
+          chunks.emplace_back(load.back(), chunkpool.get());
+
+          nind = math::flatten(mod((vec3)chunks.back().pos, (vec3)RDIM), RDIM);
+
+          while(cind < nind){
+            if( fread(&n, sizeof(size_t), 1, inFile) < 1 ) break;
+            fseek(inFile, n*sizeof(voxel::RLEMElem), SEEK_CUR);
+            cind++;
+          }
+
+          if( fread(&n, sizeof(size_t), 1, inFile) < 1 ) break;
+          if( fread(&rdata[0], sizeof(voxel::RLEMElem), n, inFile) < n) break;
+          cind++;
+
+          // Convert the Chunk Data!
+
+          voxel::uncompress(&rdata[0], n, chunks.back().data);
+
+          load.pop_back();
+
+        }
+
+        fclose(inFile);
+
+      }
+
+    }
+
     });
 
     std::cout<<"Load-Time Per Chunk: "<<loadtime/loadsize<<std::endl;
@@ -423,6 +432,139 @@ void World::buffer(){
   lock = false;
 
 }
+
+
+
+void World::compress(){
+
+  logg::deb("Compressing Chunks...");
+
+  lock = true;
+  blueprint.write(name);
+
+  vector<ivec3> load;                     //Chunks to Load
+
+  ivec3 min = ivec3(0);
+  ivec3 max = WDIM-ivec3(1);
+
+  for(int i = min.x; i <= max.x; i++)    //All Indices in Region
+  for(int j = min.y; j <= max.y; j++)
+  for(int k = min.z; k <= max.z; k++)
+    load.emplace_back(i,j,k);
+
+  if(!load.empty()){                                    //Load New Chunks
+
+    logg::deb("Compressing ", load.size(), " chunks");
+    float loadsize = load.size();
+
+    voxel::block* data = new voxel::block[CVOL];
+
+    std::cout<<"Chunk Compression ";
+    float loadtime = timer::benchmark<std::chrono::microseconds>([&](){
+
+    sort(load.begin(), load.end(),                      //Sort Load-Order
+    [](const ivec3& a, const ivec3& b) {
+
+      // Divide by Region Size
+
+      if(a.x / RDIM.x > b.x / RDIM.x) return true;
+      if(a.x / RDIM.x < b.x / RDIM.x) return false;
+
+      if(a.y / RDIM.y > b.y / RDIM.y) return true;
+      if(a.y / RDIM.y < b.y / RDIM.y) return false;
+
+      if(a.z / RDIM.z > b.z / RDIM.z) return true;
+      if(a.z / RDIM.z < b.z / RDIM.z) return false;
+
+      if(a.x > b.x) return true;
+      if(a.x < b.x) return false;
+
+      if(a.y > b.y) return true;
+      if(a.y < b.y) return false;
+
+      if(a.z > b.z) return true;
+      if(a.z < b.z) return false;
+
+      return false;
+
+    });
+
+    fs::path compressdir = rootdir/(name + "_compress");
+
+    //Load World
+    if(!fs::exists(compressdir)){
+      logg::deb("Compressing savefile ", name);
+      fs::create_directory(compressdir);
+      //savemeta();
+    }
+
+    while(!load.empty()){
+
+      ivec3 rpos = load.back()/RDIM;
+      string savefile = "world.region"+math::tostring(rpos);
+
+      FILE* inFile = fopen((savedir/savefile).string().c_str(), "rb");
+      if(inFile == NULL){
+        logg::err("Failed to open region file "+savefile);
+        load.pop_back();
+        continue;
+      }
+
+      FILE* outFile = fopen((compressdir/savefile).string().c_str(), "wb");
+      if(outFile == NULL){
+        logg::err("Failed to open region file "+savefile);
+        load.pop_back();
+        continue;
+      }
+
+    //  int oldn = math::flatten(mod((vec3)load.back(), (vec3)RDIM), RDIM);
+    //  int newn;
+    //  fseek(inFile, CVOL*oldn, SEEK_SET);
+
+      while(rpos == load.back()/RDIM){
+
+        //newn = math::flatten(mod((vec3)chunks.back().pos, (vec3)RDIM), RDIM);
+
+        //if(newn > oldn) fseek(inFile, CVOL*(newn-oldn-1), SEEK_CUR);
+
+        if(fread(data, sizeof(voxel::block), CVOL, inFile) < CVOL){
+          logg::err("Read Fail");
+        }
+        else{
+          vector<voxel::RLEMElem> elems = voxel::compress(data);
+          size_t n = elems.size();
+          fwrite(&n, sizeof(size_t), 1, outFile);
+          fwrite(&elems[0], sizeof(voxel::RLEMElem), n, outFile);
+
+          //fwrite(data, sizeof(voxel::block), CVOL, outFile);
+        }
+
+    //    oldn = newn;
+
+        load.pop_back();
+
+      }
+
+      fclose(inFile);
+      fclose(outFile);
+
+    }
+
+    });
+
+    std::cout<<"Compress Time Per Chunk: "<<loadtime/loadsize<<std::endl;
+
+    delete[] data;
+
+  }
+
+  lock = false;
+
+}
+
+
+
+
 
 /*
 ================================================================================
@@ -493,6 +635,10 @@ void World::mesh(){
 
         voxel::Chunk* cur = &chunks[math::flatten(ivec3(i, j, k) + ivec3(ox, oy, oz), effchunk+1)];
         tempchunk[(x+ox*CHLOD)*CH*CH+(y+oy*CHLOD)*CH+(z+oz*CHLOD)] = cur->data[scene::LOD*x*CH*CH+scene::LOD*y*CH+scene::LOD*z];
+        //tempchunk[math::cflatten(ivec3(x,y,z) + ivec3(ox,oy,oz)*CHLOD, ivec3(CH))] = cur->data[math::cflatten(ivec3(x,y,z)*scene::LOD, ivec3(CH))];
+
+
+
         cur->remesh = false;
 
       }
@@ -519,7 +665,6 @@ void World::mesh(){
 
 });
 
-
 }
 
 void World::mask(){
@@ -542,3 +687,5 @@ void World::mask(){
 
   vertexpool.update();
 }
+
+#endif

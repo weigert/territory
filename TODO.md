@@ -1,8 +1,38 @@
-- Buffer Object Pooling!!! this could be major.
+# todo
+
+## engine
+
+- morton order run length encoding storage
+- improve loading times, improve drawing times
+- improve the art style somehow through improved shading techniques
 
 
-- Buffer Object Pooling
-- Chunk Pooling
+## meta data
+
+## gameplay
+
+- add bots back
+- bot scripting engine
+- task pooling
+
+- items and containers
+- item construction, constructions in general
+- recipes and conversion systems
+- materials and item properties
+- regions / zones definitions and properties
+- globality / locality of knowledge
+- work designation
+
+later on:
+-
+
+# done
+
+## rendering engine
+
+- vertex pooling
+- chunk data pooling
+
 
 - Loading and Saving of Chunks needs to be a member of chunk,
 so we can defien derived classes.

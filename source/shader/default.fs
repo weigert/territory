@@ -42,8 +42,11 @@ float gridSample(int size){
   float currentDepth = ex_Shadow.z;
 
   //Compute Bias
-  float m = 1-dot(ex_Normal, normalize(lightpos));
-  float bias = mix(0.002, 0.2*m, pow(m, 5));
+  //float m = 0.005;//-dot(ex_Normal, normalize(lightpos));
+  //float bias = mix(0.002, 0.2*m, pow(m, 5));
+
+  float bias = max(0.05 * (1.0 - dot(ex_Normal, lightpos)), 0.005);
+  //float bias = 0.005;
 
   for(int x = -size; x <= size; ++x){
       for(int y = -size; y <= size; ++y){

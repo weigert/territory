@@ -12,6 +12,8 @@ namespace fs = boost::filesystem;
 fs::path rootdir;
 fs::path savedir;
 
+#include "include/libmorton/morton.h"
+
 #include "math.h"
 
 //#include "bot/task.h"
@@ -20,9 +22,11 @@ fs::path savedir;
 #include "render/scene.h"
 #include "render/vertexpool.cpp"
 
+
 #include "world/voxel.h"
 #include "world/blueprint.h"
 #include "world/world.h"
+
 
 int main( int argc, char* args[] ) {
 
@@ -47,29 +51,9 @@ int main( int argc, char* args[] ) {
     SEED = std::stoi(parse::option["s"]);
   logg::deb("SEED: ", SEED);
 
-
-
-
-
   Tiny::view.vsync = false;
-  Tiny::view.antialias = 16;
+  Tiny::view.antialias = 1;
   Tiny::window("Territory", 1200, 800);
-
-  /*
-
-  cam::near = 0.1f;
-  cam::far = 800.0f;
-  cam::FOV = 0.5f;
-  cam::moved = true;
-  cam::zoomrate = 25.0f;
-  cam::look = vec3(900, 250, 450);
-  cam::init(5, cam::PROJ);
-
-  cam::roty = 45.0f;
-  cam::rad = 100.0f;
-  cam::update();
-
-  */
 
   cam::near = -800.0f;
   cam::far = 800.0f;
@@ -78,14 +62,12 @@ int main( int argc, char* args[] ) {
   cam::look = vec3(0, 0, 0);
   cam::init(5, cam::ORTHO);
 
-
   scene::renderdist = vec3(5, 4, 5);
   scene::dproj = ortho<float>(-200,200,-200,200,-300,300);
   scene::dvp = scene::dproj*scene::dview;
 
   scene::QUAD = 2400;
   scene::MAXBUCKET = 18*18*18*8;
-
 
   //Load Shaders
   Shader cubeShader({"source/shader/default.vs", "source/shader/default.fs"}, {"in_Position", "in_Normal", "in_Color"});
@@ -104,15 +86,23 @@ int main( int argc, char* args[] ) {
   logg::debug = true;
 
 	World world((std::string)args[1], SEED);
+
+  if(parse::flag.contains("rlem"))
+    world.compressed = true;
+
   world.buffer();
   world.mesh();
+
+  //world.compress();
+
+  //voxel::compress(world.chunks[0].data);
 
   timer::Timer<std::chrono::milliseconds> worldUpdateTimer;
   worldUpdateTimer.set_interval(&world.tickLength, [&](){
     world.time = (world.time+1)%(60*24);
   });
 
-  vec3 prelookpos = floor(cam::look/vec3(world.CHUNKSIZE));
+  vec3 prelookpos = floor(cam::look/vec3(CHUNKSIZE));
   vec3 oldpos;
   vec3 newpos;
 
@@ -141,8 +131,8 @@ int main( int argc, char* args[] ) {
 
       //Rebuffer Condition
 
-      if(!all(equal(floor(cam::look/vec3(world.CHUNKSIZE)), prelookpos))){
-        prelookpos = floor(cam::look/vec3(world.CHUNKSIZE));
+      if(!all(equal(floor(cam::look/vec3(CHUNKSIZE)), prelookpos))){
+        prelookpos = floor(cam::look/vec3(CHUNKSIZE));
         std::cout<<"Buffering ";
         timer::benchmark<std::chrono::milliseconds>([&](){
           world.buffer();
