@@ -201,9 +201,17 @@ void World::blank(){
   string oldsavefile = "";
 
   voxel::Chunk chunk;
+  chunk.data = new voxel::block[CVOL]{voxel::BLOCK_AIR};
 
   ivec3 RPOS = chunk.pos/RDIM;
   string savefile = "world.region"+math::tostring(RPOS);
+
+  pFile = fopen((savedir/savefile).string().c_str(), "w+b");
+  if(pFile == NULL){
+    cout<<"FAILURE"<<endl;
+    logg::err("Failed to open region file "+savefile);
+    return;
+  }
 
   for(int i = 0; i < WDIM.x; i++)
   for(int j = 0; j < WDIM.y; j++)
@@ -212,22 +220,35 @@ void World::blank(){
     chunk.pos = ivec3(i, j, k);
 
     if(!all(equal(RPOS, chunk.pos/RDIM))){
+
       RPOS = chunk.pos/RDIM;
       savefile = "world.region"+math::tostring(RPOS);
 
       fclose(pFile);
-      pFile = fopen((savedir/savefile).string().c_str(), "a+b");
+      pFile = fopen((savedir/savefile).string().c_str(), "w+b");
       if(pFile == NULL){
+        cout<<"FAILURE"<<endl;
         logg::err("Failed to open region file "+savefile);
         return;
       }
+
     }
 
-    fwrite(chunk.data, sizeof(unsigned char), CVOL, pFile);
+    size_t nrle = 1;
+    voxel::RLEMElem elem;
+    elem.type = voxel::BLOCK_AIR;
+    elem.length = CVOL;
+
+    if( fwrite(&nrle, sizeof(size_t), 1, pFile) < 1 )
+      logg::err("Write Error");
+
+    if( fwrite(&elem, sizeof(voxel::RLEMElem), nrle, pFile) < nrle )
+      logg::err("Write Error");
 
   }
 
   fclose(pFile);
+  delete[] chunk.data;
 
 }
 
@@ -325,6 +346,8 @@ void World::buffer(){
 
     while(!load.empty()){
 
+      cout<<load.back().x<<" "<<load.back().y<<" "<<load.back().z<<endl;
+
       ivec3 rpos = load.back()/RDIM;
       string savefile = "world.region"+math::tostring(rpos);
 
@@ -348,8 +371,6 @@ void World::buffer(){
         fseek(inFile, n*sizeof(voxel::RLEMElem), SEEK_CUR);
         cind++;
       }
-
-      //fseek(inFile, CVOL*oldn, SEEK_SET);
 
       while(rpos == load.back()/RDIM){
 
@@ -388,139 +409,6 @@ void World::buffer(){
   lock = false;
 
 }
-
-/*
-
-void World::compress(){
-
-  logg::deb("Compressing Chunks...");
-
-  lock = true;
-  blueprint.write(name);
-
-  vector<ivec3> load;                     //Chunks to Load
-
-  ivec3 min = ivec3(0);
-  ivec3 max = WDIM-ivec3(1);
-
-  for(int i = min.x; i <= max.x; i++)    //All Indices in Region
-  for(int j = min.y; j <= max.y; j++)
-  for(int k = min.z; k <= max.z; k++)
-    load.emplace_back(i,j,k);
-
-  if(!load.empty()){                                    //Load New Chunks
-
-    logg::deb("Compressing ", load.size(), " chunks");
-    float loadsize = load.size();
-
-    voxel::block* data = new voxel::block[CVOL];
-
-    std::cout<<"Chunk Compression ";
-    float loadtime = timer::benchmark<std::chrono::microseconds>([&](){
-
-    sort(load.begin(), load.end(),                      //Sort Load-Order
-    [](const ivec3& a, const ivec3& b) {
-
-      // Divide by Region Size
-
-      if(a.x / RDIM.x > b.x / RDIM.x) return true;
-      if(a.x / RDIM.x < b.x / RDIM.x) return false;
-
-      if(a.y / RDIM.y > b.y / RDIM.y) return true;
-      if(a.y / RDIM.y < b.y / RDIM.y) return false;
-
-      if(a.z / RDIM.z > b.z / RDIM.z) return true;
-      if(a.z / RDIM.z < b.z / RDIM.z) return false;
-
-      if(a.x > b.x) return true;
-      if(a.x < b.x) return false;
-
-      if(a.y > b.y) return true;
-      if(a.y < b.y) return false;
-
-      if(a.z > b.z) return true;
-      if(a.z < b.z) return false;
-
-      return false;
-
-    });
-
-    fs::path compressdir = rootdir/(name + "_compress");
-
-    //Load World
-    if(!fs::exists(compressdir)){
-      logg::deb("Compressing savefile ", name);
-      fs::create_directory(compressdir);
-      //savemeta();
-    }
-
-    while(!load.empty()){
-
-      ivec3 rpos = load.back()/RDIM;
-      string savefile = "world.region"+math::tostring(rpos);
-
-      FILE* inFile = fopen((savedir/savefile).string().c_str(), "rb");
-      if(inFile == NULL){
-        logg::err("Failed to open region file "+savefile);
-        load.pop_back();
-        continue;
-      }
-
-      FILE* outFile = fopen((compressdir/savefile).string().c_str(), "wb");
-      if(outFile == NULL){
-        logg::err("Failed to open region file "+savefile);
-        load.pop_back();
-        continue;
-      }
-
-    //  int oldn = math::flatten(mod((vec3)load.back(), (vec3)RDIM), RDIM);
-    //  int newn;
-    //  fseek(inFile, CVOL*oldn, SEEK_SET);
-
-      while(rpos == load.back()/RDIM){
-
-        //newn = math::flatten(mod((vec3)chunks.back().pos, (vec3)RDIM), RDIM);
-
-        //if(newn > oldn) fseek(inFile, CVOL*(newn-oldn-1), SEEK_CUR);
-
-        if(fread(data, sizeof(voxel::block), CVOL, inFile) < CVOL){
-          logg::err("Read Fail");
-        }
-        else{
-          vector<voxel::RLEMElem> elems = voxel::compress(data);
-          size_t n = elems.size();
-          fwrite(&n, sizeof(size_t), 1, outFile);
-          fwrite(&elems[0], sizeof(voxel::RLEMElem), n, outFile);
-
-          //fwrite(data, sizeof(voxel::block), CVOL, outFile);
-        }
-
-    //    oldn = newn;
-
-        load.pop_back();
-
-      }
-
-      fclose(inFile);
-      fclose(outFile);
-
-    }
-
-    });
-
-    std::cout<<"Compress Time Per Chunk: "<<loadtime/loadsize<<std::endl;
-
-    delete[] data;
-
-  }
-
-  lock = false;
-
-}
-
-*/
-
-
 
 /*
 ================================================================================
