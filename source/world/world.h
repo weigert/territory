@@ -428,22 +428,59 @@ void World::mesh(){
 
     for(auto& chunk: chunks){
 
-      if(chunk.remesh){
+      if(!chunk.remesh) continue;
 
-        if(!chunk.firstmesh)
-          for(int d = 0; d < 6; d++)
-            vertexpool.unsection(chunk.faces[d]);
+      if(!chunk.firstmesh)
+        for(int d = 0; d < 6; d++)
+          vertexpool.unsection(chunk.faces[d]);
 
-        voxel::mesh(&chunk, &vertexpool);
-        chunk.remesh = false;
-        chunk.firstmesh = false;
+      chunk.section(&vertexpool);
 
-      }
     }
+
+    std::vector<thread> threads;
+    scene::SCALE = scene::LOD;
+
+    for(auto& chunk: chunks){
+
+
+      if(!chunk.remesh) continue;
+      threads.emplace_back(voxel::mesh, &chunk, &vertexpool);
+      chunk.remesh = false;
+      chunk.firstmesh = false;
+
+      /*
+      if(!chunk.remesh) continue;
+      scene::SCALE = scene::LOD;
+      voxel::mesh(&chunk, &vertexpool);
+      chunk.remesh = false;
+      chunk.firstmesh = false;
+      */
+
+    }
+
+    for(auto& t: threads)
+      t.join();
 
   }
 
   else {
+
+    // Unsection all chunks...
+    /*
+
+    for(auto& chunk: chunks){
+
+      if(!chunk.remesh) continue;
+
+      if(!chunk.firstmesh)
+        for(int d = 0; d < 6; d++)
+          vertexpool.unsection(chunk.faces[d]);
+
+      chunk.section(&vertexpool);
+
+    }
+    */
 
     ivec3 effchunk = maxchunk-minchunk;
     ivec3 base = mod((vec3)minchunk, vec3(scene::LOD));
@@ -477,9 +514,9 @@ void World::mesh(){
 
         voxel::Chunk* cur = &chunks[math::flatten(ivec3(i, j, k) + ivec3(ox, oy, oz), effchunk+1)];
 
-        /*
 
-        int typescount[17]{0};// = voxel::block[20];
+
+        int typescount[17]{0};
 
 
         for(int kx = 0; kx < scene::LOD; kx++)    //Offset
@@ -496,7 +533,7 @@ void World::mesh(){
           }
         }
 
-        */
+        /*
 
 
 
@@ -505,7 +542,7 @@ void World::mesh(){
         if(type == voxel::BLOCK_AIR)
           type = cur->data[math::cflatten(ivec3(x,y,z)*scene::LOD, ivec3(CH))];
 
-        
+          */
 
         tempchunk[math::cflatten(ivec3(x,y,z) + ivec3(ox,oy,oz)*CHLOD, ivec3(CH))] = type;
 
@@ -516,11 +553,8 @@ void World::mesh(){
       voxel::Chunk newchunk(basechunk->pos, tempchunk);
 
       scene::SCALE = scene::LOD;
-      int tmplod = scene::LOD;
-      scene::LOD = 1;
+      newchunk.section(&vertexpool);
       voxel::mesh(&newchunk, &vertexpool);
-      scene::LOD = tmplod;
-      scene::SCALE = 1;
 
       basechunk->faces = newchunk.faces;
       basechunk->firstmesh = false;
