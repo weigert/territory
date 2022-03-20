@@ -452,73 +452,54 @@ void mesh(Chunk* c, Vertexpool<Vertex>* vertpool){
 }
 
 /*
+================================================================================
+            Chunk Compression: Morton Order Run-Length Encoding
+================================================================================
 
-  Compression Methods
-
-*/
-
-/*
-
-  RLE Morton Chunk
-
-*/
-
-/*
-
-  First I should write a method for simply translating all chunks into a compressed format.
-
-  Convert all chunks to a compressed format???
-
-  Need to also unconvert...
+Note: rle_num is a datatype that needs to be defined so that a strict number of
+bytes is allocated in a file for the number of rle elements in a line (i.e. chunk)
+this allows for efficient line skipping / seeking.
 
 */
 
+using rle_num = size_t;
 
+// RLE Element
 
-
-struct RLEMElem {
-
+struct rlee {
   voxel::block type;
   unsigned int length = 1;
-
 };
 
-void uncompress(RLEMElem* elem, size_t N, voxel::block* data){
+// Compress / Uncompress Methods
 
-  size_t R = 0;
-  for(size_t n = 0; n < N; n++){
-    for(size_t r = 0; r < elem[n].length; r++)
-      data[R+r] = elem[n].type;
-    //  data[math::flatten(unflatten(R+r), CDIM)] = elem[n].type;
-    R += elem[n].length;
-  }
+rle_num compress(rlee* elem, voxel::block* data){
 
-}
-
-size_t compress(RLEMElem* elem, voxel::block* data){
-
-  size_t nrle = 0;
+  rle_num N = 0;
   elem->type = data[0];
   elem->length = 1;
 
   for(size_t i = 1; i < CVOL; i++){
-
-    if(data[i] == elem->type)
-      elem->length++;
-
-    else {
-
-      nrle++;
-      elem++;
-
+    if(data[i] != elem->type){
+      N++; elem++;
       elem->type = data[i];
       elem->length = 1;
-
     }
-
+    else elem->length++;
   }
 
-  return nrle;
+  return N;
+
+}
+
+void uncompress(rlee* elem, rle_num N, voxel::block* data){
+
+  size_t R = 0;
+  for(rle_num n = 0; n < N; n++){
+    for(size_t r = 0; r < elem[n].length; r++)
+      data[R+r] = elem[n].type;
+    R += elem[n].length;
+  }
 
 }
 

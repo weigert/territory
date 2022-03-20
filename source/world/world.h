@@ -234,15 +234,15 @@ void World::blank(){
 
     }
 
-    size_t nrle = 1;
-    voxel::RLEMElem elem;
+    voxel::rle_num nrle = 1;
+    voxel::rlee elem;
     elem.type = voxel::BLOCK_AIR;
     elem.length = CVOL;
 
-    if( fwrite(&nrle, sizeof(size_t), 1, pFile) < 1 )
+    if( fwrite(&nrle, sizeof(voxel::rle_num), 1, pFile) < 1 )
       logg::err("Write Error");
 
-    if( fwrite(&elem, sizeof(voxel::RLEMElem), nrle, pFile) < nrle )
+    if( fwrite(&elem, sizeof(voxel::rlee), nrle, pFile) < nrle )
       logg::err("Write Error");
 
   }
@@ -342,11 +342,9 @@ void World::buffer(){
 
     });
 
-    voxel::RLEMElem rdata[CVOL];
+    voxel::rlee rdata[CVOL];
 
     while(!load.empty()){
-
-      cout<<load.back().x<<" "<<load.back().y<<" "<<load.back().z<<endl;
 
       ivec3 rpos = load.back()/RDIM;
       string savefile = "world.region"+math::tostring(rpos);
@@ -367,8 +365,8 @@ void World::buffer(){
       // Seek-Operation
 
       while(cind < nind){
-        if( fread(&n, sizeof(size_t), 1, inFile) < 1 ) break;
-        fseek(inFile, n*sizeof(voxel::RLEMElem), SEEK_CUR);
+        if( fread(&n, sizeof(voxel::rle_num), 1, inFile) < 1 ) break;
+        fseek(inFile, n*sizeof(voxel::rlee), SEEK_CUR);
         cind++;
       }
 
@@ -379,13 +377,13 @@ void World::buffer(){
         nind = math::flatten(mod((vec3)chunks.back().pos, (vec3)RDIM), RDIM);
 
         while(cind < nind){
-          if( fread(&n, sizeof(size_t), 1, inFile) < 1 ) break;
-          fseek(inFile, n*sizeof(voxel::RLEMElem), SEEK_CUR);
+          if( fread(&n, sizeof(voxel::rle_num), 1, inFile) < 1 ) break;
+          fseek(inFile, n*sizeof(voxel::rlee), SEEK_CUR);
           cind++;
         }
 
-        if( fread(&n, sizeof(size_t), 1, inFile) < 1 ) break;
-        if( fread(&rdata[0], sizeof(voxel::RLEMElem), n, inFile) < n) break;
+        if( fread(&n, sizeof(voxel::rle_num), 1, inFile) < 1 ) break;
+        if( fread(&rdata[0], sizeof(voxel::rlee), n, inFile) < n) break;
         cind++;
 
         // Convert the Chunk Data!

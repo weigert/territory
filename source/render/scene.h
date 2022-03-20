@@ -81,7 +81,7 @@ bool changezoomstate(float camrad){
   //Change Render Parameters
   if(zoomstate == 2){
 
-    renderdist = vec3(16, 12, 16);
+    renderdist = vec3(32, 12, 32);
     dproj = ortho<float>(-800,800,-800,800,-600,600);
     dvp = dproj*dview;
 
@@ -95,7 +95,7 @@ bool changezoomstate(float camrad){
   }
   if(scene::zoomstate == 0){
 
-    renderdist = vec3(6, 4, 6);
+    renderdist = vec3(7, 4, 7);
     dproj = ortho<float>(-200,200,-200,200,-300,300);
     dvp = dproj*dview;
 

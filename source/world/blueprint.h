@@ -142,14 +142,14 @@ bool Blueprint::write(string savefile){
     }
 
     size_t nrle;                    //Number of Elements in Line
-    voxel::RLEMElem rledata[CVOL];  //RLE Data
+    voxel::rlee rledata[CVOL];  //RLE Data
 
     for(size_t n = 0; n < RVOL; n++){  //Region Size
 
-      if( fread(&nrle, sizeof(size_t), 1, inFile) < 1 )
+      if( fread(&nrle, sizeof(voxel::rle_num), 1, inFile) < 1 )
         logg::err("Read Error");
 
-      if( fread(&rledata[0], sizeof(voxel::RLEMElem), n, inFile) < n)
+      if( fread(&rledata[0], sizeof(voxel::rlee), n, inFile) < n)
         logg::err("Read Error");
 
       voxel::uncompress(rledata, nrle, chunk.data);
@@ -164,10 +164,10 @@ bool Blueprint::write(string savefile){
 
       nrle = voxel::compress(rledata, chunk.data);
 
-      if( fwrite(&nrle, sizeof(size_t), 1, outFile) < 1 )
+      if( fwrite(&nrle, sizeof(voxel::rle_num), 1, outFile) < 1 )
         logg::err("Write Error");
 
-      if( fwrite(&rledata[0], sizeof(voxel::RLEMElem), nrle, outFile) < nrle )
+      if( fwrite(&rledata[0], sizeof(voxel::rlee), nrle, outFile) < nrle )
         logg::err("Write Error");
 
     }
