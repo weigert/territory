@@ -86,14 +86,8 @@ int main( int argc, char* args[] ) {
   logg::debug = true;
 
 	World world((std::string)args[1], SEED);
-
-  if(parse::flag.contains("rlem"))
-    world.compressed = true;
-
   world.buffer();
   world.mesh();
-
-  //world.compress();
 
   //voxel::compress(world.chunks[0].data);
 

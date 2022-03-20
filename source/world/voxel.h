@@ -483,25 +483,7 @@ struct RLEMElem {
 
 };
 
-voxel::block* mortondata = new voxel::block[CVOL];
-
 void uncompress(RLEMElem* elem, size_t N, voxel::block* data){
-
-  // Data in Morton Order
-
-  /*
-
-  size_t R = 0;
-  for(size_t n = 0; n < N; n++){
-    for(size_t r = 0; r < elem[n].length; r++)
-      mortondata[R+r] = elem[n].type;
-    R += elem[n].length;
-  }
-
-  for(size_t i = 0; i < CVOL; i++)
-    data[math::flatten(unflatten(i), CDIM)] = mortondata[i];
-
-  */
 
   size_t R = 0;
   for(size_t n = 0; n < N; n++){
@@ -513,42 +495,30 @@ void uncompress(RLEMElem* elem, size_t N, voxel::block* data){
 
 }
 
-vector<RLEMElem> compress(voxel::block* data){
+size_t compress(RLEMElem* elem, voxel::block* data){
 
-  // Data in Morton Order
+  size_t nrle = 0;
+  elem->type = data[0];
+  elem->length = 1;
 
-  for(size_t i = 0; i < CVOL; i++){
+  for(size_t i = 1; i < CVOL; i++){
 
-    ivec3 p = math::unflatten(i, CDIM);
-    size_t j = libmorton::morton3D_32_encode(p.x, p.y, p.z);
-    mortondata[j] = data[i];
-
-  }
-
-  RLEMElem elem;
-  elem.type = mortondata[0];
-
-  vector<RLEMElem> RLEM;
-
-  for(size_t j = 1; j < CVOL; j++){
-
-    if(mortondata[j] == elem.type)
-      elem.length++;
+    if(data[i] == elem->type)
+      elem->length++;
 
     else {
-      RLEM.push_back(elem);
-      elem.type = mortondata[j];
-      elem.length = 1;
+
+      nrle++;
+      elem++;
+
+      elem->type = data[i];
+      elem->length = 1;
+
     }
 
   }
 
-  RLEM.push_back(elem);
-
-  //for(auto& e: RLEM)
-  //  cout<<"elem: "<<(int)(e.type)<<" "<<e.length<<endl;
-
-  return RLEM;
+  return nrle;
 
 }
 

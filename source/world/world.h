@@ -10,9 +10,9 @@
 using namespace std;
 using namespace glm;
 
-unsigned int CHUNKSIZE = 16;
-ivec3 WDIM = ivec3(16,16,16);        //Spatial Information (Size in Chunks)
-ivec3 RDIM = min(WDIM, ivec3(16,16,16));         //Chunks Per Region
+unsigned int CHUNKSIZE = 16;                      //Chunk Side-Length (Power-of-2)
+ivec3 WDIM = ivec3(16,16,16);                     //Spatial Information (Size in Chunks)
+ivec3 RDIM = min(WDIM, ivec3(16,16,16));          //Chunks Per Region
 ivec3 CDIM = ivec3(CHUNKSIZE);
 unsigned int CVOL = (CDIM.x*CDIM.y*CDIM.z);
 unsigned int RVOL = (RDIM.x*RDIM.y*RDIM.z);
@@ -321,8 +321,8 @@ void World::buffer(){
 
     });
 
+    voxel::RLEMElem rdata[CVOL];
 
-    if(!compressed)
     while(!load.empty()){
 
       ivec3 rpos = load.back()/RDIM;
@@ -335,91 +335,47 @@ void World::buffer(){
         continue;
       }
 
-      int oldn = math::flatten(mod((vec3)load.back(), (vec3)RDIM), RDIM);
-      int newn;
-      fseek(inFile, CVOL*oldn, SEEK_SET);
+      // Current Chunk Index, Next Chunk Index (In Region)
+
+      size_t n;
+      int cind = 0;
+      int nind = math::flatten(mod((vec3)load.back(), (vec3)RDIM), RDIM);
+
+      // Seek-Operation
+
+      while(cind < nind){
+        if( fread(&n, sizeof(size_t), 1, inFile) < 1 ) break;
+        fseek(inFile, n*sizeof(voxel::RLEMElem), SEEK_CUR);
+        cind++;
+      }
+
+      //fseek(inFile, CVOL*oldn, SEEK_SET);
 
       while(rpos == load.back()/RDIM){
 
         chunks.emplace_back(load.back(), chunkpool.get());
 
-        newn = math::flatten(mod((vec3)chunks.back().pos, (vec3)RDIM), RDIM);
+        nind = math::flatten(mod((vec3)chunks.back().pos, (vec3)RDIM), RDIM);
 
-        if(newn > oldn) fseek(inFile, CVOL*(newn-oldn-1), SEEK_CUR);
+        while(cind < nind){
+          if( fread(&n, sizeof(size_t), 1, inFile) < 1 ) break;
+          fseek(inFile, n*sizeof(voxel::RLEMElem), SEEK_CUR);
+          cind++;
+        }
 
-        if(fread(chunks.back().data, sizeof(unsigned char), CVOL, inFile) < CVOL)
-          logg::err("Read Fail");
-        oldn = newn;
+        if( fread(&n, sizeof(size_t), 1, inFile) < 1 ) break;
+        if( fread(&rdata[0], sizeof(voxel::RLEMElem), n, inFile) < n) break;
+        cind++;
+
+        // Convert the Chunk Data!
+
+        voxel::uncompress(&rdata[0], n, chunks.back().data);
 
         load.pop_back();
 
       }
 
       fclose(inFile);
-
-    }
-
-    else {
-
-      voxel::RLEMElem rdata[CVOL];
-
-      while(!load.empty()){
-
-        ivec3 rpos = load.back()/RDIM;
-        string savefile = "world.region"+math::tostring(rpos);
-
-        FILE* inFile = fopen((savedir/savefile).string().c_str(), "rb");
-        if(inFile == NULL){
-          logg::err("Failed to open region file "+savefile);
-          load.pop_back();
-          continue;
-        }
-
-        // Current Chunk Index, Next Chunk Index (In Region)
-
-        int cind = 0;
-        int nind = math::flatten(mod((vec3)load.back(), (vec3)RDIM), RDIM);
-
-        // Seek-Operation
-
-        size_t n;
-
-        while(cind < nind){
-          if( fread(&n, sizeof(size_t), 1, inFile) < 1 ) break;
-          fseek(inFile, n*sizeof(voxel::RLEMElem), SEEK_CUR);
-          //if( fread(&rdata[0], sizeof(voxel::RLEMElem), n, inFile) < n) break;
-          cind++;
-        }
-
-        //fseek(inFile, CVOL*oldn, SEEK_SET);
-
-        while(rpos == load.back()/RDIM){
-
-          chunks.emplace_back(load.back(), chunkpool.get());
-
-          nind = math::flatten(mod((vec3)chunks.back().pos, (vec3)RDIM), RDIM);
-
-          while(cind < nind){
-            if( fread(&n, sizeof(size_t), 1, inFile) < 1 ) break;
-            fseek(inFile, n*sizeof(voxel::RLEMElem), SEEK_CUR);
-            cind++;
-          }
-
-          if( fread(&n, sizeof(size_t), 1, inFile) < 1 ) break;
-          if( fread(&rdata[0], sizeof(voxel::RLEMElem), n, inFile) < n) break;
-          cind++;
-
-          // Convert the Chunk Data!
-
-          voxel::uncompress(&rdata[0], n, chunks.back().data);
-
-          load.pop_back();
-
-        }
-
-        fclose(inFile);
-
-      }
 
     }
 
@@ -433,7 +389,7 @@ void World::buffer(){
 
 }
 
-
+/*
 
 void World::compress(){
 
@@ -562,7 +518,7 @@ void World::compress(){
 
 }
 
-
+*/
 
 
 
@@ -634,10 +590,7 @@ void World::mesh(){
       for(int oz = 0; oz < scene::LOD; oz++){
 
         voxel::Chunk* cur = &chunks[math::flatten(ivec3(i, j, k) + ivec3(ox, oy, oz), effchunk+1)];
-        tempchunk[(x+ox*CHLOD)*CH*CH+(y+oy*CHLOD)*CH+(z+oz*CHLOD)] = cur->data[scene::LOD*x*CH*CH+scene::LOD*y*CH+scene::LOD*z];
-        //tempchunk[math::cflatten(ivec3(x,y,z) + ivec3(ox,oy,oz)*CHLOD, ivec3(CH))] = cur->data[math::cflatten(ivec3(x,y,z)*scene::LOD, ivec3(CH))];
-
-
+        tempchunk[math::cflatten(ivec3(x,y,z) + ivec3(ox,oy,oz)*CHLOD, ivec3(CH))] = cur->data[math::cflatten(ivec3(x,y,z)*scene::LOD, ivec3(CH))];
 
         cur->remesh = false;
 

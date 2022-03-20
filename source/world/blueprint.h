@@ -134,25 +134,40 @@ bool Blueprint::write(string savefile){
       logg::err("Failed to open region file "+savefile);
       return false;
     }
+
     FILE* outFile = fopen((savedir/(savefile+".temp")).string().c_str(), "wb");
-    if(inFile == NULL){
+    if(outFile == NULL){
       logg::err("Failed to open region file "+savefile);
       return false;
     }
 
+    size_t nrle;                    //Number of Elements in Line
+    voxel::RLEMElem rledata[CVOL];  //RLE Data
+
     for(size_t n = 0; n < RVOL; n++){  //Region Size
 
-      if(fread(chunk.data, sizeof(voxel::block), CVOL, inFile) < CVOL)
+      if( fread(&nrle, sizeof(size_t), 1, inFile) < 1 )
         logg::err("Read Error");
 
+      if( fread(&rledata[0], sizeof(voxel::RLEMElem), n, inFile) < n)
+        logg::err("Read Error");
+
+      voxel::uncompress(rledata, nrle, chunk.data);
       chunk.pos = math::unflatten(n, RDIM) + edits.back().rpos*RDIM;
 
       while(!edits.empty() && all(equal(chunk.pos, edits.back().cpos)) && all(equal(rpos, edits.back().rpos))){
+
         chunk.set(mod((vec3)edits.back().pos, vec3(CHUNKSIZE)), edits.back().type);
         edits.pop_back();
+
       }
 
-      if(fwrite(chunk.data, sizeof(voxel::block), CVOL, outFile) < CVOL)
+      nrle = voxel::compress(rledata, chunk.data);
+
+      if( fwrite(&nrle, sizeof(size_t), 1, outFile) < 1 )
+        logg::err("Write Error");
+
+      if( fwrite(&rledata[0], sizeof(voxel::RLEMElem), nrle, outFile) < nrle )
         logg::err("Write Error");
 
     }
