@@ -23,13 +23,13 @@ void main(){
   fragColor = texture(imageTexture, ex_Tex);
 
   //Distance Fog
-  //if(fog){
+  if(fog){
     float depthVal = clamp(texture(depthTexture, ex_Tex).r, 0.0, 1.0);
     if(depthVal < 1.0){
       float d = (depthVal-0.4)/0.2;
       fragColor = mix(fragColor, vec4(fogcolor, 1.0), d*d);
     }
-  //}
+  }
 
   //Texture Grain
   //if(grain)

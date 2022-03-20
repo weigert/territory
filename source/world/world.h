@@ -471,12 +471,43 @@ void World::mesh(){
       for(int y = 0; y < CHLOD; y++)
       for(int z = 0; z < CHLOD; z++)
 
-      for(int ox = 0; ox < scene::LOD; ox++)    //Offset
+      for(int ox = 0; ox < scene::LOD; ox++)    //Chunk Offset
       for(int oy = 0; oy < scene::LOD; oy++)
       for(int oz = 0; oz < scene::LOD; oz++){
 
         voxel::Chunk* cur = &chunks[math::flatten(ivec3(i, j, k) + ivec3(ox, oy, oz), effchunk+1)];
-        tempchunk[math::cflatten(ivec3(x,y,z) + ivec3(ox,oy,oz)*CHLOD, ivec3(CH))] = cur->data[math::cflatten(ivec3(x,y,z)*scene::LOD, ivec3(CH))];
+
+        /*
+
+        int typescount[17]{0};// = voxel::block[20];
+
+
+        for(int kx = 0; kx < scene::LOD; kx++)    //Offset
+        for(int ky = 0; ky < scene::LOD; ky++)
+        for(int kz = 0; kz < scene::LOD; kz++)
+          typescount[cur->data[math::cflatten(ivec3(x,y,z)*scene::LOD+ivec3(kx,ky,kz), ivec3(CH))]]++;
+
+        voxel::block type = voxel::BLOCK_AIR;
+        int max = 0;
+        for(int m = 1; m < 17; m++){
+          if(typescount[m] > max){
+              type = (voxel::block)m;
+              max = typescount[m];
+          }
+        }
+
+        */
+
+
+
+
+        voxel::block type = cur->data[math::cflatten(ivec3(x+1,y+1,z+1)*scene::LOD-ivec3(1), ivec3(CH))];
+        if(type == voxel::BLOCK_AIR)
+          type = cur->data[math::cflatten(ivec3(x,y,z)*scene::LOD, ivec3(CH))];
+
+        
+
+        tempchunk[math::cflatten(ivec3(x,y,z) + ivec3(ox,oy,oz)*CHLOD, ivec3(CH))] = type;
 
         cur->remesh = false;
 
