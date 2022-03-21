@@ -16,9 +16,6 @@ fs::path savedir;
 
 #include "math.h"
 
-//#include "bot/task.h"
-//#include "bot/bot.h"
-
 #include "render/scene.h"
 #include "render/vertexpool.cpp"
 
@@ -26,6 +23,11 @@ fs::path savedir;
 #include "world/voxel.h"
 #include "world/blueprint.h"
 #include "world/world.h"
+
+
+#include "bot/task.h"
+#include "bot/bot.h"
+#include "bot/tasks.h"
 
 
 int main( int argc, char* args[] ) {
@@ -52,7 +54,7 @@ int main( int argc, char* args[] ) {
   logg::deb("SEED: ", SEED);
 
   Tiny::view.vsync = false;
-  Tiny::view.antialias = 1;
+  //Tiny::view.antialias = 1;
   Tiny::window("Territory", 1200, 800);
 
   cam::near = -800.0f;
@@ -77,7 +79,7 @@ int main( int argc, char* args[] ) {
   Shader spriteShader({"source/shader/sprite.vs", "source/shader/sprite.fs"}, {"in_Quad", "in_Tex"});
   Texture cowboyfull(image::load("resource/sprite/cowboyfull.png"));
 
-  Billboard shadow(1000, 1000, false);
+  Billboard shadow(3000, 3000, false);
   Billboard image(1200, 800);
 
   Square2D flat;
@@ -108,10 +110,22 @@ int main( int argc, char* args[] ) {
   if(cam::pos.z == 0) oldpos.z = 0;
 
 
-//  vector<Bot> bots;
-//  bots.emplace_back(vec3(0,316,0)); //Place a Bot
+  vector<Bot> bots;
+  bots.emplace_back(world.top(ivec2(1, 0))); //Place a Bot
 
+  cam::look = bots.back().pos;
+  cam::update();
 
+  scene::daytime = (double)world.time/(60.0*24.0);
+  scene::lightpos = vec3(-10.0f, 15.0f+0.0f, -10.0f+0.1*20.0f);
+
+  scene::computelighting(scene::daytime);
+
+  Task::world = &world;
+
+  cout<<(int)(world.get(ivec3(0, 75, 0)))<<endl;
+
+  bool paused = true;
 
 	//Add the Event Handler
 	Tiny::event.handler = [&](){
@@ -174,6 +188,9 @@ int main( int argc, char* args[] ) {
 
     cam::handler();
 
+    if(!Tiny::event.press.empty() && Tiny::event.press.back() == SDLK_p)
+      paused = !paused;
+
 	};
 
 	//Set up an ImGUI Interface here
@@ -223,10 +240,11 @@ int main( int argc, char* args[] ) {
 
      //Draw the Bots
 
-     /*
+
 
      spriteShader.use();
      for(auto& bot: bots){
+
        spriteShader.uniform("width", 4.0f);
        spriteShader.uniform("height", 4.0f);
        spriteShader.uniform("nframe", 0.0f);
@@ -236,15 +254,16 @@ int main( int argc, char* args[] ) {
        glm::mat4 model = glm::mat4(1.0f);
        model = glm::translate(model, bot.pos + vec3(0,0.5,0));
        model = glm::scale(model, glm::vec3(0.5,1,0.5));
-       model = glm::rotate(model, glm::radians(90.0f-cam::rot), glm::vec3(0,1,0));
+       model = glm::rotate(model, glm::radians(180.0f-cam::rot), glm::vec3(0,1,0));
 
        spriteShader.uniform("model", model);
        spriteShader.uniform("vp", cam::vp);
 
        flat3.render();
+
      }
 
-     */
+
 
 
      Tiny::view.target(color::black);
@@ -261,16 +280,41 @@ int main( int argc, char* args[] ) {
 
 	};
 
+  Bot bot(vec3(0));
+
 	//Execute the render loop
 	Tiny::loop([&](){
 
+    if(paused)
+      return;
+
     scene::daytime = (double)world.time/(60.0*24.0);
-    scene::lightpos = vec3(-10.0f, 20.0f+10.0f, -10.0f+0.1*20.0f);
+    scene::lightpos = vec3(-10.0f, 15.0f+0.0f, -10.0f+0.1*20.0f);
 
     scene::computelighting(scene::daytime);
 
-//    for(auto& bot: bots)
-//      bot.execute();
+    for(auto& bot: bots){
+
+      if(bot.execute()){
+
+        /*
+        ivec2 npos = math::rand2(ivec2(CHUNKSIZE)*ivec2(world.maxchunk.x-world.minchunk.x, world.maxchunk.z-world.minchunk.z)) + ivec2(CHUNKSIZE)*ivec2(world.minchunk.x, world.minchunk.z);
+        ivec3 wpos = world.top(npos);
+        while(wpos.y == -1){
+          npos = math::rand2(ivec2(CHUNKSIZE)*ivec2(world.maxchunk.x-world.minchunk.x, world.maxchunk.z-world.minchunk.z)) + ivec2(CHUNKSIZE)*ivec2(world.minchunk.x, world.minchunk.z);
+          wpos = world.top(npos);
+        }
+        bot.task = new task::Path(wpos);
+      */
+
+
+        bot.task = new task::Fell(bot.pos);
+        //bot.task = new task::Fell(ivec3(10,0,10));
+        //bot.task = new task::Fell();
+
+      }
+
+    }
 
 	});
 

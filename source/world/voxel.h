@@ -14,6 +14,7 @@ using namespace glm;
 unsigned int CHUNKSIZE = 16;
 unsigned int CVOL = 16*16*16;
 ivec3 CDIM = ivec3(16, 16, 16);
+unsigned int NMESHTHREADS = 32;
 
 // Block-Types
 

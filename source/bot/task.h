@@ -2,6 +2,19 @@
 ================================================================================
                             Task Bot System - Task
 ================================================================================
+
+The idea is that I have a taskpool, which stores a number of available task objects.
+These are the basic structures which determine something that is being done.
+
+Tasks are abstract function pointers which do a number of things??
+Or are they structs which contain the abstract function pointers??
+
+Not sure.
+
+How do I include metadata in the abstract class???
+
+I guess the derived class can contain relevant information.
+
 */
 
 #ifndef TERRITORY_TASK
@@ -25,16 +38,20 @@ using TaskHandle = function<bool(Bot*)>;
 struct Task {
 
   Task(){};
-  
+
   string desc = "";     //Task Description
   bool init = true;     //Initial Execution
-  vector<Task> tasks;   //Internal Task Queue
+  vector<Task*> tasks;  //Internal Task Queue
 
   bool queue(Bot*);     //Handle the Queue
   bool perform(Bot*);   //Multi-Step Task Performance
   TaskHandle handle;    //Actual Function Handle
 
+  static World* world;
+
 };
+
+World* Task::world = NULL;
 
 bool Task::perform(Bot* bot){
 
@@ -48,70 +65,16 @@ bool Task::perform(Bot* bot){
 
 bool Task::queue(Bot* bot){
 
-  if(tasks.empty())             //Queue Handled
+  if(tasks.empty())               //Queue Handled
     return true;
 
-  if(tasks.back().perform(bot)) //Perform Top Task
-    tasks.pop_back();           //Remove from Queue
+  if(tasks.back()->perform(bot)){ //Perform Top Task
+    delete tasks.back();
+    tasks.pop_back();             //Remove from Queue
+  }
 
-  return false;                 //Repeat Loop
+  return false;                   //Repeat Loop
 
 }
-
-/*
-================================================================================
-                            Derived / Composed Tasks
-================================================================================
-*/
-
-namespace task {
-
-//List of All Available Tasks
-
-struct Idle;
-struct Example;
-
-/*
-================================================================================
-                              Define the Tasks
-================================================================================
-*/
-
-struct Idle : public Task {
-
-  string desc = "Idle";
-
-  Idle(){
-
-    handle = [&](Bot* bot){
-      cout<<"Handling Queue in Idle"<<endl;
-      return true;        //Work off Queue
-    };
-
-  };
-
-};
-
-struct Example : public Task {
-
-  string desc = "Example";
-
-  Example(){
-
-    tasks.push_back(Idle());    //Construct List of Tasks
-    tasks.push_back(Idle());
-    tasks.push_back(Idle());
-
-    handle = [&](Bot* bot){
-      cout<<"Handling Queue in Example"<<endl;
-      return queue(bot);        //Work off Queue
-    };
-
-  };
-
-};
-
-} //End of Namespace
-
 
 #endif

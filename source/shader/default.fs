@@ -45,8 +45,7 @@ float gridSample(int size){
   //float m = 0.005;//-dot(ex_Normal, normalize(lightpos));
   //float bias = mix(0.002, 0.2*m, pow(m, 5));
 
-  float bias = max(0.05 * (1.0 - dot(ex_Normal, lightpos)), 0.005);
-  //float bias = 0.005;
+  float bias = max(0.005 * (1.0 - dot(ex_Normal, normalize(lightpos))), 0.0001);
 
   for(int x = -size; x <= size; ++x){
       for(int y = -size; y <= size; ++y){
@@ -55,8 +54,8 @@ float gridSample(int size){
       }
   }
 
-  shadow/=((2*size+1)*(2*size+1)*2.0);
-  return shadow;
+  //shadow/=((2*size+1)*(2*size+1)*2.0);
+  return shadow*0.8/9;
 
 }
 

@@ -2,10 +2,8 @@
 
 ## engine
 
-- morton order run length encoding storage
 - improve loading times, improve drawing times
 - improve the art style somehow through improved shading techniques
-
 
 ## meta data
 
@@ -32,6 +30,17 @@ later on:
 
 - vertex pooling
 - chunk data pooling
+- morton order chunk storage
+- morton order RLE disk storage
+-
+
+
+
+
+
+
+
+
 
 
 - Loading and Saving of Chunks needs to be a member of chunk,

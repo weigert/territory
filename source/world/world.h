@@ -73,6 +73,63 @@ public:
 
   void compress();
 
+  /*
+    Location Queries
+  */
+
+  voxel::block get(ivec3 wpos){
+
+    ivec3 cpos = wpos / CDIM;
+
+    // Out of Loaded-Bounds Check
+
+    if( cpos.x < minchunk.x || cpos.x > maxchunk.x ) return voxel::BLOCK_AIR;
+    if( cpos.y < minchunk.y || cpos.y > maxchunk.y ) return voxel::BLOCK_AIR;
+    if( cpos.z < minchunk.z || cpos.z > maxchunk.z ) return voxel::BLOCK_AIR;
+
+    // Retrieve Value (Chunk-Index -> Block-Index)
+
+    int cind = math::flatten(cpos - minchunk, maxchunk+ivec3(1)-minchunk);
+    return chunks[cind].data[math::cflatten(wpos - cpos*CDIM, CDIM)];
+
+  }
+
+  ivec3 top(ivec2 pos){
+
+    ivec3 wpos = ivec3(pos.x, (maxchunk.y+1)*CHUNKSIZE-1, pos.y);
+    voxel::block type = get(wpos);
+
+    while(type == voxel::BLOCK_AIR || type == voxel::BLOCK_LEAVES){
+      wpos.y--;
+      if(wpos.y < 0) return wpos + ivec3(0,1,0);
+      type = get(wpos);
+    }
+
+    if(type == voxel::BLOCK_WOOD)
+      return wpos + ivec3(0,1,0);
+
+    return wpos + ivec3(0,1,0);
+
+  }
+
+  void set(ivec3 wpos, voxel::block type){
+
+    ivec3 cpos = wpos / CDIM;
+
+    // Out of Loaded-Bounds Check
+
+    if( cpos.x < minchunk.x || cpos.x > maxchunk.x ) return;
+    if( cpos.y < minchunk.y || cpos.y > maxchunk.y ) return;
+    if( cpos.z < minchunk.z || cpos.z > maxchunk.z ) return;
+
+    // Retrieve Value (Chunk-Index -> Block-Index)
+
+    int cind = math::flatten(cpos - minchunk, maxchunk+ivec3(1)-minchunk);
+    chunks[cind].data[math::cflatten(wpos - cpos*CDIM, CDIM)] = type;
+    chunks[cind].remesh = true;
+
+  }
+
 };
 
 
@@ -443,9 +500,14 @@ void World::mesh(){
 
     for(auto& chunk: chunks){
 
-
       if(!chunk.remesh) continue;
       threads.emplace_back(voxel::mesh, &chunk, &vertexpool);
+      if(threads.size() >= voxel::NMESHTHREADS){
+        for(auto& t: threads)
+          t.join();
+        threads.clear();
+      }
+
       chunk.remesh = false;
       chunk.firstmesh = false;
 

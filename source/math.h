@@ -41,4 +41,12 @@ using namespace glm;
     return ivec3(x, y, z);
   }
 
+  ivec2 rand2( ivec2 max ){
+    return ivec2(rand()%max.x, rand()%max.y);
+  }
+
+  ivec3 rand3( ivec3 max ){
+    return ivec3(rand()%max.x, rand()%max.y, rand()%max.z);
+  }
+
 }
