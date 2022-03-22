@@ -478,35 +478,35 @@ struct rlee {
 
 // Compress / Uncompress Methods
 
+void uncompress(rlee* elem, rle_num nrle, voxel::block* data){
+
+  for(rle_num n = 0; n < nrle; n++)             //Iterate over RLE Elements
+  for(size_t r = 0; r < elem[n].length; r++){   //Iterate over their Extent
+    *data = elem[n].type;                       //Set Type
+    data++;                                     //Shift Pointer Forward
+  }
+
+}
+
 rle_num compress(rlee* elem, voxel::block* data){
 
-  rle_num N = 0;
-  elem->type = data[0];
-  elem->length = 1;
+  rle_num nrle = 1;     //We have at least one element
+  elem->type = data[0]; //Of type Data
+  elem->length = 1;     //Of Length 1
 
   for(size_t i = 1; i < CVOL; i++){
     if(data[i] != elem->type){
-      N++; elem++;
+      nrle++; elem++;
       elem->type = data[i];
       elem->length = 1;
     }
     else elem->length++;
   }
 
-  return N;
+  return nrle;
 
 }
 
-void uncompress(rlee* elem, rle_num N, voxel::block* data){
-
-  size_t R = 0;
-  for(rle_num n = 0; n < N; n++){
-    for(size_t r = 0; r < elem[n].length; r++)
-      data[R+r] = elem[n].type;
-    R += elem[n].length;
-  }
-
-}
 
 }
 

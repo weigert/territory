@@ -77,20 +77,24 @@ public:
     Location Queries
   */
 
+  voxel::Chunk* getChunk(ivec3 cpos){
+
+    if( cpos.x < minchunk.x || cpos.x > maxchunk.x ) return NULL;
+    if( cpos.y < minchunk.y || cpos.y > maxchunk.y ) return NULL;
+    if( cpos.z < minchunk.z || cpos.z > maxchunk.z ) return NULL;
+
+    int cind = math::flatten(cpos - minchunk, maxchunk+ivec3(1)-minchunk);
+    return &chunks[cind];
+
+  }
+
   voxel::block get(ivec3 wpos){
 
     ivec3 cpos = wpos / CDIM;
 
-    // Out of Loaded-Bounds Check
-
-    if( cpos.x < minchunk.x || cpos.x > maxchunk.x ) return voxel::BLOCK_AIR;
-    if( cpos.y < minchunk.y || cpos.y > maxchunk.y ) return voxel::BLOCK_AIR;
-    if( cpos.z < minchunk.z || cpos.z > maxchunk.z ) return voxel::BLOCK_AIR;
-
-    // Retrieve Value (Chunk-Index -> Block-Index)
-
-    int cind = math::flatten(cpos - minchunk, maxchunk+ivec3(1)-minchunk);
-    return chunks[cind].data[math::cflatten(wpos - cpos*CDIM, CDIM)];
+    voxel::Chunk* chunk = getChunk( cpos );
+    if(chunk == NULL) return voxel::BLOCK_AIR;
+    return chunk->data[math::cflatten(wpos - cpos*CDIM, CDIM)];
 
   }
 
@@ -127,6 +131,8 @@ public:
     int cind = math::flatten(cpos - minchunk, maxchunk+ivec3(1)-minchunk);
     chunks[cind].data[math::cflatten(wpos - cpos*CDIM, CDIM)] = type;
     chunks[cind].remesh = true;
+
+    blueprint.add(wpos, type);
 
   }
 

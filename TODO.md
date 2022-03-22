@@ -32,8 +32,8 @@ later on:
 - chunk data pooling
 - morton order chunk storage
 - morton order RLE disk storage
--
 
+## bots
 
 
 

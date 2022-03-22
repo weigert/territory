@@ -5,14 +5,15 @@ namespace blueprint {
 using namespace glm;
 using namespace std;
 
+
 const size_t MAXEDITS = 2 << 24;
-int CHUNKSIZE = CHUNKSIZE;
-ivec3 RDIM = RDIM;
-ivec3 WDIM = WDIM;
-ivec3 CDIM = CDIM;
-unsigned int RVOL = RDIM.x*RDIM.y*RDIM.z;
-unsigned int CVOL = CDIM.x*CDIM.y*CDIM.z;
-unsigned int WVOL = WDIM.x*WDIM.y*WDIM.z;
+unsigned int CHUNKSIZE = 16;                      //Chunk Side-Length (Power-of-2)
+ivec3 WDIM = ivec3(16,16,16);                     //Spatial Information (Size in Chunks)
+ivec3 RDIM = min(WDIM, ivec3(16,16,16));          //Chunks Per Region
+ivec3 CDIM = ivec3(CHUNKSIZE);
+unsigned int CVOL = (CDIM.x*CDIM.y*CDIM.z);
+unsigned int RVOL = (RDIM.x*RDIM.y*RDIM.z);
+unsigned int WVOL = (WDIM.x*WDIM.y*WDIM.z);
 
 /*
 ================================================================================
@@ -74,7 +75,7 @@ public:
 
   vector<bufferObject> edits;
 
-  bool add(ivec3 _pos, voxel::block _type, bool negative);  //Add Block
+  bool add(ivec3 _pos, voxel::block _type, bool negative = false);  //Add Block
   bool write(string savename);
 
   Blueprint& operator += (Blueprint& lhs){              //Merge Blueprints
@@ -113,7 +114,7 @@ bool Blueprint::add(ivec3 pos, voxel::block type, bool negative){
 
 }
 
-bool Blueprint::write(string savefile){
+bool Blueprint::write(string s){
 
   logg::deb("Evaluating Blueprint [", edits.size(), "]");
 
@@ -123,6 +124,10 @@ bool Blueprint::write(string savefile){
   sort(edits.begin(), edits.end(), greater<bufferObject>());
 
   voxel::Chunk chunk;
+  chunk.data = new voxel::block[CVOL]{voxel::BLOCK_AIR};
+
+  voxel::rlee rledata[CVOL];              //RLE Data
+  voxel::rle_num nrle = 1;                    //Number of Elements in Line
 
   while(!edits.empty()){
 
@@ -141,18 +146,18 @@ bool Blueprint::write(string savefile){
       return false;
     }
 
-    size_t nrle;                    //Number of Elements in Line
-    voxel::rlee rledata[CVOL];  //RLE Data
-
     for(size_t n = 0; n < RVOL; n++){  //Region Size
 
       if( fread(&nrle, sizeof(voxel::rle_num), 1, inFile) < 1 )
         logg::err("Read Error");
 
-      if( fread(&rledata[0], sizeof(voxel::rlee), n, inFile) < n)
+      if( fread(&rledata[0], sizeof(voxel::rlee), nrle, inFile) < nrle)
         logg::err("Read Error");
 
-      voxel::uncompress(rledata, nrle, chunk.data);
+      // Comporess
+
+      voxel::uncompress(rledata, nrle, chunk.data); //Uncompress
+
       chunk.pos = math::unflatten(n, RDIM) + edits.back().rpos*RDIM;
 
       while(!edits.empty() && all(equal(chunk.pos, edits.back().cpos)) && all(equal(rpos, edits.back().rpos))){
@@ -162,7 +167,7 @@ bool Blueprint::write(string savefile){
 
       }
 
-      nrle = voxel::compress(rledata, chunk.data);
+      nrle = voxel::compress(rledata, chunk.data);  //Compress
 
       if( fwrite(&nrle, sizeof(voxel::rle_num), 1, outFile) < 1 )
         logg::err("Write Error");
@@ -179,6 +184,8 @@ bool Blueprint::write(string savefile){
     fs::rename((savedir/(savefile+".temp")), savedir/savefile);
 
   }
+
+  delete[] chunk.data;
 
   logg::deb("Success");
   return true;
