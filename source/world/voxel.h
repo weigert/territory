@@ -11,10 +11,10 @@ namespace voxel {
 using namespace std;
 using namespace glm;
 
-unsigned int CHUNKSIZE = 16;
-unsigned int CVOL = 16*16*16;
-ivec3 CDIM = ivec3(16, 16, 16);
-unsigned int NMESHTHREADS = 32;
+const unsigned int CHUNKSIZE = 16;
+const unsigned int CVOL = 16*16*16;
+const ivec3 CDIM = ivec3(16, 16, 16);
+const unsigned int NMESHTHREADS = 32;
 
 // Block-Types
 
@@ -278,65 +278,65 @@ public:
 
 void mesh(Chunk* c, Vertexpool<Vertex>* vertpool){
 
-  vec3 p = c->pos*ivec3(CHUNKSIZE);
+  const vec3 p = vec3(c->pos)*vec3(CHUNKSIZE) - vec3(0.5f);
 
-  unsigned int u, v, w;
-  int n;
+  const unsigned int ua[6] = {0, 0, 1, 1, 2, 2};
+  const unsigned int va[6] = {1, 1, 2, 2, 0, 0};
+  const unsigned int wa[6] = {2, 2, 0, 0, 1, 1};
+  const int na[6] = {-1, 1,-1, 1,-1, 1};          //Normal Direction
 
-  voxel::block* mask = new voxel::block[CHUNKSIZE*CHUNKSIZE];
-  voxel::block current, facing;
-  int s;
+  voxel::block* ndata = new voxel::block[CVOL];
+  for(size_t i = 0; i < CVOL; i++)
+    ndata[i] = c->data[math::cflatten(math::unflatten(i, CDIM), CDIM)];
 
-  int quads = 0;
+  const function<void(int)> meshface = [&](int d){
 
-  for(int d = 0; d < 6; d++){
+    voxel::block* mask = new voxel::block[CHUNKSIZE*CHUNKSIZE]{BLOCK_AIR};
+    voxel::block current;
+    int s;
 
-  //  std::cout<<"Chunk D-Loop ";
-  //  timer::benchmark<std::chrono::microseconds>([&](){
+    int quads = 0;
+  //  int subquads = 0;
 
-    u = (d/2+0)%3;  //u = 0, 0, 1, 1, 2, 2      //Dimension m->indices
-    v = (d/2+1)%3;  //v = 1, 1, 2, 2, 0, 0
-    w = (d/2+2)%3;  //w = 2, 2, 0, 0, 1, 1
+    const unsigned int u = ua[d];
+    const unsigned int v = va[d];
+    const unsigned int w = wa[d];
+    const int n = na[d];
 
-    unsigned int x[3] = {0};
     int q[3] = {0};
     int y[3] = {0};
+    q[u] = n;           //Normal Vector along orientation
+    y[u] = 1;           //Unit Vector along orientiation
 
-    n = 2*(d%2)-1;  //Normal Direction
-    q[u] = n;           //Normal Vector
-    y[u] = 1;           //Simple Vector
+    unsigned int x[3] = {0};
 
-    c->quadsize = 0;
+    for(x[u] = 0; x[u] < CHUNKSIZE; ++x[u]){       //Loop Over Depth
 
-    for(x[u] = 0; x[u] < CHUNKSIZE; x[u]++){       //Loop Over Depth
-
-      for(x[v] = 0; x[v] < CHUNKSIZE; x[v]++){     //Loop Over Slice
-        for(x[w] = 0; x[w] < CHUNKSIZE; x[w]++){
+      for(x[v] = 0; x[v] < CHUNKSIZE; ++x[v]){     //Loop Over Slice
+        for(x[w] = 0; x[w] < CHUNKSIZE; ++x[w]){
 
           s = x[w] + x[v]*CHUNKSIZE;                                    //Slice Index
-          mask[s] = BLOCK_AIR;                                                  //Set to Air
+          mask[s] = ndata[math::flatten(x[0], x[1], x[2], CDIM)];
+        //  subquads++;
 
-          current = c->get(ivec3(x[0],x[1],x[2]));   //Position at one corner!
-
-          if(current == BLOCK_AIR) continue;
-
-          //Basically, we are facing out of the chunk, so we do take over the surface.
-          //  if(x[u] + q[u] < 0 || x[u] + q[u] >= CHUNKSIZE){
-          if(x[u] + q[u] < 0 || x[u] + q[u] >= CHUNKSIZE){
-            mask[s] = current;
+          if(mask[s] == BLOCK_AIR){
+        //    subquads--;
             continue;
           }
 
-          //Now see if we should remove this mask element or not, i.e. not visible!
-          facing = c->get(ivec3(x[0]+q[0],x[1]+q[1],x[2]+q[2]));
+          if(x[u] + q[u] < 0 || x[u] + q[u] >= CHUNKSIZE)
+            continue;
 
-          //Make sure that the facing block can be air or non-cubic!
-          if(facing == BLOCK_AIR)
-            mask[s] = current;
-          // else mask[s] = BLOCK_ANY;
+          if(ndata[math::flatten(x[0]+q[0], x[1]+q[1], x[2]+q[2], CDIM)] != BLOCK_AIR){
+            mask[s] = BLOCK_AIR;
+        //    subquads--;
+          }
 
         }
       }
+
+  //    if(subquads == 0)
+  //      continue;
 
       unsigned int width = 1, height = 1;
       bool quaddone;
@@ -350,27 +350,23 @@ void mesh(Chunk* c, Vertexpool<Vertex>* vertpool){
           s = x[w] + x[v]*CHUNKSIZE;    //Current Slice Index
           current = mask[s];        //Current Block Type
 
-          if(current == BLOCK_AIR /* || current == BLOCK_ANY */ )  //We don't mesh air
+          if(current == BLOCK_AIR)  //We don't mesh air
             continue;
 
-          while(x[w] + width < CHUNKSIZE && (mask[s+width] == current /* || mask[s+width] == BLOCK_ANY */ ))
+          while(x[w] + width < CHUNKSIZE && (mask[s+width] == current ))
             width++;
 
           quaddone = false;
           for(height = 1; x[v] + height < CHUNKSIZE; height++){   //Find Height
 
             for(unsigned int k = 0; k < width; k++){                   //Iterate Over Width
-              if(mask[s+k+height*CHUNKSIZE] != current /* && mask[s+k+height*CHUNKSIZE] != BLOCK_ANY */ ) {
+              if(mask[s+k+height*CHUNKSIZE] != current) {
                 quaddone = true;
                 break;
               }
             }
             if(quaddone) break;
           }
-
-          for(unsigned int l = x[v]; l < x[v] + height; l++)   //Zero the Mask
-          for(unsigned int k = x[w]; k < x[w] + width; k++)
-            mask[k+l*CHUNKSIZE] = BLOCK_AIR;
 
         //  vec3 px = p+vec3(x[0], x[1], x[2]);
           vec3 qq = vec3(q[0], q[1], q[2]);
@@ -382,77 +378,89 @@ void mesh(Chunk* c, Vertexpool<Vertex>* vertpool){
 
           if(n < 0){
 
-            vertpool->fill(c->faces[d], c->quadsize*4+0,
-              vec3( (p.x-0.5+scene::SCALE*(x[0])),
-                    (p.y-0.5+scene::SCALE*(x[1])),
-                    (p.z-0.5+scene::SCALE*(x[2]))),
+            vertpool->fill(c->faces[d], quads*4+0,
+              vec3( (p.x+scene::SCALE*(x[0])),
+                    (p.y+scene::SCALE*(x[1])),
+                    (p.z+scene::SCALE*(x[2]))),
               qq, color);
 
-            vertpool->fill(c->faces[d], c->quadsize*4+1,
-              vec3( (p.x-0.5+scene::SCALE*(x[0]+du[0]+dv[0])),
-                    (p.y-0.5+scene::SCALE*(x[1]+du[1]+dv[1])),
-                    (p.z-0.5+scene::SCALE*(x[2]+du[2]+dv[2]))),
+            vertpool->fill(c->faces[d], quads*4+1,
+              vec3( (p.x+scene::SCALE*(x[0]+du[0]+dv[0])),
+                    (p.y+scene::SCALE*(x[1]+du[1]+dv[1])),
+                    (p.z+scene::SCALE*(x[2]+du[2]+dv[2]))),
               qq, color);
 
-            vertpool->fill(c->faces[d], c->quadsize*4+2,
-              vec3( (p.x-0.5+scene::SCALE*(x[0]+du[0])),
-                    (p.y-0.5+scene::SCALE*(x[1]+du[1])),
-                    (p.z-0.5+scene::SCALE*(x[2]+du[2]))),
+            vertpool->fill(c->faces[d], quads*4+2,
+              vec3( (p.x+scene::SCALE*(x[0]+du[0])),
+                    (p.y+scene::SCALE*(x[1]+du[1])),
+                    (p.z+scene::SCALE*(x[2]+du[2]))),
               qq, color);
 
-            vertpool->fill(c->faces[d], c->quadsize*4+3,
-              vec3( (p.x-0.5+scene::SCALE*(x[0]+dv[0])),
-                    (p.y-0.5+scene::SCALE*(x[1]+dv[1])),
-                    (p.z-0.5+scene::SCALE*(x[2]+dv[2]))),
+            vertpool->fill(c->faces[d], quads*4+3,
+              vec3( (p.x+scene::SCALE*(x[0]+dv[0])),
+                    (p.y+scene::SCALE*(x[1]+dv[1])),
+                    (p.z+scene::SCALE*(x[2]+dv[2]))),
               qq, color);
 
           }
           else{
 
-            vertpool->fill(c->faces[d], c->quadsize*4+0,
-              vec3( (p.x-0.5+scene::SCALE*(x[0]+y[0])),
-                    (p.y-0.5+scene::SCALE*(x[1]+y[1])),
-                    (p.z-0.5+scene::SCALE*(x[2]+y[2]))),
+            vertpool->fill(c->faces[d], quads*4+0,
+              vec3( (p.x+scene::SCALE*(x[0]+y[0])),
+                    (p.y+scene::SCALE*(x[1]+y[1])),
+                    (p.z+scene::SCALE*(x[2]+y[2]))),
               qq, color);
 
-            vertpool->fill(c->faces[d], c->quadsize*4+1,
-              vec3( (p.x-0.5+scene::SCALE*(x[0]+du[0]+dv[0]+y[0])),
-                    (p.y-0.5+scene::SCALE*(x[1]+du[1]+dv[1]+y[1])),
-                    (p.z-0.5+scene::SCALE*(x[2]+du[2]+dv[2]+y[2]))),
+            vertpool->fill(c->faces[d], quads*4+1,
+              vec3( (p.x+scene::SCALE*(x[0]+du[0]+dv[0]+y[0])),
+                    (p.y+scene::SCALE*(x[1]+du[1]+dv[1]+y[1])),
+                    (p.z+scene::SCALE*(x[2]+du[2]+dv[2]+y[2]))),
               qq, color);
 
-            vertpool->fill(c->faces[d], c->quadsize*4+2,
-              vec3( (p.x-0.5+scene::SCALE*(x[0]+du[0]+y[0])),
-                    (p.y-0.5+scene::SCALE*(x[1]+du[1]+y[1])),
-                    (p.z-0.5+scene::SCALE*(x[2]+du[2]+y[2]))),
+            vertpool->fill(c->faces[d], quads*4+2,
+              vec3( (p.x+scene::SCALE*(x[0]+du[0]+y[0])),
+                    (p.y+scene::SCALE*(x[1]+du[1]+y[1])),
+                    (p.z+scene::SCALE*(x[2]+du[2]+y[2]))),
               qq, color);
 
-            vertpool->fill(c->faces[d], c->quadsize*4+3,
-              vec3( (p.x-0.5+scene::SCALE*(x[0]+dv[0]+y[0])),
-                    (p.y-0.5+scene::SCALE*(x[1]+dv[1]+y[1])),
-                    (p.z-0.5+scene::SCALE*(x[2]+dv[2]+y[2]))),
+            vertpool->fill(c->faces[d], quads*4+3,
+              vec3( (p.x+scene::SCALE*(x[0]+dv[0]+y[0])),
+                    (p.y+scene::SCALE*(x[1]+dv[1]+y[1])),
+                    (p.z+scene::SCALE*(x[2]+dv[2]+y[2]))),
               qq, color);
 
           }
 
-          c->quadsize++;
+          for(unsigned int l = x[v]; l < x[v] + height; l++)   //Zero the Mask
+          for(unsigned int k = x[w]; k < x[w] + width; k++)
+            mask[k+l*CHUNKSIZE] = BLOCK_AIR;
+
+          quads++;
           //Next Quad
         }
       }
       //Next Slice
     }
 
-    vertpool->resize(c->faces[d], c->quadsize*6);
-    quads += c->quadsize;
-  //  });
+    vertpool->resize(c->faces[d], quads*6);
+    delete[] mask;
+
+  };
 
 
-  //Next Surface Orientation
-  }
+  for(unsigned int d = 0; d < 6; d++)
+    meshface(d);
+
+//  vector<thread> threads;
+//  for(unsigned int d = 0; d < 6; d++)
+//    threads.emplace_back(meshface, d);
+
+//  for(auto& t: threads)
+//    t.join();
 
 //  std::cout<<"QUADS: "<<quads<<std::endl;
 
-  delete[] mask;
+  delete[] ndata;
 
 }
 
@@ -476,7 +484,41 @@ struct rlee {
   unsigned int length = 1;
 };
 
+void uncompress(rlee* elem, rle_num nrle, voxel::block* data){
+
+  for(rle_num n = 0; n < nrle; n++)             //Iterate over RLE Elements
+  for(size_t r = 0; r < elem[n].length; r++){   //Iterate over their Extent
+    *data = elem[n].type;                       //Set Type
+    data++;                                     //Shift Pointer Forward
+  }
+
+}
+
+rle_num compress(rlee* elem, voxel::block* data){
+
+  rle_num nrle = 1;   //Initial Element
+  elem->type = data[0];
+  elem->length = 1;
+
+  for(size_t i = 1; i < CVOL; i++){
+
+    if(data[i] != elem->type){
+      nrle++; elem++;
+      elem->type = data[i];
+      elem->length = 1;
+    }
+
+    else elem->length++;
+
+  }
+
+  return nrle;
+
+}
+
 // Compress / Uncompress Methods
+
+/*
 
 void uncompress(rlee* elem, rle_num nrle, voxel::block* data){
 
@@ -490,22 +532,27 @@ void uncompress(rlee* elem, rle_num nrle, voxel::block* data){
 
 rle_num compress(rlee* elem, voxel::block* data){
 
-  rle_num nrle = 1;     //We have at least one element
-  elem->type = data[0]; //Of type Data
-  elem->length = 1;     //Of Length 1
+  rle_num nrle = 1;   //Initial Element
+  elem->type = data[0];
+  elem->length = 1;
 
   for(size_t i = 1; i < CVOL; i++){
+
     if(data[i] != elem->type){
       nrle++; elem++;
       elem->type = data[i];
       elem->length = 1;
     }
+
     else elem->length++;
+
   }
 
   return nrle;
 
 }
+
+*/
 
 
 }

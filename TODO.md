@@ -32,6 +32,8 @@ later on:
 - chunk data pooling
 - morton order chunk storage
 - morton order RLE disk storage
+- blueprints are functioning again as intended
+- removed all traces of serialization with boost
 
 ## bots
 
@@ -40,23 +42,6 @@ later on:
 
 
 
-
-
-
-- Loading and Saving of Chunks needs to be a member of chunk,
-so we can defien derived classes.
-
-- Meshing works well - I need better rendering with less driver overhead
-  - Quad pooling?
-  - Model Merging?
-  - glMultiDrawElements?
-
-- Compression and LOD
-  - Z-Order RLE?
-
-- Occlusion Culling?
-  - Don't draw quads / voxels which are not visible?
-  - Don't mesh quads / voxels which are not visible?
 
 
 

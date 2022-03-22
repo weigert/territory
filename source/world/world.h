@@ -517,14 +517,6 @@ void World::mesh(){
       chunk.remesh = false;
       chunk.firstmesh = false;
 
-      /*
-      if(!chunk.remesh) continue;
-      scene::SCALE = scene::LOD;
-      voxel::mesh(&chunk, &vertexpool);
-      chunk.remesh = false;
-      chunk.firstmesh = false;
-      */
-
     }
 
     for(auto& t: threads)
@@ -601,16 +593,17 @@ void World::mesh(){
           }
         }
 
+        
+
         /*
-
-
-
 
         voxel::block type = cur->data[math::cflatten(ivec3(x+1,y+1,z+1)*scene::LOD-ivec3(1), ivec3(CH))];
         if(type == voxel::BLOCK_AIR)
           type = cur->data[math::cflatten(ivec3(x,y,z)*scene::LOD, ivec3(CH))];
 
-          */
+        */
+
+
 
         tempchunk[math::cflatten(ivec3(x,y,z) + ivec3(ox,oy,oz)*CHLOD, ivec3(CH))] = type;
 

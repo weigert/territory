@@ -6,7 +6,7 @@ CF = -Wall -O3
 LF = -I/usr/local/include -L/usr/local/lib
 
 # TinyEngine Linking Libraries
-TINYLINK = -lX11 -lpthread -lnoise -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lGL -lGLEW -lboost_serialization -lboost_system -lboost_filesystem
+TINYLINK = -lX11 -lpthread -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lGL -lGLEW -lboost_system -lboost_filesystem
 
 # Make Rule
 all: source/territory.cpp
