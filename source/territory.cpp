@@ -53,8 +53,8 @@ int main( int argc, char* args[] ) {
     SEED = std::stoi(parse::option["s"]);
   logg::deb("SEED: ", SEED);
 
-  Tiny::view.vsync = false;
-  //Tiny::view.antialias = 1;
+  //Tiny::view.vsync = false;
+  Tiny::view.antialias = 1;
   Tiny::window("Territory", 1200, 800);
 
   cam::near = -800.0f;
@@ -274,6 +274,7 @@ int main( int argc, char* args[] ) {
      effectShader.uniform("grain", scene::grain);          //Texture Grain
      effectShader.uniform("fog", scene::fog);              //Fog
      effectShader.uniform("fogcolor", scene::fogcolor);    //
+     effectShader.uniform("lookdir", cam::pos);    //
 
      effectShader.uniform("model", glm::mat4(1));
      flat.render();

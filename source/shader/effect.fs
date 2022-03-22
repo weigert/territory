@@ -31,6 +31,24 @@ void main(){
     }
   }
 
+  /*
+  if(true){
+
+    float d0 = clamp(texture(depthTexture, ex_Tex).r, 0.0, 1.0);
+    float d1 = clamp(texture(depthTexture, ex_Tex+vec2(0.001,0)).r, 0.0, 1.0);
+    float d2 = clamp(texture(depthTexture, ex_Tex+vec2(-0.001,0)).r, 0.0, 1.0);
+  //  float d2 = clamp(texture(depthTexture, ex_Tex).r, 0.0, 1.0);
+  //  float d3 = clamp(texture(depthTexture, ex_Tex).r, 0.0, 1.0);
+
+    if(abs(d1 - d0) > 0.0001) fragColor = vec4(1,1,1,1);
+    if(abs(d2 - d0) > 0.0001) fragColor = vec4(1,1,1,1);
+  }
+  */
+
+//
+//  float depthVal
+
+
   //Texture Grain
   //if(grain)
   //  fragColor += 0.1*vec4(rand(ex_Tex)*vec3(1.0f), 1.0f);

@@ -465,6 +465,205 @@ void mesh(Chunk* c, Vertexpool<Vertex>* vertpool){
 }
 
 /*
+
+
+struct treemeshnode {
+
+  treemeshnode* A = NULL;
+  treemeshnode* B = NULL;
+
+  block type = BLOCK_AIR;             //Contains
+  int p[2]{0, 0};                     //Position
+  int w[2]{CHUNKSIZE, CHUNKSIZE};     //Width
+  int dim = 0;                        //Split-Dimension
+
+  treemeshnode(){}
+
+  treemeshnode(treemeshnode* parent){
+    p[0] = parent->p[0];
+    p[1] = parent->p[1];
+    w[0] = parent->w[0];
+    w[1] = parent->w[1];
+  }
+
+  ~treemeshnode(){
+    if(A != NULL) delete A;
+    if(B != NULL) delete B;
+  }
+
+  bool split(int ndim, int nw){
+
+    if(w[ndim] <= 1)  //Can't Split Along here...
+      return false;
+
+    if(w[ndim] < nw)
+      return false;
+
+    dim = ndim;
+
+    if(A != NULL) delete A;
+    if(B != NULL) delete B;
+
+    A = new treemeshnode(this);
+    B = new treemeshnode(this);
+
+    A->w[ndim] = nw;
+    B->w[ndim] = w[ndim]-nw;
+    B->p[ndim] = nw;
+
+    return true;
+
+  }
+
+
+};
+
+void mesh(Chunk* c, Vertexpool<Vertex>* vertpool){
+
+  const vec3 p = vec3(c->pos)*vec3(CHUNKSIZE) - vec3(0.5f);
+
+  const unsigned int ua[6] = {0, 0, 1, 1, 2, 2};
+  const unsigned int va[6] = {1, 1, 2, 2, 0, 0};
+  const unsigned int wa[6] = {2, 2, 0, 0, 1, 1};
+  const int na[6] = {-1, 1,-1, 1,-1, 1};          //Normal Direction
+
+//  voxel::block* ndata = new voxel::block[CVOL];
+//  for(size_t i = 0; i < CVOL; i++)
+//    ndata[i] = c->data[i];//c->data[math::cflatten(math::unflatten(i, CDIM), CDIM)];
+
+  treemeshnode* root = new treemeshnode();
+
+  root->split(0, CHUNKSIZE/2);
+  root->B->type = BLOCK_STONE;
+
+  const function<void(int)> meshface = [&](int d){
+
+
+    int quads = 0;
+  //  int subquads = 0;
+
+    const unsigned int u = ua[d];
+    const unsigned int v = va[d];
+    const unsigned int w = wa[d];
+    const int n = na[d];
+
+    int q[3] = {0};
+    int y[3] = {0};
+    q[u] = n;           //Normal Vector along orientation
+    y[u] = 1;           //Unit Vector along orientiation
+
+    unsigned int x[3] = {0};
+
+    for(x[u] = 0; x[u] < CHUNKSIZE; ++x[u]){       //Loop Over Depth
+
+      const function<void(treemeshnode*)> donodequad = [&](treemeshnode* node){
+
+        if(node->A != NULL && node->B != NULL){
+          donodequad(node->A);
+          donodequad(node->B);
+          return;
+        }
+
+        if(node->type == BLOCK_AIR)
+          return;
+
+        x[v] = node->p[0];
+        x[w] = node->p[1];
+
+        vec3 qq = vec3(q[0], q[1], q[2]);
+        int du[3] = {0}; du[v] = node->w[0];
+        int dv[3] = {0}; dv[w] = node->w[1];
+        vec3 color = voxel::get(node->type, color::hashrand(math::cflatten(ivec3(x[0], x[1], x[2]), ivec3(16))));
+
+        if(n < 0){
+
+          vertpool->fill(c->faces[d], quads*4+0,
+            vec3( (p.x+scene::SCALE*(x[0])),
+                  (p.y+scene::SCALE*(x[1])),
+                  (p.z+scene::SCALE*(x[2]))),
+            qq, color);
+
+          vertpool->fill(c->faces[d], quads*4+1,
+            vec3( (p.x+scene::SCALE*(x[0]+du[0]+dv[0])),
+                  (p.y+scene::SCALE*(x[1]+du[1]+dv[1])),
+                  (p.z+scene::SCALE*(x[2]+du[2]+dv[2]))),
+            qq, color);
+
+          vertpool->fill(c->faces[d], quads*4+2,
+            vec3( (p.x+scene::SCALE*(x[0]+du[0])),
+                  (p.y+scene::SCALE*(x[1]+du[1])),
+                  (p.z+scene::SCALE*(x[2]+du[2]))),
+            qq, color);
+
+          vertpool->fill(c->faces[d], quads*4+3,
+            vec3( (p.x+scene::SCALE*(x[0]+dv[0])),
+                  (p.y+scene::SCALE*(x[1]+dv[1])),
+                  (p.z+scene::SCALE*(x[2]+dv[2]))),
+            qq, color);
+
+        }
+        else{
+
+          vertpool->fill(c->faces[d], quads*4+0,
+            vec3( (p.x+scene::SCALE*(x[0]+y[0])),
+                  (p.y+scene::SCALE*(x[1]+y[1])),
+                  (p.z+scene::SCALE*(x[2]+y[2]))),
+            qq, color);
+
+          vertpool->fill(c->faces[d], quads*4+1,
+            vec3( (p.x+scene::SCALE*(x[0]+du[0]+dv[0]+y[0])),
+                  (p.y+scene::SCALE*(x[1]+du[1]+dv[1]+y[1])),
+                  (p.z+scene::SCALE*(x[2]+du[2]+dv[2]+y[2]))),
+            qq, color);
+
+          vertpool->fill(c->faces[d], quads*4+2,
+            vec3( (p.x+scene::SCALE*(x[0]+du[0]+y[0])),
+                  (p.y+scene::SCALE*(x[1]+du[1]+y[1])),
+                  (p.z+scene::SCALE*(x[2]+du[2]+y[2]))),
+            qq, color);
+
+          vertpool->fill(c->faces[d], quads*4+3,
+            vec3( (p.x+scene::SCALE*(x[0]+dv[0]+y[0])),
+                  (p.y+scene::SCALE*(x[1]+dv[1]+y[1])),
+                  (p.z+scene::SCALE*(x[2]+dv[2]+y[2]))),
+            qq, color);
+
+        }
+
+        quads++;
+
+      };
+
+      donodequad(root);
+
+    }
+
+    vertpool->resize(c->faces[d], quads*6);
+
+  };
+
+
+  for(unsigned int d = 0; d < 6; d++)
+    meshface(d);
+
+  delete root;
+
+//  vector<thread> threads;
+//  for(unsigned int d = 0; d < 6; d++)
+//    threads.emplace_back(meshface, d);
+
+//  for(auto& t: threads)
+//    t.join();
+
+//  std::cout<<"QUADS: "<<quads<<std::endl;
+
+//  delete[] ndata;
+
+}
+
+*/
+
+/*
 ================================================================================
             Chunk Compression: Morton Order Run-Length Encoding
 ================================================================================

@@ -461,11 +461,14 @@ void World::buffer(){
 
     }
 
+
     });
 
     std::cout<<"Load-Time Per Chunk: "<<loadtime/loadsize<<std::endl;
 
   }
+
+  sort(chunks.begin(), chunks.end(), less<voxel::Chunk>());
 
   lock = false;
 
@@ -479,76 +482,59 @@ void World::buffer(){
 
 void World::mesh(){
 
+  // Constant Parameters
+
+  const int CHLOD = CHUNKSIZE/scene::LOD;
+  const ivec3 effchunk = maxchunk-minchunk;
+  const ivec3 base = mod((vec3)minchunk, vec3(scene::LOD));
+  scene::SCALE = scene::LOD;
+
+  vector<voxel::Chunk*> meshchunks;
+
+  // Benchmark
+
   timer::benchmark<std::chrono::microseconds>([&](){
-
-  sort(chunks.begin(), chunks.end(), less<voxel::Chunk>());
-
-  //What I create chunks which represent merged chunks?
 
   logg::deb("Meshing Chunks...");
 
   if(scene::LOD == 1){
 
+    // Select Chunks for Remeshing, Prepare
+
     for(auto& chunk: chunks){
 
-      if(!chunk.remesh) continue;
+      if(!chunk.remesh)
+        continue;
 
       if(!chunk.firstmesh)
-        for(int d = 0; d < 6; d++)
-          vertexpool.unsection(chunk.faces[d]);
-
+      for(int d = 0; d < 6; d++)
+        vertexpool.unsection(chunk.faces[d]);
       chunk.section(&vertexpool);
 
-    }
-
-    std::vector<thread> threads;
-    scene::SCALE = scene::LOD;
-
-    for(auto& chunk: chunks){
-
-      if(!chunk.remesh) continue;
-      threads.emplace_back(voxel::mesh, &chunk, &vertexpool);
-      if(threads.size() >= voxel::NMESHTHREADS){
-        for(auto& t: threads)
-          t.join();
-        threads.clear();
-      }
-
+      meshchunks.push_back(&chunk);
       chunk.remesh = false;
       chunk.firstmesh = false;
 
     }
 
+    // Parallel
+
+    std::vector<thread> threads;
+    for(auto& chunk: meshchunks)
+      threads.emplace_back(voxel::mesh, chunk, &vertexpool);
     for(auto& t: threads)
       t.join();
+
+    // Serial
+
+    //for(auto& chunk: meshchunks)
+    //  voxel::mesh(chunk, &vertexpool);
 
   }
 
   else {
 
-    // Unsection all chunks...
-    /*
-
-    for(auto& chunk: chunks){
-
-      if(!chunk.remesh) continue;
-
-      if(!chunk.firstmesh)
-        for(int d = 0; d < 6; d++)
-          vertexpool.unsection(chunk.faces[d]);
-
-      chunk.section(&vertexpool);
-
-    }
-    */
-
-    ivec3 effchunk = maxchunk-minchunk;
-    ivec3 base = mod((vec3)minchunk, vec3(scene::LOD));
-
-    const int CH = CHUNKSIZE;
-    const int CHLOD = CHUNKSIZE/scene::LOD;
-
-    voxel::block* tempchunk = new voxel::block[CVOL]{voxel::BLOCK_AIR};
+    // Generate temporary chunk structures
 
     for(int i = base.x; i < effchunk.x; i += scene::LOD)
     for(int j = base.y; j < effchunk.y; j += scene::LOD)
@@ -563,6 +549,16 @@ void World::mesh(){
       for(int d = 0; d < 6; d++)
         vertexpool.unsection(basechunk->faces[d]);
 
+      meshchunks.push_back(new voxel::Chunk(basechunk->pos, chunkpool.get()));
+      meshchunks.back()->section(&vertexpool);
+      basechunk->faces = meshchunks.back()->faces;
+      basechunk->firstmesh = false;
+      basechunk->remesh = false;
+
+    }
+
+    const function<void(voxel::Chunk*, Vertexpool<Vertex>*)> meshchunk = [&](voxel::Chunk* tempchunk, Vertexpool<Vertex>* vertexpool){
+
       //Merge the Data of these Chunks into a Super Chunk
       for(int x = 0; x < CHLOD; x++)
       for(int y = 0; y < CHLOD; y++)
@@ -572,57 +568,48 @@ void World::mesh(){
       for(int oy = 0; oy < scene::LOD; oy++)
       for(int oz = 0; oz < scene::LOD; oz++){
 
-        voxel::Chunk* cur = &chunks[math::flatten(ivec3(i, j, k) + ivec3(ox, oy, oz), effchunk+1)];
-
-
+        voxel::Chunk* cur = &chunks[math::flatten(tempchunk->pos - minchunk + ivec3(ox, oy, oz), effchunk+1)];
 
         int typescount[17]{0};
-
 
         for(int kx = 0; kx < scene::LOD; kx++)    //Offset
         for(int ky = 0; ky < scene::LOD; ky++)
         for(int kz = 0; kz < scene::LOD; kz++)
-          typescount[cur->data[math::cflatten(ivec3(x,y,z)*scene::LOD+ivec3(kx,ky,kz), ivec3(CH))]]++;
+          typescount[cur->data[math::cflatten(ivec3(x,y,z)*scene::LOD+ivec3(kx,ky,kz), ivec3(CHUNKSIZE))]]++;
 
         voxel::block type = voxel::BLOCK_AIR;
         int max = 0;
-        for(int m = 1; m < 17; m++){
-          if(typescount[m] > max){
-              type = (voxel::block)m;
-              max = typescount[m];
-          }
+        for(int m = 1; m < 17; m++)
+        if(typescount[m] > max){
+          type = (voxel::block)m;
+          max = typescount[m];
         }
 
-        
-
-        /*
-
-        voxel::block type = cur->data[math::cflatten(ivec3(x+1,y+1,z+1)*scene::LOD-ivec3(1), ivec3(CH))];
-        if(type == voxel::BLOCK_AIR)
-          type = cur->data[math::cflatten(ivec3(x,y,z)*scene::LOD, ivec3(CH))];
-
-        */
-
-
-
-        tempchunk[math::cflatten(ivec3(x,y,z) + ivec3(ox,oy,oz)*CHLOD, ivec3(CH))] = type;
-
-        cur->remesh = false;
+        tempchunk->data[math::cflatten(ivec3(x,y,z) + ivec3(ox,oy,oz)*CHLOD, ivec3(CHUNKSIZE))] = type;
 
       }
 
-      voxel::Chunk newchunk(basechunk->pos, tempchunk);
+      voxel::mesh(tempchunk, vertexpool);
 
-      scene::SCALE = scene::LOD;
-      newchunk.section(&vertexpool);
-      voxel::mesh(&newchunk, &vertexpool);
+    };
 
-      basechunk->faces = newchunk.faces;
-      basechunk->firstmesh = false;
+    // Serial
 
+  //  for(auto& chunk: meshchunks)
+  //    meshchunk(chunk, &vertexpool);
+
+    // Parallel
+
+    vector<thread> threads;
+    for(auto& chunk: meshchunks)
+      threads.emplace_back(meshchunk, chunk, &vertexpool);
+    for(auto& t: threads)
+      t.join();
+
+    for(auto& chunk: meshchunks){
+      chunkpool.remove(chunk->data);
+      delete chunk;
     }
-
-    delete[] tempchunk;
 
   }
 
