@@ -72,11 +72,11 @@ int main( int argc, char* args[] ) {
   scene::MAXBUCKET = 18*18*18*8;
 
   //Load Shaders
-  Shader cubeShader({"source/shader/default.vs", "source/shader/default.fs"}, {"in_Position", "in_Normal", "in_Color"});
-  Shader depthShader({"source/shader/depth.vs", "source/shader/depth.fs"}, {"in_Position"});
-	Shader effectShader({"source/shader/effect.vs", "source/shader/effect.fs"}, {"in_Quad", "in_Tex"});
+  Shader cubeShader({"source/shader/world/default.vs", "source/shader/world/default.fs"}, {"in_Position", "in_Normal", "in_Color"});
+  Shader depthShader({"source/shader/world/depth.vs", "source/shader/world/depth.fs"}, {"in_Position"});
+	Shader effectShader({"source/shader/effect/effect.vs", "source/shader/effect/effect.fs"}, {"in_Quad", "in_Tex"});
 
-  Shader spriteShader({"source/shader/sprite.vs", "source/shader/sprite.fs"}, {"in_Quad", "in_Tex"});
+  Shader spriteShader({"source/shader/sprite/sprite.vs", "source/shader/sprite/sprite.fs"}, {"in_Quad", "in_Tex"});
   Texture cowboyfull(image::load("resource/sprite/cowboyfull.png"));
 
   Billboard shadow(3000, 3000, false);
