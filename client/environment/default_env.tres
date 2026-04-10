@@ -1,0 +1,14 @@
+[gd_resource type="Environment" load_steps=2 format=3]
+
+[sub_resource type="Sky" id="1"]
+
+[resource]
+background_mode = 2
+sky = SubResource("1")
+tonemap_mode = 3
+ssao_enabled = true
+ssao_radius = 2.0
+ssao_intensity = 1.5
+glow_enabled = true
+glow_intensity = 0.4
+glow_bloom = 0.1
